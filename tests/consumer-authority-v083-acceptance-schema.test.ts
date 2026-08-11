@@ -44,6 +44,11 @@ describe("consumer authority 0.8.3 acceptance schema", () => {
         transformedUserInput: "user-messages-and-user-text-parts-never-satisfy-the-post-model-predicate",
         messageIdentity: "message-id-session-role-and-event-surface-association-is-immutable-role-drift-blocks",
         partIdentity: "part-id-session-message-type-and-event-surface-association-is-immutable-linked-text-cannot-promote",
+        lifecycle: {
+          message: "message.updated-first-or-same-binding-repeat-then-user-message.removed-once; no-unknown-remove-or-update-after-remove",
+          part: "message.part.updated-first-or-same-binding-repeat-then-message.part.removed-once; no-unknown-remove-update-after-remove-or-rebind",
+          rejectedCodes: ["message-lifecycle-invalid", "part-lifecycle-invalid"],
+        },
       },
     })
   })

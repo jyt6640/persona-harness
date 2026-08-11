@@ -212,6 +212,172 @@ describe("OpenCode interview observation contract", () => {
     expect(JSON.stringify(result)).not.toContain("changing-part")
   })
 
+  it("tombstones a removed part and rejects update-after-remove reuse", () => {
+    const result = evaluateOpenCodeInterviewObservation(observation([
+      assistantMessage(),
+      assistantText("Which people should this product help first?"),
+      {
+        type: "message.part.removed",
+        properties: {
+          sessionID,
+          messageID: "assistant-message",
+          partID: "assistant-text",
+        },
+      },
+      assistantText("Which people should this product help first?"),
+    ]))
+
+    expect(result).toMatchObject({
+      status: "blocked",
+      code: "part-lifecycle-invalid",
+      ambiguousInterviewFirst: false,
+      responsePredicatePostModel: false,
+    })
+    expect(JSON.stringify(result)).not.toContain("assistant-text")
+  })
+
+  it("rejects removal of an unknown or already removed part", () => {
+    const unknown = evaluateOpenCodeInterviewObservation(observation([
+      assistantMessage(),
+      {
+        type: "message.part.removed",
+        properties: {
+          sessionID,
+          messageID: "assistant-message",
+          partID: "unknown-part",
+        },
+      },
+    ]))
+    expect(unknown).toMatchObject({ status: "blocked", code: "part-lifecycle-invalid" })
+
+    const repeated = evaluateOpenCodeInterviewObservation(observation([
+      assistantMessage(),
+      assistantText("Which people should this product help first?"),
+      {
+        type: "message.part.removed",
+        properties: { sessionID, messageID: "assistant-message", partID: "assistant-text" },
+      },
+      {
+        type: "message.part.removed",
+        properties: { sessionID, messageID: "assistant-message", partID: "assistant-text" },
+      },
+    ]))
+    expect(repeated).toMatchObject({ status: "blocked", code: "part-lifecycle-invalid" })
+  })
+
+  it("rejects a part removal with a conflicting parent message identity", () => {
+    const result = evaluateOpenCodeInterviewObservation(observation([
+      assistantMessage(),
+      assistantText("Which people should this product help first?"),
+      {
+        type: "message.part.removed",
+        properties: {
+          sessionID,
+          messageID: "different-message",
+          partID: "assistant-text",
+        },
+      },
+    ]))
+
+    expect(result).toMatchObject({
+      status: "blocked",
+      code: "part-identity-conflict",
+      ambiguousInterviewFirst: false,
+      responsePredicatePostModel: false,
+    })
+  })
+
+  it("rejects message updates after a message removal", () => {
+    const result = evaluateOpenCodeInterviewObservation(observation([
+      assistantMessage(),
+      {
+        type: "message.removed",
+        properties: { sessionID, messageID: "assistant-message" },
+      },
+      assistantMessage(),
+    ]))
+
+    expect(result).toMatchObject({
+      status: "blocked",
+      code: "message-lifecycle-invalid",
+      ambiguousInterviewFirst: false,
+      responsePredicatePostModel: false,
+    })
+
+    const childAfterRemoval = evaluateOpenCodeInterviewObservation(observation([
+      userMessage("Create an app for neighbours to exchange practical skills"),
+      {
+        type: "message.removed",
+        properties: { sessionID, messageID: "user-message" },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "late-user-text",
+            sessionID,
+            messageID: "user-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ]))
+    expect(childAfterRemoval).toMatchObject({ status: "blocked", code: "part-lifecycle-invalid" })
+
+    const unknownMessageRemoval = evaluateOpenCodeInterviewObservation(observation([
+      {
+        type: "message.removed",
+        properties: { sessionID, messageID: "unknown-message" },
+      },
+    ]))
+    expect(unknownMessageRemoval).toMatchObject({ status: "blocked", code: "message-lifecycle-invalid" })
+  })
+
+  it("allows a known user part to transition once to removed", () => {
+    const result = evaluateOpenCodeInterviewObservation(observation([
+      userMessage("Create an app for neighbours to exchange practical skills"),
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "user-text",
+            sessionID,
+            messageID: "user-message",
+            type: "text",
+            text: "The user request is not an assistant response.",
+          },
+        },
+      },
+      {
+        type: "message.part.removed",
+        properties: { sessionID, messageID: "user-message", partID: "user-text" },
+      },
+      assistantMessage(),
+      assistantText("Which people should this product help first?"),
+    ]))
+
+    expect(result).toMatchObject({
+      status: "passed",
+      code: "ready",
+      ambiguousInterviewFirst: true,
+      responsePredicatePostModel: true,
+    })
+  })
+
+  it("fails closed for missing nested message and part payloads", () => {
+    const missingMessageInfo = evaluateOpenCodeInterviewObservation(observation([
+      { type: "message.updated", properties: {} },
+    ]))
+    expect(missingMessageInfo).toMatchObject({ status: "blocked", code: "observation-schema-invalid" })
+
+    const missingPart = evaluateOpenCodeInterviewObservation(observation([
+      assistantMessage(),
+      { type: "message.part.updated", properties: {} },
+    ]))
+    expect(missingPart).toMatchObject({ status: "blocked", code: "observation-schema-invalid" })
+  })
+
   it.each([
     ["solution", "I recommend a service architecture for this product?", "assistant-response-solution-content"],
     ["plan", "Here is the plan: first define the database, then build the API?", "assistant-response-plan-content"],

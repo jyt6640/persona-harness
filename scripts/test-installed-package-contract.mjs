@@ -408,6 +408,74 @@ async function assertOpenCodeInterviewObservationContract(packageRoot, label) {
   ) {
     throw new Error(`${label} OpenCode interview observation contract accepted linked text promotion or leaked part identity`)
   }
+
+  const removedReuse = contract.evaluateOpenCodeInterviewObservation({
+    schemaVersion: contract.OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION,
+    events: [
+      {
+        type: "message.updated",
+        properties: { info: { id: "assistant-message", sessionID, role: "assistant" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "assistant-text",
+            sessionID,
+            messageID: "assistant-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+      {
+        type: "message.part.removed",
+        properties: { sessionID, messageID: "assistant-message", partID: "assistant-text" },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "assistant-text",
+            sessionID,
+            messageID: "assistant-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ],
+  })
+  if (
+    removedReuse.status !== "blocked"
+    || removedReuse.code !== "part-lifecycle-invalid"
+    || removedReuse.responsePredicatePostModel !== false
+    || JSON.stringify(removedReuse).includes("assistant-text")
+  ) {
+    throw new Error(`${label} OpenCode interview observation contract accepted update-after-remove or leaked lifecycle identity`)
+  }
+
+  const unknownRemoval = contract.evaluateOpenCodeInterviewObservation({
+    schemaVersion: contract.OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION,
+    events: [
+      {
+        type: "message.updated",
+        properties: { info: { id: "assistant-message", sessionID, role: "assistant" } },
+      },
+      {
+        type: "message.part.removed",
+        properties: { sessionID, messageID: "assistant-message", partID: "unknown-part" },
+      },
+    ],
+  })
+  if (
+    unknownRemoval.status !== "blocked"
+    || unknownRemoval.code !== "part-lifecycle-invalid"
+    || unknownRemoval.responsePredicatePostModel !== false
+    || JSON.stringify(unknownRemoval).includes("unknown-part")
+  ) {
+    throw new Error(`${label} OpenCode interview observation contract accepted unknown removal or leaked lifecycle identity`)
+  }
 }
 
 async function assertPackagedConsumerAuthorityBoundary(

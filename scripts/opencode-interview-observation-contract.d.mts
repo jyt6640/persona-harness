@@ -12,6 +12,8 @@ export type OpenCodeInterviewObservationResult = Readonly<{
     | "multiple-assistant-responses"
     | "message-identity-conflict"
     | "part-identity-conflict"
+    | "message-lifecycle-invalid"
+    | "part-lifecycle-invalid"
     | "foreign-event"
     | "assistant-response-not-single-question"
     | "assistant-response-solution-content"

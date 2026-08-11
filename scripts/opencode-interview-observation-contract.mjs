@@ -51,6 +51,8 @@ export function evaluateOpenCodeInterviewObservation(value) {
     assistantTextParts: new Map(),
     messageBindings: new Map(),
     partBindings: new Map(),
+    messageTombstones: new Set(),
+    partTombstones: new Set(),
     preApprovalNoMutation: true,
     sessionID: undefined,
   }
@@ -86,11 +88,12 @@ function consumeEvent(event, state) {
 
   if (type === "message.updated") {
     const info = properties.info
-    if (!isBoundIdentifier(info.id) || !isBoundIdentifier(info.sessionID) || !isRole(info.role)) {
+    if (!isRecord(info) || !isBoundIdentifier(info.id) || !isBoundIdentifier(info.sessionID) || !isRole(info.role)) {
       return "observation-schema-invalid"
     }
     const sessionCode = bindSession(info.sessionID, state)
     if (sessionCode !== undefined) return sessionCode
+    if (state.messageTombstones.has(info.id)) return "message-lifecycle-invalid"
     const messageBinding = { sessionID: info.sessionID, role: info.role, surface: "message.updated" }
     const previousMessage = state.messageBindings.get(info.id)
     if (previousMessage !== undefined && !isDeepStrictEqual(previousMessage, messageBinding)) {
@@ -109,7 +112,8 @@ function consumeEvent(event, state) {
   if (type === "message.part.updated") {
     const part = properties.part
     if (
-      !isBoundIdentifier(part.id)
+      !isRecord(part)
+      || !isBoundIdentifier(part.id)
       || !isBoundIdentifier(part.sessionID)
       || !isBoundIdentifier(part.messageID)
       || !isBoundIdentifier(part.type)
@@ -118,6 +122,7 @@ function consumeEvent(event, state) {
     }
     const sessionCode = bindSession(part.sessionID, state)
     if (sessionCode !== undefined) return sessionCode
+    if (state.partTombstones.has(part.id)) return "part-lifecycle-invalid"
     const partBinding = {
       sessionID: part.sessionID,
       messageID: part.messageID,
@@ -128,11 +133,13 @@ function consumeEvent(event, state) {
     if (previousPart !== undefined && !isDeepStrictEqual(previousPart, partBinding)) {
       return "part-identity-conflict"
     }
-    state.partBindings.set(part.id, partBinding)
-    const role = state.messageBindings.get(part.messageID)?.role
-    if (role === undefined) {
+    const messageBinding = state.messageBindings.get(part.messageID)
+    if (messageBinding === undefined) {
       return "assistant-response-order-invalid"
     }
+    if (state.messageTombstones.has(part.messageID)) return "part-lifecycle-invalid"
+    state.partBindings.set(part.id, partBinding)
+    const role = messageBinding.role
     if (part.type === "text") {
       if (typeof part.text !== "string" || part.text.length > MAX_TEXT_LENGTH) {
         return "observation-schema-invalid"
@@ -196,6 +203,21 @@ function consumeEvent(event, state) {
     }
     const sessionCode = bindSession(properties.sessionID, state)
     if (sessionCode !== undefined) return sessionCode
+    const partBinding = state.partBindings.get(properties.partID)
+    if (partBinding === undefined) {
+      return "part-lifecycle-invalid"
+    }
+    if (partBinding.sessionID !== properties.sessionID || partBinding.messageID !== properties.messageID) {
+      return "part-identity-conflict"
+    }
+    if (state.partTombstones.has(properties.partID)) return "part-lifecycle-invalid"
+    const messageBinding = state.messageBindings.get(properties.messageID)
+    if (messageBinding === undefined || state.messageTombstones.has(properties.messageID)) {
+      return "part-lifecycle-invalid"
+    }
+    state.partTombstones.add(properties.partID)
+    state.assistantPartIDs.delete(properties.partID)
+    state.assistantTextParts.delete(properties.partID)
     return undefined
   }
 
@@ -205,6 +227,12 @@ function consumeEvent(event, state) {
     }
     const sessionCode = bindSession(properties.sessionID, state)
     if (sessionCode !== undefined) return sessionCode
+    const messageBinding = state.messageBindings.get(properties.messageID)
+    if (messageBinding === undefined || state.messageTombstones.has(properties.messageID)) {
+      return "message-lifecycle-invalid"
+    }
+    if (messageBinding.role === "assistant") return "message-lifecycle-invalid"
+    state.messageTombstones.add(properties.messageID)
     return undefined
   }
 
