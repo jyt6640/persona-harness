@@ -96,8 +96,11 @@ reliability, or default-change evidence.
 
 ## Boundaries
 
-- No runtime injection unpark.
-- No new `.persona/evidence` schema.
+- Runtime injection remains default-off and opt-in; this record does not unpark
+  the feature or make it a host requirement.
+- The conditional runtime-context record is additive metadata-only evidence
+  (`phase0.runtime-context.1`); it never replaces rule-pack hashes or grants
+  workflow authority.
 - No default, exit-code, hook-signature, or release channel movement.
 - No product efficacy, token-saving, app-quality, broad reliability,
   deterministic enforcement, closure guarantee, or generated-app certification

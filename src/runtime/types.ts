@@ -1,4 +1,5 @@
 import type { Hooks } from "@opencode-ai/plugin"
+import type { RuntimeContextSection } from "./runtime-context.js"
 
 export type FileRole =
   | "controller"
@@ -42,6 +43,8 @@ export type PendingInjection = {
   readonly selectedPolicyOverlay: SelectedPolicyOverlay
   readonly policies: string[]
   readonly block: string
+  readonly semanticSections: readonly RuntimeContextSection[]
+  readonly contextDigest: string
 }
 
 export type SelectedHarnessConfigDiagnostic = {

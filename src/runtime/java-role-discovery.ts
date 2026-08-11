@@ -1,6 +1,7 @@
 import { isJavaTargetFile } from "./file-role.js"
 import { createInjectionBlock } from "./injection.js"
 import { isInstalledPersonaHarnessPackageFile } from "./target-file.js"
+import { createRuntimeContextSections, runtimeContextDigest } from "./runtime-context.js"
 import type { FileRole, PendingInjection } from "./types.js"
 import type { HarnessConfigLoadResult } from "../config/harness-config.js"
 
@@ -113,6 +114,19 @@ export function createJavaRoleReadFollowUp(injections: readonly PendingInjection
 
   const representativeInjections = representativeInjectionsByRole(injections)
   const readLines = representativeInjections.map((injection) => `- read ${injection.targetFile} (${injection.fileRole})`)
+  const policies = [
+    "Discovered Java role files must be read so role-specific rule injection reaches model input before further edits.",
+  ]
+  const semanticSections = createRuntimeContextSections({
+    profile: [],
+    overlay: { metadata: { enabled: false, sources: [], diagnostics: [] }, summaryLines: [] },
+    rules: {
+      policies,
+      selectedRuleMetadata: uniqueRuleMetadata(injections),
+      selectedRules: uniqueValues(injections.flatMap((injection) => injection.selectedRules)),
+    },
+    skills: uniqueSharedSkills(injections),
+  })
   return {
     targetFile: "<java-role-read-follow-up>",
     fileRole: "java-common",
@@ -125,9 +139,7 @@ export function createJavaRoleReadFollowUp(injections: readonly PendingInjection
       sources: [],
       diagnostics: [],
     },
-    policies: [
-      "Discovered Java role files must be read so role-specific rule injection reaches model input before further edits.",
-    ],
+    policies,
     block: [
       "[Persona Harness Injection]",
       "",
@@ -138,5 +150,7 @@ export function createJavaRoleReadFollowUp(injections: readonly PendingInjection
       "",
       ...readLines,
     ].join("\n"),
+    semanticSections,
+    contextDigest: runtimeContextDigest(semanticSections),
   }
 }

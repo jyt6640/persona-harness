@@ -370,7 +370,9 @@ npx ph init
 }
 ```
 
-그 프로젝트에서 OpenCode가 `src/main/java/**/*.java` target file을 읽거나 수정하면 Persona Harness가 파일 역할을 판정하고, 해당 Java/Spring Clean Code rules를 tool output과 다음 model input에 주입한다. evidence는 해당 프로젝트의 `.persona/evidence/phase0` 아래에 남는다.
+그 프로젝트에서 OpenCode가 `src/main/java/**/*.java` target file을 읽거나 수정하면 Persona Harness가 파일 역할을 판정하고, 해당 Java/Spring Clean Code rules를 after hook의 tool output에 우선 주입한다. tool output을 사용할 수 없는 host shape에서만 다음 model input으로 bounded fallback을 사용한다. evidence는 해당 프로젝트의 `.persona/evidence/phase0` 아래에 남는다.
+
+runtime context delivery는 기존 `runtimeInjection` opt-in 안에서만 동작한다. before hook이나 무관한 tool call은 context block/store/evidence를 만들지 않는다. profile, overlay, selected rules, selected skills guidance는 내부 semantic section별 안정적인 `sha256:` digest로 묶이며, 같은 session의 중복 digest는 억제하고 서로 다른 pending context는 순서를 보존한 bounded queue에 둔다. `phase0.runtime-context.1` evidence에는 상태(`offered`, `tool-output-emitted`, `model-input-observed`, `model-input-fallback`, `duplicate-suppressed`)와 digest/count metadata만 남고 prompt, source, rule, capsule 본문은 남기지 않는다. 사용자가 입력한 marker 문자열은 model-input 관찰 증거로 인정하지 않는다.
 
 Java file이 아직 없는 0-start 상황에서는 `README.md`, `requirements.md`, `build.gradle`, `settings.gradle` target에 한해 Java backend bootstrap guidance를 주입한다. 일반 markdown 문서, `docs/` 내부 문서, `CHANGELOG.md`, 임의 note 파일에는 bootstrap injection을 걸지 않는다.
 
@@ -816,6 +818,7 @@ enforce한다. Windows에서는 POSIX mode를 주장하지 않으며 동일한 w
 - selected rule metadata: path, id, source, domain, topic, severity
 - injected policy count
 - injection이 들어간 위치: pending-store, tool-output, model-input
+- conditional runtime context의 상태와 section/context digest metadata
 
 저장하지 않는 것:
 

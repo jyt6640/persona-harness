@@ -203,9 +203,9 @@ describe("runtime session classification for multi-agent hooks", () => {
     const targetFile = fixturePath("ReservationController.java")
 
     await hooks.event?.({ event: sessionEvent(fixtureWorkspace, "session.created", sessionID, "session-main") })
-    await hooks["tool.execute.before"]?.(
-      { callID: "call-1", sessionID, tool: "edit" },
-      { args: { filePath: targetFile } },
+    await hooks["tool.execute.after"]?.(
+      { callID: "call-1", sessionID, tool: "edit", args: { filePath: targetFile } },
+      { title: "edit", output: undefined as unknown as string, metadata: {} },
     )
     const output = modelInput(sessionID)
     await hooks["experimental.chat.messages.transform"]?.({}, output)
@@ -242,9 +242,9 @@ describe("runtime session classification for multi-agent hooks", () => {
     const targetFile = fixturePath("ReservationController.java")
 
     await hooks.event?.({ event: sessionEvent(fixtureWorkspace, "session.created", sessionID) })
-    await hooks["tool.execute.before"]?.(
-      { callID: "call-1", sessionID, tool: "edit" },
-      { args: { filePath: targetFile } },
+    await hooks["tool.execute.after"]?.(
+      { callID: "call-1", sessionID, tool: "edit", args: { filePath: targetFile } },
+      { title: "edit", output: undefined as unknown as string, metadata: {} },
     )
     const output = modelInput(sessionID)
     await hooks["experimental.chat.messages.transform"]?.({}, output)
@@ -262,9 +262,9 @@ describe("runtime session classification for multi-agent hooks", () => {
     const sessionID = "session-unknown"
     const targetFile = fixturePath("ReservationController.java")
 
-    await hooks["tool.execute.before"]?.(
-      { callID: "call-1", sessionID, tool: "edit" },
-      { args: { filePath: targetFile } },
+    await hooks["tool.execute.after"]?.(
+      { callID: "call-1", sessionID, tool: "edit", args: { filePath: targetFile } },
+      { title: "edit", output: undefined as unknown as string, metadata: {} },
     )
     const output = modelInput(sessionID)
     await hooks["experimental.chat.messages.transform"]?.({}, output)
@@ -292,9 +292,9 @@ describe("runtime session classification for multi-agent hooks", () => {
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const targetFile = fixturePath("ReservationController.java")
 
-    await hooks["tool.execute.before"]?.(
-      { callID: "call-1", sessionID: "session-unknown", tool: "edit" },
-      { args: { filePath: targetFile } },
+    await hooks["tool.execute.after"]?.(
+      { callID: "call-1", sessionID: "session-unknown", tool: "edit", args: { filePath: targetFile } },
+      { title: "edit", output: undefined as unknown as string, metadata: {} },
     )
 
     const payloads = skipEvidencePayloads()
@@ -312,9 +312,9 @@ describe("runtime session classification for multi-agent hooks", () => {
     const sessionID = "session-no-multi-agent"
     const targetFile = fixturePath("ReservationController.java")
 
-    await hooks["tool.execute.before"]?.(
-      { callID: "call-1", sessionID, tool: "edit" },
-      { args: { filePath: targetFile } },
+    await hooks["tool.execute.after"]?.(
+      { callID: "call-1", sessionID, tool: "edit", args: { filePath: targetFile } },
+      { title: "edit", output: undefined as unknown as string, metadata: {} },
     )
     const output = modelInput(sessionID)
     await hooks["experimental.chat.messages.transform"]?.({}, output)

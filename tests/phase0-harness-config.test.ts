@@ -294,9 +294,9 @@ severity: must
     const hooks = createPhase0Hooks({ projectDir })
     const output = emptyModelInput("disabled-session")
 
-    await hooks["tool.execute.before"]?.(
-      { tool: "read", sessionID: "disabled-session", callID: "call-1" },
-      { args: { filePath: "src/main/java/ReservationController.java" } },
+    await hooks["tool.execute.after"]?.(
+      { tool: "read", sessionID: "disabled-session", callID: "call-1", args: { filePath: "src/main/java/ReservationController.java" } },
+      { title: "read", output: "", metadata: {} },
     )
     await hooks["experimental.chat.messages.transform"]?.({}, output)
 
@@ -310,9 +310,9 @@ severity: must
     const hooks = createPhase0Hooks({ projectDir })
     const output = emptyModelInput("domain-session")
 
-    await hooks["tool.execute.before"]?.(
-      { tool: "read", sessionID: "domain-session", callID: "call-1" },
-      { args: { filePath: "src/main/java/ReservationController.java" } },
+    await hooks["tool.execute.after"]?.(
+      { tool: "read", sessionID: "domain-session", callID: "call-1", args: { filePath: "src/main/java/ReservationController.java" } },
+      { title: "read", output: "", metadata: {} },
     )
     await hooks["experimental.chat.messages.transform"]?.({}, output)
 

@@ -230,7 +230,7 @@ describe("Phase 0 bootstrap injection", () => {
 
     expect(toolOutput.output).toContain("File role: project-bootstrap")
     expect(toolOutput.output).toContain("Project profile summary:")
-    expect(firstText(output)).toContain("backend/java-backend-bootstrap.md")
+    expect(toolOutput.output).toContain("backend/java-backend-bootstrap.md")
     expect(
       evidencePayloads(projectDir).some(
         (payload) => payload.fileRole === "project-bootstrap" && payload.profileSummaryInjected === true,
