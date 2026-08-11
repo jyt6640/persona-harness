@@ -53,6 +53,18 @@ function latestText(output: TransformMessagesOutput): string {
 }
 
 describe("product interview hook activation", () => {
+  it("renders a mandatory first-response contract before the original product request", async () => {
+    const projectDir = createProductProject()
+    const hooks = createPhase0Hooks({ projectDir })
+    const output = outputWithText("session-first-response-contract", "Create an app for neighbours to exchange practical skills")
+
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const text = latestText(output)
+    expect(text).toContain("Required first response: ask exactly one product question now, then wait for the user's answer.")
+    expect(text).toContain("Do not propose a solution, implementation, technical plan, command, or file change in this turn.")
+  })
+
   it("starts the interview for an ambiguous create-an-app request and keeps approval non-mutating", async () => {
     const projectDir = createProductProject()
     const hooks = createPhase0Hooks({ projectDir })

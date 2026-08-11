@@ -107,6 +107,15 @@ function renderQuestion(session: ProductInterviewSession, approvalBlocked = fals
       "Current understanding: product discovery is in progress in this conversation.",
       ...(session.mode === "brownfield-change-discovery"
         ? [
+            "First-action contract: inspect relevant existing code before asking for facts it already answers.",
+            "Do not implement or create project state in this turn.",
+          ]
+        : [
+            "Required first response: ask exactly one product question now, then wait for the user's answer.",
+            "Do not propose a solution, implementation, technical plan, command, or file change in this turn.",
+          ]),
+      ...(session.mode === "brownfield-change-discovery"
+        ? [
             "Mode: brownfield-change-discovery.",
             "Read relevant existing code before asking for facts it already answers.",
           ]
