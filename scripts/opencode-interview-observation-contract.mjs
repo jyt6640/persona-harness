@@ -49,7 +49,8 @@ export function evaluateOpenCodeInterviewObservation(value) {
     assistantMessageID: undefined,
     assistantPartIDs: new Set(),
     assistantTextParts: new Map(),
-    messageRoles: new Map(),
+    messageBindings: new Map(),
+    partBindings: new Map(),
     preApprovalNoMutation: true,
     sessionID: undefined,
   }
@@ -90,24 +91,45 @@ function consumeEvent(event, state) {
     }
     const sessionCode = bindSession(info.sessionID, state)
     if (sessionCode !== undefined) return sessionCode
+    const messageBinding = { sessionID: info.sessionID, role: info.role, surface: "message.updated" }
+    const previousMessage = state.messageBindings.get(info.id)
+    if (previousMessage !== undefined && !isDeepStrictEqual(previousMessage, messageBinding)) {
+      return "message-identity-conflict"
+    }
+    state.messageBindings.set(info.id, messageBinding)
     if (info.role === "assistant") {
       if (state.assistantMessageID !== undefined && state.assistantMessageID !== info.id) {
         return "multiple-assistant-responses"
       }
       state.assistantMessageID = info.id
     }
-    state.messageRoles.set(info.id, info.role)
     return undefined
   }
 
   if (type === "message.part.updated") {
     const part = properties.part
-    if (!isBoundIdentifier(part.id) || !isBoundIdentifier(part.sessionID) || !isBoundIdentifier(part.messageID)) {
+    if (
+      !isBoundIdentifier(part.id)
+      || !isBoundIdentifier(part.sessionID)
+      || !isBoundIdentifier(part.messageID)
+      || !isBoundIdentifier(part.type)
+    ) {
       return "observation-schema-invalid"
     }
     const sessionCode = bindSession(part.sessionID, state)
     if (sessionCode !== undefined) return sessionCode
-    const role = state.messageRoles.get(part.messageID)
+    const partBinding = {
+      sessionID: part.sessionID,
+      messageID: part.messageID,
+      type: part.type,
+      surface: "message.part.updated",
+    }
+    const previousPart = state.partBindings.get(part.id)
+    if (previousPart !== undefined && !isDeepStrictEqual(previousPart, partBinding)) {
+      return "part-identity-conflict"
+    }
+    state.partBindings.set(part.id, partBinding)
+    const role = state.messageBindings.get(part.messageID)?.role
     if (role === undefined) {
       return "assistant-response-order-invalid"
     }

@@ -10,6 +10,8 @@ export type OpenCodeInterviewObservationResult = Readonly<{
     | "assistant-response-missing"
     | "assistant-response-order-invalid"
     | "multiple-assistant-responses"
+    | "message-identity-conflict"
+    | "part-identity-conflict"
     | "foreign-event"
     | "assistant-response-not-single-question"
     | "assistant-response-solution-content"

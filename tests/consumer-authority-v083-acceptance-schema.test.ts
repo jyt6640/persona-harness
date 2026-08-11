@@ -42,6 +42,8 @@ describe("consumer authority 0.8.3 acceptance schema", () => {
       output: "fixed-status-booleans-and-code-only-no-response-text-path-argument-token-or-host-data",
       firstResponse: {
         transformedUserInput: "user-messages-and-user-text-parts-never-satisfy-the-post-model-predicate",
+        messageIdentity: "message-id-session-role-and-event-surface-association-is-immutable-role-drift-blocks",
+        partIdentity: "part-id-session-message-type-and-event-surface-association-is-immutable-linked-text-cannot-promote",
       },
     })
   })

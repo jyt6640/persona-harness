@@ -709,6 +709,8 @@
       "assistantMessage": "first-message.updated-role-assistant-with-one-session-bound-message-id",
       "assistantText": "message.part.updated-text-parts-linked-to-that-assistant-message-only",
       "transformedUserInput": "user-messages-and-user-text-parts-never-satisfy-the-post-model-predicate",
+      "messageIdentity": "message-id-session-role-and-event-surface-association-is-immutable-role-drift-blocks",
+      "partIdentity": "part-id-session-message-type-and-event-surface-association-is-immutable-linked-text-cannot-promote",
       "cardinality": "one-assistant-message-id-only-repeated-updates-of-that-id-allowed"
     },
     "response": {

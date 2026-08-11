@@ -328,6 +328,86 @@ async function assertOpenCodeInterviewObservationContract(packageRoot, label) {
   ) {
     throw new Error(`${label} OpenCode interview observation contract accepted transformed input or leaked response data`)
   }
+
+  const identityDrift = contract.evaluateOpenCodeInterviewObservation({
+    schemaVersion: contract.OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION,
+    events: [
+      {
+        type: "message.updated",
+        properties: { info: { id: "drifting-message", sessionID, role: "user" } },
+      },
+      {
+        type: "message.updated",
+        properties: { info: { id: "drifting-message", sessionID, role: "assistant" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "drifting-text",
+            sessionID,
+            messageID: "drifting-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ],
+  })
+  if (
+    identityDrift.status !== "blocked"
+    || identityDrift.code !== "message-identity-conflict"
+    || identityDrift.responsePredicatePostModel !== false
+    || JSON.stringify(identityDrift).includes("drifting-message")
+  ) {
+    throw new Error(`${label} OpenCode interview observation contract accepted message identity drift or leaked identity data`)
+  }
+
+  const partPromotion = contract.evaluateOpenCodeInterviewObservation({
+    schemaVersion: contract.OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION,
+    events: [
+      {
+        type: "message.updated",
+        properties: { info: { id: "user-message", sessionID, role: "user" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "shared-text-part",
+            sessionID,
+            messageID: "user-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+      {
+        type: "message.updated",
+        properties: { info: { id: "assistant-message", sessionID, role: "assistant" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "shared-text-part",
+            sessionID,
+            messageID: "assistant-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ],
+  })
+  if (
+    partPromotion.status !== "blocked"
+    || partPromotion.code !== "part-identity-conflict"
+    || partPromotion.responsePredicatePostModel !== false
+    || JSON.stringify(partPromotion).includes("shared-text-part")
+  ) {
+    throw new Error(`${label} OpenCode interview observation contract accepted linked text promotion or leaked part identity`)
+  }
 }
 
 async function assertPackagedConsumerAuthorityBoundary(

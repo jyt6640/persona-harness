@@ -87,6 +87,131 @@ describe("OpenCode interview observation contract", () => {
     })
   })
 
+  it("rejects a message identity that drifts from user to assistant", () => {
+    const result = evaluateOpenCodeInterviewObservation(observation([
+      {
+        type: "message.updated",
+        properties: { info: { id: "drifting-message", sessionID, role: "user" } },
+      },
+      {
+        type: "message.updated",
+        properties: { info: { id: "drifting-message", sessionID, role: "assistant" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "drifting-text",
+            sessionID,
+            messageID: "drifting-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ]))
+
+    expect(result).toMatchObject({
+      status: "blocked",
+      code: "message-identity-conflict",
+      ambiguousInterviewFirst: false,
+      responsePredicatePostModel: false,
+    })
+    expect(JSON.stringify(result)).not.toContain("drifting-message")
+  })
+
+  it("rejects a part identity reused to promote linked user text", () => {
+    const result = evaluateOpenCodeInterviewObservation(observation([
+      userMessage("Create an app for neighbours to exchange practical skills"),
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "shared-text-part",
+            sessionID,
+            messageID: "user-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+      assistantMessage(),
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "shared-text-part",
+            sessionID,
+            messageID: "assistant-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ]))
+
+    expect(result).toMatchObject({
+      status: "blocked",
+      code: "part-identity-conflict",
+      ambiguousInterviewFirst: false,
+      responsePredicatePostModel: false,
+    })
+    expect(JSON.stringify(result)).not.toContain("shared-text-part")
+  })
+
+  it("allows repeated updates for the same assistant message and part identities", () => {
+    const result = evaluateOpenCodeInterviewObservation(observation([
+      assistantMessage(),
+      assistantMessage(),
+      assistantText("Which people should this product help first?"),
+      assistantText("Which people should this product help first?"),
+    ]))
+
+    expect(result).toMatchObject({
+      status: "passed",
+      code: "ready",
+      ambiguousInterviewFirst: true,
+      responsePredicatePostModel: true,
+    })
+  })
+
+  it("rejects a part identity that changes type across updates", () => {
+    const result = evaluateOpenCodeInterviewObservation(observation([
+      assistantMessage(),
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "changing-part",
+            sessionID,
+            messageID: "assistant-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "changing-part",
+            sessionID,
+            messageID: "assistant-message",
+            type: "patch",
+          },
+        },
+      },
+    ]))
+
+    expect(result).toMatchObject({
+      status: "blocked",
+      code: "part-identity-conflict",
+      ambiguousInterviewFirst: false,
+      responsePredicatePostModel: false,
+    })
+    expect(JSON.stringify(result)).not.toContain("changing-part")
+  })
+
   it.each([
     ["solution", "I recommend a service architecture for this product?", "assistant-response-solution-content"],
     ["plan", "Here is the plan: first define the database, then build the API?", "assistant-response-plan-content"],
