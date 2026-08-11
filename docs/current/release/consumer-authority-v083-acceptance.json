@@ -64,6 +64,7 @@
           "fresh-install",
           "package-identity",
           "package-content-identity",
+          "opencode-interview-observation",
           "repository-only-files",
           "canonical-publisher",
           "observer-credential",
@@ -90,6 +91,7 @@
         "schemaVersion": "clean-package-exercise-phase.1",
         "sourceBuilt": [
           "cli-binding",
+          "opencode-interview-observation",
           "producer-intake",
           "producer-action-topology",
           "canonical-publisher",
@@ -693,6 +695,35 @@
     "requiredEvidence": "one separately authorized normal push of the v4-prepared exact fixture commit; immediate current-version original-artifact transport, online verification before leaf-certificate-notAfter without validity relaxation, one authenticated fetch, one Finish consumption, and immediate replay rejection occur in the same unchanged consumer",
     "whyLocalCannotClose": "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Source and CI-shaped packed exercise prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, byte-strict primary package-record selector lifecycle, COPYFILE_EXCL private-copy reassessment, one runner-temp isolated token-free state root, fixed-placeholder exact-plan help parser preflight without artifact or network access, strict secondary validation, fixed stage and shape diagnostics. Package acceptance separately proves current package-lock-acceptance binding, exact-tar provenance, normal installation, installed-only no-source fallback, CLI approval-before-mutation behavior, complete source and fresh-installed fixture import closure, explicit public acceptance of a retained draft plan, exact Linux authority-fetch child envelope behavior, trusted-unconsumed-persisted discovery result binding, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
   },
+  "openCodeInterviewObservation": {
+    "approvalBoundary": {
+      "event": "permission.replied",
+      "acceptedResponses": [
+        "once",
+        "always"
+      ],
+      "preApprovalMutation": "tool.execute-before-or-after-command-executed-file-edited-file-watcher-updated-session-diff-and-assistant-tool-parts-block-before-approval"
+    },
+    "input": "normalized-opencode-event-stream-from-message-and-plugin-hook-surfaces",
+    "firstResponse": {
+      "assistantMessage": "first-message.updated-role-assistant-with-one-session-bound-message-id",
+      "assistantText": "message.part.updated-text-parts-linked-to-that-assistant-message-only",
+      "transformedUserInput": "user-messages-and-user-text-parts-never-satisfy-the-post-model-predicate",
+      "cardinality": "one-assistant-message-id-only-repeated-updates-of-that-id-allowed"
+    },
+    "response": {
+      "predicate": "one-bounded-single-question-response-with-one-terminal-question-mark",
+      "rejectedContent": [
+        "solution",
+        "plan",
+        "command",
+        "file-change",
+        "multiple-or-nonquestion-content"
+      ]
+    },
+    "output": "fixed-status-booleans-and-code-only-no-response-text-path-argument-token-or-host-data",
+    "schemaVersion": "opencode-interview-observation.1"
+  },
   "mutationBoundary": {
     "performed": false,
     "prohibited": [
@@ -909,7 +940,8 @@
       "authenticated-fetch-to-trusted-unconsumed",
       "one-Finish-consumption-and-immediate-replay-block",
       "current-package-lock-acceptance-version-binding-and-complete-source-and-fresh-installed-fixture-import-closure-without-source-fallback",
-      "workflow-private-copy-reassessment-and-fixed-placeholder-exact-plan-help-parser-preflight-without-artifact-network-token-or-ambient-state"
+      "workflow-private-copy-reassessment-and-fixed-placeholder-exact-plan-help-parser-preflight-without-artifact-network-token-or-ambient-state",
+      "actual-opencode-first-assistant-response-linked-event-and-zero-pre-approval-mutation-trace-without-transformed-input-substitution"
     ],
     "localProof": "clean-linux-node20-source-built-and-fresh-packed-installed-v4-cleanliness-qualified-dpkg-ownership-byte-strict-primary-with-optional-known-completion-mode-independent-validation-and-strict-secondary-package-record-copyfile-excl-private-copy-reassessment-runner-temp-isolated-token-free-gh-state-fixed-placeholder-exact-plan-help-parser-preflight-fixed-stage-and-shape-diagnostics-current-package-lock-acceptance-binding-complete-fixture-import-closure-and-authority-child-contracts-with-exact-linux-runtime-envelope-and-trusted-unconsumed-persisted-discovery-result-binding",
     "remainingUncertainty": "one-authorized-v4-fixture-push-and-immediate-current-artifact-observation-only"
@@ -959,7 +991,8 @@
         "exact-tar-provenance",
         "normal-install",
         "installed-only-no-source-fallback",
-        "cli-and-approval-before-mutation"
+        "cli-and-approval-before-mutation",
+        "post-model-assistant-response-and-pre-approval-trace"
       ]
     },
     "sourceAndProtectedUbuntuCi": {

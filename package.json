@@ -221,6 +221,8 @@
     "scripts/consumer-authority-external-observer-boundary.mjs",
     "scripts/consumer-authority-external-attestation-command-plan.d.mts",
     "scripts/consumer-authority-external-attestation-command-plan.mjs",
+    "scripts/opencode-interview-observation-contract.d.mts",
+    "scripts/opencode-interview-observation-contract.mjs",
     "scripts/fetch-consumer-authority-artifact.mjs",
     "scripts/read-consumer-authority-github.mjs",
     "scripts/preflight-consumer-authority-observer.mjs",

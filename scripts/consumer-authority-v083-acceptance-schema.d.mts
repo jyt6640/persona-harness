@@ -17,6 +17,26 @@ export type V083AcceptanceManifest = Readonly<Record<string, unknown>> & Readonl
   hostedResidual: Readonly<{
     whyLocalCannotClose: string
   }>
+  openCodeInterviewObservation: Readonly<{
+    approvalBoundary: Readonly<{
+      event: string
+      acceptedResponses: readonly string[]
+      preApprovalMutation: string
+    }>
+    input: string
+    firstResponse: Readonly<{
+      assistantMessage: string
+      assistantText: string
+      transformedUserInput: string
+      cardinality: string
+    }>
+    response: Readonly<{
+      predicate: string
+      rejectedContent: readonly string[]
+    }>
+    output: string
+    schemaVersion: "opencode-interview-observation.1"
+  }>
   package: Readonly<{
     channel: string
     scope: string

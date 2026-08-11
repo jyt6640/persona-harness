@@ -508,6 +508,8 @@ describe("package files policy", () => {
       "scripts/consumer-authority-external-attestation-command-plan.mjs",
       "scripts/consumer-authority-external-observer-boundary.d.mts",
       "scripts/consumer-authority-external-observer-boundary.mjs",
+      "scripts/opencode-interview-observation-contract.d.mts",
+      "scripts/opencode-interview-observation-contract.mjs",
       "scripts/canonical-package-packer.d.mts",
       "scripts/canonical-package-packer.mjs",
       "scripts/canonical-package-publisher.d.mts",

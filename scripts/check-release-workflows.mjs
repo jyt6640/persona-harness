@@ -339,6 +339,7 @@ function hasPackageObserverResponsibility(packageManifestText, acceptanceManifes
         "normal-install",
         "installed-only-no-source-fallback",
         "cli-and-approval-before-mutation",
+        "post-model-assistant-response-and-pre-approval-trace",
       ])
       && hasExactStrings(responsibilities.sourceAndProtectedUbuntuCi.requires, [
         "workflow-owned-dpkg-observer-gh-selection",

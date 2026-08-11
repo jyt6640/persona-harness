@@ -32,6 +32,18 @@ describe("consumer authority 0.8.3 acceptance schema", () => {
     expect(packageLock.packages[""]).toMatchObject({ version: manifest.package.version })
     expect(manifest.v082HistoricalRelease).toMatchObject({ reusableForV083: false, version: "0.8.2" })
     expect(v082.package).toMatchObject({ channel: "latest", scope: "ga-approved", version: "0.8.2" })
+    expect(manifest.acceptanceResponsibilities.package).toMatchObject({
+      excludes: ["attestation-parser", "observer-gh-selector"],
+      requires: expect.arrayContaining(["post-model-assistant-response-and-pre-approval-trace"]),
+    })
+    expect(manifest.openCodeInterviewObservation).toMatchObject({
+      schemaVersion: "opencode-interview-observation.1",
+      input: "normalized-opencode-event-stream-from-message-and-plugin-hook-surfaces",
+      output: "fixed-status-booleans-and-code-only-no-response-text-path-argument-token-or-host-data",
+      firstResponse: {
+        transformedUserInput: "user-messages-and-user-text-parts-never-satisfy-the-post-model-predicate",
+      },
+    })
   })
 
   it("rejects neighboring versions and records that attempt to reuse v082 as current", () => {

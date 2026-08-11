@@ -145,6 +145,10 @@ async function runInstalledPackageContract(options) {
     packed.tarballPath,
     packed.facts.packageContentIdentity,
   ))
+  await runPhase("opencode-interview-observation", () => assertOpenCodeInterviewObservationContract(
+    installedPackage,
+    "installed package",
+  ))
   await runPhase("repository-only-files", () => assertRepositoryOnlyFilesAreAbsent(installedPackage))
   await runPhase("canonical-publisher", () => assertCanonicalPackagePublisherPlan(installedPackage, "installed package"))
   await runPhase("observer-credential", () => assertObserverCredentialPreflight(installedPackage, consumerDirectory, "installed package"))
@@ -201,6 +205,10 @@ async function runSourceCliContract(options) {
   const { observerGh, packageExercise, producerIntakeOnly, sourceCli } = options
   const runPhase = createPackageExercisePhaseRunner(options, "source-built")
   const phPath = await runPhase("cli-binding", () => resolveSourceCliPath(sourceCli))
+  await runPhase("opencode-interview-observation", () => assertOpenCodeInterviewObservationContract(
+    repositoryRoot,
+    "source CLI",
+  ))
 
   await runPhase("producer-intake", () => assertSourceProjectFinishProducerIntake(phPath))
   await runPhase("producer-action-topology", () => assertSourceProjectFinishProducerActionTopology())
@@ -252,6 +260,74 @@ function resolveSourceCliPath(sourceCliPath) {
   const phPath = resolve(repositoryRoot, sourceCliPath)
   if (!existsSync(phPath)) throw new Error("source CLI is missing")
   return phPath
+}
+
+async function assertOpenCodeInterviewObservationContract(packageRoot, label) {
+  const scriptPath = join(packageRoot, "scripts", "opencode-interview-observation-contract.mjs")
+  if (!existsSync(scriptPath)) {
+    throw new Error(`${label} OpenCode interview observation contract is missing from the package`)
+  }
+  const contract = await import(pathToFileURL(scriptPath).href)
+  const sessionID = "installed-observation-session"
+  const result = contract.evaluateOpenCodeInterviewObservation({
+    schemaVersion: contract.OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION,
+    events: [
+      {
+        type: "message.updated",
+        properties: { info: { id: "assistant-message", sessionID, role: "assistant" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "assistant-text",
+            sessionID,
+            messageID: "assistant-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ],
+  })
+  if (
+    result.status !== "passed"
+    || result.code !== "ready"
+    || result.ambiguousInterviewFirst !== true
+    || result.responsePredicatePostModel !== true
+    || result.preApprovalNoMutation !== true
+  ) {
+    throw new Error(`${label} OpenCode interview observation contract did not accept the assistant event path`)
+  }
+  const transformedOnly = contract.evaluateOpenCodeInterviewObservation({
+    schemaVersion: contract.OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION,
+    events: [
+      {
+        type: "message.updated",
+        properties: { info: { id: "user-message", sessionID, role: "user" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "user-text",
+            sessionID,
+            messageID: "user-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ],
+  })
+  if (
+    transformedOnly.status !== "blocked"
+    || transformedOnly.code !== "assistant-response-missing"
+    || transformedOnly.responsePredicatePostModel !== false
+    || JSON.stringify(transformedOnly).includes("Which people")
+  ) {
+    throw new Error(`${label} OpenCode interview observation contract accepted transformed input or leaked response data`)
+  }
 }
 
 async function assertPackagedConsumerAuthorityBoundary(
