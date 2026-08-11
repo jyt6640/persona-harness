@@ -12,6 +12,17 @@ preparation alone does not establish stable support or channel state.
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
 
+## [0.8.4] - 2026-08-11
+
+- Add a finite, nonreflective `bindingReason` to blocked authority fetch results
+  so package-version, source, enrollment, signer, freshness, consumption,
+  verification, artifact, run, and unknown ownership classes remain distinct
+  without exposing receipt values, paths, tokens, URLs, or raw verifier output.
+- Keep the public fetch schema versioned as `consumer-authority-fetch.3` while
+  preserving trusted/unconsumed, one-Finish, and replay rejection behavior.
+- Record `0.8.3` as immutable published history and bind current acceptance to
+  the unpublished `0.8.4` package candidate.
+
 ## [0.8.3] - 2026-08-10
 
 - Prepare portable automatic skill activation: ambiguous new-product requests
@@ -23,8 +34,8 @@ preparation alone does not establish stable support or channel state.
 - Preserve an existing source-bound draft or revision plan during strict
   bootstrap, then require the current V4 readiness route to use explicit
   `ph plan --accept` before its Gradle, report, and evidence prerequisites.
-- `0.8.3` is an unpublished source candidate. The immutable published `0.8.2`
-  package cannot be repacked or reused for this release.
+- `0.8.3` is the immutable published release record. Its package cannot be
+  repacked or reused for the `0.8.4` correction.
 
 ## [0.8.0-beta.19] - 2026-08-02
 

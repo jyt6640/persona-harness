@@ -223,7 +223,7 @@ describe("consumer authority command boundary", () => {
       authorityEligible: true,
       consumptionState: "unconsumed",
       next: "workflow-finish",
-      schemaVersion: "consumer-authority-fetch.2",
+      schemaVersion: "consumer-authority-fetch.3",
       state: "trusted",
     })
     expect(readAuthorityArtifact(987654321, { storeRoot }).state).toBe("ready")

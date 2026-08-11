@@ -2,7 +2,11 @@ import { createHash } from "node:crypto"
 
 import { describe, expect, it } from "vitest"
 
-import { matchesAuthorityArtifactBinding } from "../src/cli/authority-artifact-binding.js"
+import {
+  AUTHORITY_BINDING_REASONS,
+  classifyAuthorityBindingReason,
+  matchesAuthorityArtifactBinding,
+} from "../src/cli/authority-artifact-binding.js"
 import type { AuthorityArtifact } from "../src/cli/authority-artifact-store.js"
 import {
   authorityEnrollmentFromReadback,
@@ -106,6 +110,66 @@ describe("consumer authority artifact binding", () => {
     const assessment = isAssessment(candidate) ? candidate : input.assessment
 
     expect(matchesAuthorityArtifactBinding(artifact, input.enrollment, assessment)).toBe(false)
+  })
+
+  it("maps every verifier state and diagnostic path to a finite nonreflective reason", () => {
+    const input = validBinding()
+    const cases = [
+      ["source-drift", "source"] ,
+      ["stale", "freshness"],
+      ["replayed", "consumption"],
+      ["certificate-invalid", "signer"],
+      ["crypto-failed", "verification"],
+      ["malformed", "artifact"],
+      ["binding-mismatch", "package-version", "predicate.receipt.phVersion"],
+      ["wrong-policy", "signer", "enrollment.reusable-workflow"],
+      ["binding-mismatch", "consumption", "consumption.recordUnreadable"],
+      ["binding-mismatch", "unknown", "opaque-internal-diagnostic"],
+    ] as const
+
+    expect(AUTHORITY_BINDING_REASONS).toEqual([
+      "artifact",
+      "package-version",
+      "source",
+      "enrollment",
+      "run",
+      "signer",
+      "freshness",
+      "consumption",
+      "verification",
+      "unknown",
+    ])
+    for (const [state, expected, path = state] of cases) {
+      const assessment = {
+        ...input.assessment,
+        authorityEligible: false,
+        consumptionState: "not-applicable" as const,
+        decision: "blocked" as const,
+        diagnostics: [{ code: state, path }],
+        state,
+      }
+      expect(classifyAuthorityBindingReason(input.artifact, input.enrollment, assessment)).toBe(expected)
+    }
+  })
+
+  it.each([
+    ["source head", (input: BindingInput) => ({ ...input.artifact, sourceHead: "c".repeat(40) }), "source"],
+    ["run", (input: BindingInput) => ({ ...input.artifact, runId: "30430000001" }), "run"],
+    ["reusable signer", (input: BindingInput) => assessmentFor(input, {
+      ...input.receipt,
+      workflow: {
+        ...input.receipt.workflow,
+        certificateSan: projectFinishAttestationReusableCertificateSan("c".repeat(40)),
+      },
+    }), "signer"],
+  ] as const)("classifies structured %s mismatch without exposing values", (_label, mutate, expected) => {
+    const input = validBinding()
+    const candidate = mutate(input)
+    const artifact = isArtifact(candidate) ? candidate : input.artifact
+    const assessment = isAssessment(candidate) ? candidate : input.assessment
+
+    expect(classifyAuthorityBindingReason(artifact, input.enrollment, assessment)).toBe(expected)
+    expect(JSON.stringify(classifyAuthorityBindingReason(artifact, input.enrollment, assessment))).not.toContain("c".repeat(40))
   })
 })
 

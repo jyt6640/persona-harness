@@ -118,8 +118,9 @@ historical rows; they are not competing live claims.
 | `0.8.0-rc.1` | 2026-08-09 | published `next` release candidate | [`release notes`](../current/release/v0.8.0-rc.1-release-notes.md) | recorded npm `next` at the 2026-08-09 readback |
 | `0.8.0` | 2026-08-09 | published stable release | [`release notes`](../current/release/v0.8.0-release-notes.md) | superseded as npm `latest` by `0.8.1` in the same release cycle |
 | `0.8.1` | 2026-08-09 | historical stable `latest` record | [`release notes`](../current/release/v0.8.1-release-notes.md) | superseded as npm `latest` by the later recorded `0.8.2` publication; re-read live state before a release decision |
-| `0.8.2` | 2026-08-10 | recorded npm `latest` publication | [`release notes`](../current/release/v0.8.2-release-notes.md) | canonical registry bytes are immutable and cannot supply `0.8.3` package evidence |
-| `0.8.3` | 2026-08-10 | unpublished stable source candidate | [`release notes`](../current/release/v0.8.3-release-notes.md) | requires its own exact package facts and normal package and hosted gates; no release action is implied |
+| `0.8.2` | 2026-08-10 | recorded npm `latest` publication | [`release notes`](../current/release/v0.8.2-release-notes.md) | canonical registry bytes are immutable and cannot supply `0.8.3` or later package evidence |
+| `0.8.3` | 2026-08-10 | published stable release; immutable historical record | [`release notes`](../current/release/v0.8.3-release-notes.md) | package bytes and acceptance evidence are fixed to 0.8.3 and cannot be reused for later package-visible corrections |
+| `0.8.4` | 2026-08-11 | unpublished stable source candidate | [`release notes`](../current/release/v0.8.4-release-notes.md) | adds the normalized authority binding-reason contract; requires its own exact package facts and normal package and hosted gates |
 
 ## Future Migration Notes
 

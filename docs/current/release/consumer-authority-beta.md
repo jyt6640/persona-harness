@@ -349,6 +349,13 @@ blocked and never convert package provenance into Finish authority.
 Multiple enrollments require an explicit enrolled `owner/repository` argument
 to `fetch github`; ambiguous selection performs no network request.
 
+The public fetch JSON uses `consumer-authority-fetch.3`. A verifier block keeps
+the public state `binding-mismatch` and may add only the fixed `bindingReason`
+enum: `artifact`, `package-version`, `source`, `enrollment`, `run`, `signer`,
+`freshness`, `consumption`, `verification`, or `unknown`. It never includes
+diagnostic paths, receipt values, tokens, URLs, raw verifier output, or local
+paths; Finish and replay behavior are unchanged.
+
 ## Live Trust Diagnostics
 
 `ph doctor` performs a live, read-only Sigstore trust-root check with a

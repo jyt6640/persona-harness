@@ -1,4 +1,5 @@
 import { authorityEnrollmentFromReadback } from "./authority-enrollment.js"
+import type { AuthorityBindingReason } from "./authority-artifact-binding.js"
 import type { CliRunResult } from "./bearshell.js"
 import type { GithubAuthorityFetchDiagnostic } from "./authority-fetch-worker.js"
 
@@ -93,6 +94,7 @@ export function blockedFetch(
   state: string,
   next: AuthorityStatus["next"] = "authority-fetch-github",
   diagnostic?: GithubAuthorityFetchDiagnostic,
+  bindingReason?: AuthorityBindingReason,
 ): CliRunResult {
   return {
     status: 1,
@@ -101,11 +103,12 @@ export function blockedFetch(
         authorityEligible: false,
         consumptionState: "not-applicable",
         ...(diagnostic === undefined ? {} : { diagnostic }),
+        ...(bindingReason === undefined ? {} : { bindingReason }),
         next,
-        schemaVersion: "consumer-authority-fetch.2",
+        schemaVersion: "consumer-authority-fetch.3",
         state,
       })}\n`
-      : `Consumer authority fetch: BLOCKED (${state})${diagnostic === undefined ? "" : `; diagnostic: ${diagnostic}`}. No evidence was retained or consumed.\n`,
+      : `Consumer authority fetch: BLOCKED (${state})${diagnostic === undefined ? "" : `; diagnostic: ${diagnostic}`}${bindingReason === undefined ? "" : `; binding reason: ${bindingReason}`}. No evidence was retained or consumed.\n`,
     stderr: "",
   }
 }
