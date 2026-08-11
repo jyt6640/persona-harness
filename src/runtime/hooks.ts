@@ -2,7 +2,7 @@ import type { Hooks } from "@opencode-ai/plugin"
 import { existsSync } from "node:fs"
 import { join } from "node:path"
 
-import { writePhase0Evidence } from "./evidence.js"
+import { writePhase0Evidence, writeRuntimeContextEvidence } from "./evidence.js"
 import { ContinuationTracker } from "./continuation.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
 import {
@@ -25,9 +25,10 @@ import {
   createJavaRoleReadFollowUp,
   discoverJavaRoleInjections,
   formatJavaRoleDiscoveryBlock,
+  isJavaRoleDiscoveryTool,
 } from "./java-role-discovery.js"
 import { warnRuntimeFailure } from "./error-boundary.js"
-import { injectIntoLatestUserMessage } from "./messages.js"
+import { injectRuntimeContextIntoLatestUserMessage } from "./messages.js"
 import { observeJavaWriteReportOnly } from "./observer-report-only.js"
 import { RailComplianceTracker } from "./rail-compliance.js"
 import { ProductDeepInterviewTracker } from "./product-deep-interview.js"
@@ -59,7 +60,7 @@ type Phase0HookOptions = {
 }
 
 function appendInjectionToToolOutput(output: ToolAfterOutput, block: string): void {
-  if (typeof output.output !== "string" || output.output.includes("[Persona Harness Injection]")) {
+  if (typeof output.output !== "string") {
     return
   }
 
@@ -182,16 +183,12 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   }
 
   function captureTargetFile(
-    hook: "tool.execute.before" | "tool.execute.after",
     tool: string,
     sessionID: string,
     callID: string | undefined,
     args: Record<string, unknown>,
-  ): ReturnType<typeof createInjectionBlock> | undefined {
+  ): { readonly injection: ReturnType<typeof createInjectionBlock>; readonly accepted: boolean; readonly kind: string } | undefined {
     if (!runtimeInjectionEnabled) {
-      return undefined
-    }
-    if (!allowsRuntimeInjection(sessionID, "target-file")) {
       return undefined
     }
 
@@ -210,23 +207,38 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     if (!canInjectBackend && !canInjectSharedSkill) {
       return undefined
     }
+    if (!allowsRuntimeInjection(sessionID, "target-file")) {
+      return undefined
+    }
 
     const injection = createInjectionBlock(targetFile, projectDir, { configResult })
-    store.set(sessionID, injection)
-    writePhase0Evidence(projectDir, {
-      hook,
-      sessionID,
-      callID,
-      injectedInto: "pending-store",
-      injection,
-    }, {
-      evidenceDir,
-    })
-    return injection
+    const offer = store.set(sessionID, injection)
+    if (offer.kind === "offered") {
+      writePhase0Evidence(projectDir, {
+        hook: "tool.execute.after",
+        sessionID,
+        callID,
+        injectedInto: "pending-store",
+        injection,
+      }, {
+        evidenceDir,
+      })
+      writeRuntimeContextEvidence(projectDir, {
+        hook: "tool.execute.after",
+        sessionID,
+        callID,
+        injection,
+        state: "offered",
+      }, { evidenceDir })
+    }
+    return { injection, accepted: offer.accepted, kind: offer.kind }
   }
 
   function captureJavaRoleDiscovery(input: ToolAfterInput, output: ToolAfterOutput): void {
     if (!runtimeInjectionEnabled || typeof output.output !== "string" || !config.enabledDomains.includes("backend")) {
+      return
+    }
+    if (!isJavaRoleDiscoveryTool(input.tool)) {
       return
     }
     if (!allowsRuntimeInjection(input.sessionID, "java-role-discovery")) {
@@ -241,16 +253,18 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     appendJavaRoleDiscoveryToToolOutput(output, formatJavaRoleDiscoveryBlock(injections))
     const followUp = createJavaRoleReadFollowUp(injections)
     if (followUp) {
-      store.set(input.sessionID, followUp)
-      writePhase0Evidence(projectDir, {
-        hook: "tool.execute.after",
-        sessionID: input.sessionID,
-        callID: input.callID,
-        injectedInto: "pending-store",
-        injection: followUp,
-      }, {
-        evidenceDir,
-      })
+      const offer = store.set(input.sessionID, followUp)
+      if (offer.accepted) {
+        writePhase0Evidence(projectDir, {
+          hook: "tool.execute.after",
+          sessionID: input.sessionID,
+          callID: input.callID,
+          injectedInto: "pending-store",
+          injection: followUp,
+        }, {
+          evidenceDir,
+        })
+      }
     }
 
     for (const injection of injections) {
@@ -301,15 +315,8 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     },
 
     "tool.execute.before": async (input: ToolBeforeInput, output: ToolBeforeOutput): Promise<void> => {
-      runHostHook("tool.execute.before", () => {
-        captureTargetFile(
-          "tool.execute.before",
-          input.tool,
-          input.sessionID,
-          input.callID,
-          output.args as Record<string, unknown>,
-        )
-      })
+      void input
+      void output
     },
 
     "tool.execute.after": async (input: ToolAfterInput, output: ToolAfterOutput): Promise<void> => {
@@ -361,18 +368,32 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           })
         }
 
-        const injection = captureTargetFile(
-          "tool.execute.after",
+        const captured = captureTargetFile(
           input.tool,
           input.sessionID,
           input.callID,
           input.args as Record<string, unknown>,
         )
-        if (!injection) {
+        if (captured === undefined || !captured.accepted) {
+          if (captured?.kind === "duplicate-suppressed") {
+            writeRuntimeContextEvidence(projectDir, {
+              hook: "tool.execute.after",
+              sessionID: input.sessionID,
+              callID: input.callID,
+              injection: captured.injection,
+              state: "duplicate-suppressed",
+            }, { evidenceDir })
+          }
+          return
+        }
+        const injection = captured.injection
+
+        if (typeof output.output !== "string") {
           return
         }
 
         appendInjectionToToolOutput(output, injection.block)
+        store.markToolOutputEmitted(input.sessionID, injection.contextDigest)
         const warning = createWriteGuardWarning({
           projectDir,
           targetFile: injection.targetFile,
@@ -390,6 +411,13 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         }, {
           evidenceDir,
         })
+        writeRuntimeContextEvidence(projectDir, {
+          hook: "tool.execute.after",
+          sessionID: input.sessionID,
+          callID: input.callID,
+          injection,
+          state: "tool-output-emitted",
+        }, { evidenceDir })
         if (!observerFindingsEnabled) {
           observeJavaWriteReportOnly({
             evidenceDir,
@@ -427,12 +455,20 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         entrySteering.apply(sessionId, output)
 
         const injection =
-          runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "model-input") ? store.take(sessionId) : undefined
+          runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "model-input")
+            ? store.takeForModelInput(sessionId)
+            : undefined
         if (!injection) {
           return
         }
 
-        if (injectIntoLatestUserMessage(output, injection)) {
+        const delivery = injectRuntimeContextIntoLatestUserMessage(output, injection)
+        if (delivery === "observed" || delivery === "fallback") {
+          if (delivery === "observed") {
+            store.markModelInputObserved(sessionId, injection.contextDigest)
+          } else {
+            store.markModelInputFallback(sessionId, injection.contextDigest)
+          }
           writePhase0Evidence(projectDir, {
             hook: "experimental.chat.messages.transform",
             sessionID: sessionId,
@@ -441,6 +477,20 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           }, {
             evidenceDir,
           })
+          writeRuntimeContextEvidence(projectDir, {
+            hook: "experimental.chat.messages.transform",
+            sessionID: sessionId,
+            injection,
+            state: delivery === "observed" ? "model-input-observed" : "model-input-fallback",
+          }, { evidenceDir })
+        } else if (delivery === "duplicate-suppressed") {
+          store.markDuplicateSuppressed(sessionId, injection.contextDigest)
+          writeRuntimeContextEvidence(projectDir, {
+            hook: "experimental.chat.messages.transform",
+            sessionID: sessionId,
+            injection,
+            state: "duplicate-suppressed",
+          }, { evidenceDir })
         }
       })
     },

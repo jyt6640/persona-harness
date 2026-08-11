@@ -129,9 +129,9 @@ describe("Phase 0 shared skill routing", () => {
     const hooks = createPhase0Hooks({ projectDir })
     const sessionID = "session-typescript"
 
-    await hooks["tool.execute.before"]?.(
-      { tool: "edit", sessionID, callID: "call-1" },
-      { args: { filePath: "src/components/App.tsx" } },
+    await hooks["tool.execute.after"]?.(
+      { tool: "edit", sessionID, callID: "call-1", args: { filePath: "src/components/App.tsx" } },
+      { title: "edit", output: undefined as unknown as string, metadata: {} },
     )
 
     const output = modelInput(sessionID)

@@ -7,12 +7,14 @@ import { summarizeEvidenceText, type EvidenceTextSummary } from "./evidence-reda
 import {
   evidenceRunId,
   evidenceWriteContext,
+  opaqueEvidenceKey,
   writeEvidenceRecord,
   type EvidenceWriteContext,
   type EvidenceWriteOptions,
 } from "./evidence-file.js"
 import type { TopLevelIntent } from "./top-level-intent-router.js"
 import type { PendingInjection } from "./types.js"
+import type { RuntimeContextDeliveryState } from "./store.js"
 
 export type RailComplianceFindingCode =
   | "review-rail-file-modification"
@@ -131,6 +133,46 @@ export function writePhase0Evidence(projectDir: string, event: EvidenceEvent, op
   }
 
   writeEvidenceRecord(context, "injection", runId, payload)
+}
+
+export type RuntimeContextEvidenceEvent = {
+  readonly hook: "tool.execute.after" | "experimental.chat.messages.transform"
+  readonly sessionID: string
+  readonly callID?: string
+  readonly injection: PendingInjection
+  readonly state: RuntimeContextDeliveryState
+}
+
+export function writeRuntimeContextEvidence(
+  projectDir: string,
+  event: RuntimeContextEvidenceEvent,
+  options: EvidenceWriteOptions = {},
+): void {
+  const context = evidenceWriteContext(projectDir, options)
+  if (context === undefined) {
+    return
+  }
+  const runId = evidenceRunId()
+  const payload = {
+    schemaVersion: "phase0.runtime-context.1",
+    runId,
+    timestamp: new Date().toISOString(),
+    privacyClass: EVIDENCE_PRIVACY_CLASS.metadataSafe,
+    hook: event.hook,
+    sessionID: event.sessionID,
+    callID: event.callID,
+    state: event.state,
+    contextDigest: event.injection.contextDigest,
+    sectionKinds: event.injection.semanticSections.map((section) => section.kind),
+    sectionDigests: event.injection.semanticSections.map((section) => section.digest),
+    targetFileDigest: opaqueEvidenceKey(event.injection.targetFile),
+    fileRole: event.injection.fileRole,
+    selectedRuleCount: event.injection.selectedRules.length,
+    selectedSkillCount: event.injection.selectedSharedSkills.length,
+    injectedPolicyCount: event.injection.policies.length,
+  }
+
+  writeEvidenceRecord(context, "runtime-context", runId, payload)
 }
 
 export function writeIntentEvidence(

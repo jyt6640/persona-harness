@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
 import { createInjectionBlock } from "../src/runtime/injection.js"
 import { loadRulesForRole } from "../src/rules/rule-loader.js"
+import { PendingInjectionStore } from "../src/runtime/store.js"
 import type { FileRole, TransformMessagesOutput } from "../src/runtime/types.js"
 
 const fixtureRoot = join(process.cwd(), ".persona-test-fixtures", "src", "main", "java", "com", "example")
@@ -136,9 +137,9 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     const sessionID = "session-default-off"
     const targetFile = fixturePath("ReservationController.java")
 
-    await hooks["tool.execute.before"]?.(
-      { tool: "edit", sessionID, callID: "call-1" },
-      { args: { filePath: targetFile } },
+    await hooks["tool.execute.after"]?.(
+      { tool: "edit", sessionID, callID: "call-1", args: { filePath: targetFile } },
+      { title: "edit", output: undefined as unknown as string, metadata: {} },
     )
 
     const output = modelInput(sessionID)
@@ -154,9 +155,9 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     const sessionID = "session-controller"
     const targetFile = fixturePath("ReservationController.java")
 
-    await hooks["tool.execute.before"]?.(
-      { tool: "edit", sessionID, callID: "call-1" },
-      { args: { filePath: targetFile } },
+    await hooks["tool.execute.after"]?.(
+      { tool: "edit", sessionID, callID: "call-1", args: { filePath: targetFile } },
+      { title: "edit", output: undefined as unknown as string, metadata: {} },
     )
 
     const output = modelInput(sessionID)
@@ -474,9 +475,9 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     const sessionID = "session-service"
     const targetFile = fixturePath("ReservationService.java")
 
-    await hooks["tool.execute.before"]?.(
-      { tool: "write", sessionID, callID: "call-2" },
-      { args: { path: targetFile } },
+    await hooks["tool.execute.after"]?.(
+      { tool: "write", sessionID, callID: "call-2", args: { path: targetFile } },
+      { title: "write", output: undefined as unknown as string, metadata: {} },
     )
 
     const output = modelInput(sessionID)
@@ -503,7 +504,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
 
     await hooks["tool.execute.after"]?.(
       { tool: "read", sessionID, callID: "call-3", args: { targetFile } },
-      { title: "read", output: "", metadata: {} },
+      { title: "read", output: undefined as unknown as string, metadata: {} },
     )
 
     const output = modelInput(sessionID)
@@ -649,6 +650,129 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(injection.selectedRules.length).toBeGreaterThan(0)
     expect(injection.selectedRules.every((rulePath) => typeof rulePath === "string")).toBe(true)
     expect(injection.selectedRules).not.toContain("backend/step1-api-contract.md")
+  })
+
+  it("keeps runtime context eligibility after-only", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-after-only"
+    const targetFile = fixturePath("ReservationController.java")
+
+    await hooks["tool.execute.before"]?.(
+      { tool: "read", sessionID, callID: "before-call" },
+      { args: { filePath: targetFile } },
+    )
+
+    const output = modelInput(sessionID)
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    expect(firstText(output)).not.toContain("[Persona Harness Injection]")
+    expect(evidencePayloads(fixtureWorkspace).filter((payload) =>
+      payload.schemaVersion === "phase0.1" || payload.schemaVersion === "phase0.runtime-context.1",
+    )).toEqual([])
+  })
+
+  it("does not use an already-present user marker as runtime context proof", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-marker-is-not-proof"
+    const targetFile = fixturePath("ReservationController.java")
+
+    await hooks["tool.execute.after"]?.(
+      { tool: "read", sessionID, callID: "after-call", args: { filePath: targetFile } },
+      { title: "read", output: undefined as unknown as string, metadata: {} },
+    )
+
+    const output = modelInputWithText(sessionID, "[Persona Harness Injection]\n사용자가 입력한 표식")
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const injectedPart = output.messages[0]?.parts.find(
+      (part) => part.type === "text" &&
+        (part as typeof part & { readonly metadata?: Record<string, unknown> }).metadata?.personaHarnessContextDigest,
+    )
+    expect(injectedPart?.type === "text" ? injectedPart.metadata : undefined).toMatchObject({
+      personaHarnessContextDigest: expect.stringMatching(/^sha256:[a-f0-9]{64}$/),
+    })
+  })
+
+  it("records a model-input fallback when the host text part is immutable", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    writeFileSync(
+      join(fixtureWorkspace, ".persona", "harness.jsonc"),
+      `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["backend", "programming"] }, null, 2)}\n`,
+    )
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-model-input-fallback"
+    const targetFile = fixturePath("ReservationController.java")
+
+    await hooks["tool.execute.after"]?.(
+      { tool: "read", sessionID, callID: "after-call", args: { filePath: targetFile } },
+      { title: "read", output: undefined as unknown as string, metadata: {} },
+    )
+    const output = modelInput(sessionID)
+    const textPart = output.messages[0]?.parts[0]
+    if (textPart === undefined) {
+      throw new Error("expected a model input text part")
+    }
+    Object.freeze(textPart)
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    expect(output.messages[0]?.parts.some((part) => part.type === "text" && part.synthetic === true)).toBe(true)
+    expect(evidencePayloads(fixtureWorkspace).some(
+      (payload) => payload.schemaVersion === "phase0.runtime-context.1" && payload.state === "model-input-fallback",
+    )).toBe(true)
+  })
+
+  it("does not duplicate a context already emitted in tool output", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-tool-output-lifecycle"
+    const targetFile = fixturePath("ReservationController.java")
+    const toolOutput = { title: "read", output: "class ReservationController {}", metadata: {} }
+
+    await hooks["tool.execute.after"]?.(
+      { tool: "read", sessionID, callID: "after-call", args: { filePath: targetFile } },
+      toolOutput,
+    )
+    const output = modelInput(sessionID)
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    expect(toolOutput.output).toContain("[Persona Harness Injection]")
+    expect(output.messages[0]?.parts.some((part) => part.type === "text" && part.synthetic === true)).toBe(false)
+    const runtimeEvidence = evidencePayloads(fixtureWorkspace).find(
+      (payload) => payload.schemaVersion === "phase0.runtime-context.1" && payload.state === "tool-output-emitted",
+    )
+    expect(runtimeEvidence).toBeDefined()
+    expect(JSON.stringify(runtimeEvidence)).not.toContain(targetFile)
+    expect(JSON.stringify(runtimeEvidence)).not.toContain("[Persona Harness Injection]")
+  })
+
+  it("retains distinct pending contexts in order instead of overwriting silently", () => {
+    const store = new PendingInjectionStore()
+    const first = createInjectionBlock("src/main/java/com/example/FirstController.java", fixtureWorkspace)
+    const second = createInjectionBlock("src/main/java/com/example/SecondService.java", fixtureWorkspace)
+
+    const firstOffer = store.set("session-ordered-pending", first)
+    const secondOffer = store.set("session-ordered-pending", second)
+
+    expect(firstOffer.kind).toBe("offered")
+    expect(secondOffer.kind).toBe("offered")
+    expect(store.delivery("session-ordered-pending", first.contextDigest)?.state).toBe("offered")
+    expect(store.take("session-ordered-pending")?.targetFile).toBe(first.targetFile)
+    expect(store.take("session-ordered-pending")?.targetFile).toBe(second.targetFile)
+  })
+
+  it("attaches stable semantic section digests without storing context bodies in evidence", () => {
+    const targetFile = fixturePath("ReservationController.java")
+    const injection = createInjectionBlock(targetFile, fixtureWorkspace)
+    const candidate = injection as typeof injection & {
+      readonly semanticSections?: readonly { readonly kind: string; readonly digest: string }[]
+      readonly contextDigest?: string
+    }
+
+    expect(candidate.semanticSections?.length).toBeGreaterThan(0)
+    expect(candidate.semanticSections?.every((section) => /^sha256:[a-f0-9]{64}$/.test(section.digest))).toBe(true)
+    expect(candidate.contextDigest).toMatch(/^sha256:[a-f0-9]{64}$/)
   })
 })
 

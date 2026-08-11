@@ -4,6 +4,7 @@ import { loadBackendPolicyOverlay } from "../config/policy-overlay.js"
 import { loadBackendProjectProfileSummary, readBackendProjectProfileState } from "../config/project-profile.js"
 import { loadRulesForRole } from "../rules/rule-loader.js"
 import { resolveSharedSkillFileRole, selectSharedSkillsForTarget } from "./shared-skill-router.js"
+import { createRuntimeContextSections, runtimeContextDigest } from "./runtime-context.js"
 import type { PendingInjection } from "./types.js"
 import { isJavaTargetFile } from "./file-role.js"
 
@@ -126,6 +127,20 @@ export function createInjectionBlock(
     ...(shouldLoadJavaRules ? ["", ...tier1WorkflowRailLines(), "", ...tier3ClosureLines()] : []),
   ].join("\n")
 
+  const semanticSections = createRuntimeContextSections({
+    profile: projectProfileSummary,
+    overlay: {
+      metadata: policyOverlay.metadata,
+      summaryLines: policyOverlay.summaryLines,
+    },
+    rules: {
+      policies,
+      selectedRuleMetadata,
+      selectedRules,
+    },
+    skills: selectedSharedSkills,
+  })
+
   return {
     targetFile,
     fileRole,
@@ -136,5 +151,7 @@ export function createInjectionBlock(
     selectedPolicyOverlay: policyOverlay.metadata,
     policies,
     block,
+    semanticSections,
+    contextDigest: runtimeContextDigest(semanticSections),
   }
 }
