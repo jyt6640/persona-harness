@@ -14,6 +14,7 @@ export const PACKAGE_EXERCISE_PHASES = Object.freeze({
     "fresh-install",
     "package-identity",
     "package-content-identity",
+    "opencode-interview-observation",
     "repository-only-files",
     "canonical-publisher",
     "observer-credential",
@@ -38,6 +39,7 @@ export const PACKAGE_EXERCISE_PHASES = Object.freeze({
   ]),
   "source-built": Object.freeze([
     "cli-binding",
+    "opencode-interview-observation",
     "producer-intake",
     "producer-action-topology",
     "canonical-publisher",

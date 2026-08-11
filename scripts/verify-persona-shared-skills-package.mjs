@@ -162,6 +162,8 @@ function assertInstalledCatalog(packageRoot, expectedVersion) {
 async function assertInstalledRuntime(packageRoot, consumerRoot) {
   const pluginModule = await import(pathToFileURL(join(packageRoot, "dist", "index.js")).href)
   const catalogModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "persona-shared-skill-catalog.js")).href)
+  const intentModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "top-level-intent-router.js")).href)
+  const adapterModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "opencode-skill-adapter.js")).href)
   const interviewModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "product-deep-interview.js")).href)
   const provenanceModule = await import(pathToFileURL(join(packageRoot, "scripts", "staged-package-artifact-provenance-network.mjs")).href)
   if (pluginModule.default?.id !== "persona-harness") {
@@ -173,6 +175,31 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
   const plan = catalogModule.resolvePersonaSharedSkill("plan")
   if (plan.entry !== "skills/plan/SKILL.md") {
     throw new Error("installed shared-skill runtime resolved an unexpected plan entry")
+  }
+  const automaticIntent = intentModule.detectTopLevelIntent("I want to build a small product")
+  if (
+    automaticIntent?.primary !== "product-interview"
+    || automaticIntent.activation?.decision !== "automatic"
+    || automaticIntent.activation.skillId !== "deep-interview"
+    || automaticIntent.activation.firstAction !== "one-question-product-interview"
+  ) {
+    throw new Error("installed shared-skill runtime did not activate the compact product route")
+  }
+  if (intentModule.detectTopLevelIntent("hello there") !== undefined) {
+    throw new Error("installed shared-skill runtime routed an ordinary turn")
+  }
+  const compactRoute = adapterModule.createOpenCodeSkillRoute({
+    decision: "activate",
+    firstAction: "one-question-product-interview",
+    skillId: "deep-interview",
+    reason: "The request remains ambiguous.",
+  })
+  if (
+    !compactRoute.includes("Reference: packages/shared-skills/skills/deep-interview/SKILL.md")
+    || compactRoute.includes("# Product Deep Interview")
+    || compactRoute.includes("npx ph workflow")
+  ) {
+    throw new Error("installed shared-skill route loaded more than its compact reference")
   }
   const tracker = new interviewModule.ProductDeepInterviewTracker()
   const result = tracker.route("installed-package-contract", "I want to build a small product")

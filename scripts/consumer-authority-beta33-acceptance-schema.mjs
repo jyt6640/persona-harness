@@ -4,7 +4,6 @@ import { isDeepStrictEqual } from "node:util"
 
 import { canonicalBeta32AcceptanceManifest } from "./consumer-authority-beta32-acceptance-schema.mjs"
 import {
-  PACKAGE_EXERCISE_PHASES,
   PACKAGE_EXERCISE_PHASE_SCHEMA_VERSION,
 } from "./clean-package-exercise-phase.mjs"
 import {
@@ -21,6 +20,54 @@ export const BETA33_ACCEPTANCE_SCHEMA_VERSION = "consumer-authority-beta33-accep
 
 const BETA33_PACKAGE_VERSION = "0.8.0-beta.33"
 const ACCEPTANCE_PATH = join("docs", "current", "release", "consumer-authority-beta33-acceptance.json")
+const HISTORICAL_PACKAGE_EXERCISE_PHASES = Object.freeze({
+  freshTar: Object.freeze([
+    "tarball-materialization",
+    "fresh-install",
+    "package-identity",
+    "package-content-identity",
+    "repository-only-files",
+    "canonical-publisher",
+    "observer-credential",
+    "producer-intake",
+    "producer-action-topology",
+    "verifier-no-source",
+    "project-finish-verifier-no-source",
+    "prearmed-observer",
+    "v4-cleanliness",
+    "observer-gh-selector",
+    "attestation-parser",
+    "artifact-transport",
+    "authority-discovery",
+    "authority-lifecycle",
+    "staged-artifact-verifier",
+    "doctor-registry",
+    "evidence-read-write",
+    "report-stdin",
+    "workflow-lifecycle",
+    "bootstrap-workspace-intake",
+    "installed-package-test",
+  ]),
+  sourceBuilt: Object.freeze([
+    "cli-binding",
+    "producer-intake",
+    "producer-action-topology",
+    "canonical-publisher",
+    "prearmed-observer",
+    "v4-cleanliness",
+    "observer-gh-selector",
+    "attestation-parser",
+    "artifact-transport",
+    "observer-credential",
+    "authority-discovery",
+    "authority-lifecycle",
+    "doctor-registry",
+    "evidence-read-write",
+    "report-stdin",
+    "workflow-lifecycle",
+    "bootstrap-workspace-intake",
+  ]),
+})
 const EXPECTED_MANIFEST = buildExpectedManifest()
 
 export class Beta33AcceptanceManifestError extends Error {
@@ -117,10 +164,10 @@ function buildExpectedManifest() {
       schemaVersion: AUTHORITY_DISCOVERY_EXERCISE_SCHEMA_VERSION,
     },
     childOutput: "each-source-built-and-fresh-tar-package-exercise-phase-emits-one-ordered-exact-nonreflective-ready-record-or-one-terminal-blocked-record-before-the-terminal-pass-marker",
-    freshTar: [...PACKAGE_EXERCISE_PHASES["fresh-tar"]],
+    freshTar: [...HISTORICAL_PACKAGE_EXERCISE_PHASES.freshTar],
     parentAcceptance: "the-clean-bundle-parent-requires-the-complete-ordered-ready-transcript-and-exact-terminal-pass-marker; marker-only-malformed-out-of-order-foreign-or-success-after-blocked-output-is-a-bounded-phase-envelope-block",
     schemaVersion: PACKAGE_EXERCISE_PHASE_SCHEMA_VERSION,
-    sourceBuilt: [...PACKAGE_EXERCISE_PHASES["source-built"]],
+    sourceBuilt: [...HISTORICAL_PACKAGE_EXERCISE_PHASES.sourceBuilt],
   }
   manifest.closureCompleteness.deterministicLinks = manifest.closureCompleteness.deterministicLinks.map((link) => link.includes("ubuntu-dpkg-ownership-byte-strict-package-record")
     ? "ubuntu-dpkg-ownership-byte-strict-package-record-policy-primary-with-optional-known-completion-mode-independent-validation-and-strict-secondary-records-workflow-selected-copyfile-excl-private-observer-gh-tool-reassessment-and-no-network-parser-help-preflight-with-fixed-nonreflective-selector-stage-and-package-record-shape-without-package-path-lookup"

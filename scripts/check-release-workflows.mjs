@@ -339,6 +339,7 @@ function hasPackageObserverResponsibility(packageManifestText, acceptanceManifes
         "normal-install",
         "installed-only-no-source-fallback",
         "cli-and-approval-before-mutation",
+        "post-model-assistant-response-and-pre-approval-trace",
       ])
       && hasExactStrings(responsibilities.sourceAndProtectedUbuntuCi.requires, [
         "workflow-owned-dpkg-observer-gh-selection",
@@ -479,7 +480,7 @@ async function main() {
     observerGhPackageRecord,
     observerGhTool,
     packageManifest,
-    v082AcceptanceManifest,
+    v083AcceptanceManifest,
   } = inputs
   const failures = []
   for (const [name, path, predicate] of requirements) {
@@ -552,7 +553,7 @@ async function main() {
   if (!hasWorkflowOwnedObserverGhProvisioner(observerGhProvisioner, observerGhSelector, observerGhPackageRecord, observerGhTool)) {
     failures.push("workflow-owned observer gh provisioner")
   }
-  if (!hasPackageObserverResponsibility(packageManifest, v082AcceptanceManifest)) {
+  if (!hasPackageObserverResponsibility(packageManifest, v083AcceptanceManifest)) {
     failures.push("Package observer responsibility")
   }
   if (failures.length > 0) {

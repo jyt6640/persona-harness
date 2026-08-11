@@ -72,7 +72,7 @@ export type ProductDeepInterviewResult =
   | { readonly kind: "approved"; readonly handoff: "technical-intake"; readonly block: string }
   | { readonly kind: "stopped"; readonly block: string }
 
-const START_PATTERN = /(만들래|만들고\s*싶|기획해|구상해|서비스\s*만들|웹\s*서비스|기존\s*(?:서비스|제품|앱|흐름).*(?:개선|변경)|product\s+idea|want\s+to\s+(?:build|explore)|build\s+(?:an?|the)\s+(?:app|service|product)|new\s+(?:app|service|product)|(?:app|service|product)\s+idea|(?:improve|change)\s+(?:an?\s+)?existing(?:\s+\w+){0,2}\s+(?:app|service|product|flow))/iu
+const START_PATTERN = /(만들래|만들고\s*싶|기획해|구상해|서비스\s*만들|웹\s*서비스|기존\s*(?:서비스|제품|앱|흐름).*(?:개선|변경)|product\s+idea|want\s+to\s+(?:build|create|make|explore)|(?:build|create|make)\s+(?:an?|the)\s+(?:app|service|product)|new\s+(?:app|service|product)|(?:app|service|product)\s+idea|(?:improve|change)\s+(?:an?\s+)?existing(?:\s+\w+){0,2}\s+(?:app|service|product|flow))/iu
 const APPROVAL_PATTERN = /^(?:승인|진행하자|시작하자|approve|proceed|go\s+ahead)$/iu
 const STOP_PATTERN = /^(?:stop|pause|그만|중단)$/iu
 const DEFER_PATTERN = /^(?:defer|skip|later|보류|넘겨)$/iu
@@ -98,12 +98,22 @@ function renderQuestion(session: ProductInterviewSession, approvalBlocked = fals
     block: [
       "[Persona Harness Product Interview]",
       createOpenCodeSkillRoute({
-        decision: "suggest",
+        decision: "activate",
+        firstAction: session.mode === "brownfield-change-discovery" ? "code-first-change-discovery" : "one-question-product-interview",
         skillId: "deep-interview",
         reason: "Product facts are still unresolved, so technical intake and planning remain deferred.",
       }),
       "",
       "Current understanding: product discovery is in progress in this conversation.",
+      ...(session.mode === "brownfield-change-discovery"
+        ? [
+            "First-action contract: inspect relevant existing code before asking for facts it already answers.",
+            "Do not implement or create project state in this turn.",
+          ]
+        : [
+            "Required first response: ask exactly one product question now, then wait for the user's answer.",
+            "Do not propose a solution, implementation, technical plan, command, or file change in this turn.",
+          ]),
       ...(session.mode === "brownfield-change-discovery"
         ? [
             "Mode: brownfield-change-discovery.",

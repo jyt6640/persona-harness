@@ -1,11 +1,16 @@
 # Top-level Intent Router
 
-The current router gives an unresolved product idea the
-`product-interview` primary intent before requirements drafting or programming.
-It asks one product question at a time and requires explicit brief approval
-before `technical-intake`.
+The router activates at most one compact Persona catalog reference for a turn.
+An explicit `/persona <skill-id>` command wins. A malformed or unavailable
+command fails closed rather than falling back to another skill.
 
-Other routes remain bounded: debug, review, refactor, git, requirements, and
-programming select an advisory Persona skill reference. They do not inject a
-full skill body or advance workflow state. The full portable contract is
-[Persona Shared Skills Core](persona-shared-skills-core.md).
+Clear direct debug, review, refactor, Git, and implementation requests bypass
+product discovery. An ambiguous new-product request starts `deep-interview`
+with one question, recommendation, and tradeoff. An ambiguous brownfield
+request starts code-first discovery. `skip`, `defer`, and `stop` suppress a new
+interview start.
+
+The adapter supplies only the selected reference, safe first action, and
+handoff. It does not inject a full skill body or catalog, create workflow state,
+or run a command. The full portable contract is [Persona Shared Skills
+Core](persona-shared-skills-core.md).

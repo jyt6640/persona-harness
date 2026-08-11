@@ -33,7 +33,7 @@ npx ph bootstrap backend
 
 `npx ph init`은 최소 설치/연동 단계다. `.persona/harness.jsonc`, `.persona/conventions/`, `.persona/rules/`, `.opencode/opencode.json`, `.gitignore`를 준비하고 다음 행동을 안내한다. `AGENTS.md`, `.persona/project-profile.jsonc`, policy overlay, accepted plan, implementation/review report template은 만들지 않는다.
 
-Backend-ready 상태가 필요하면 `npx ph bootstrap backend`를 실행한다. 이 명령은 `AGENTS.md`, backend profile, policy overlay, accepted plan, implementation/review report template, harness/OpenCode config 상태를 준비한다.
+Backend-ready 상태가 필요하면 `npx ph bootstrap backend`를 실행한다. 이 명령은 없는 workflow plan을 accepted 상태로 만들고 `AGENTS.md`, backend profile, policy overlay, implementation/review report template, harness/OpenCode config 상태를 준비한다. 이미 있는 draft 또는 revision plan은 사용자 승인 경계를 보존하므로 자동 승인하지 않는다. 그 plan으로 구현 또는 Finish readiness를 계속하려면 `npx ph plan --accept`를 명시적으로 실행한다.
 
 프로젝트 조건을 직접 선택하려면 bootstrap 대신 `npx ph intake --interactive` 또는 `npx ph intake --default backend`를 실행한 뒤 `npx ph policy init`과 `npx ph plan`으로 계획 흐름을 진행한다.
 
@@ -489,7 +489,7 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 
 개인/팀/프로젝트 철학은 선택적으로 얹는 후속 philosophy harness layer다. 철학이 없을 때는 Clean Code와 backend 역할 책임을 기본값으로 삼고, 프로젝트 규모, 개인/팀 맥락, 저장소/DB/기술 선택 같은 최소 질문을 통해 계획을 먼저 세운 뒤 구현으로 넘어가는 방향을 유지한다.
 
-`packages/shared-skills`에는 OMO shared-skills 구조와 skill content를 vendoring한다. Persona Harness의 목표는 OMO처럼 작업 맥락에 맞는 skill을 자연스럽게 고르되, backend/frontend/infra에 특화해 적용하는 것이다. 현재 최소 auto-routing은 TypeScript와 React/frontend TypeScript target 모두에 `programming`만 선택한다. `frontend`는 명시적으로 선택하는 optional overlay이며 automatic injection 대상이 아니다.
+`packages/shared-skills`에는 Persona-owned portable catalog와 skill reference를 포함한다. 파일 target routing은 TypeScript와 React/frontend TypeScript target 모두에 `programming`만 선택한다. 별도로 top-level intent routing은 명시적 `/persona <skill-id>` command, clear direct work, 또는 ambiguous product discovery에 따라 하나의 compact reference를 activate한다. `frontend`는 명시적으로 선택하는 optional overlay이며 automatic injection 대상이 아니다. Host adapter는 full skill body나 catalog를 inject하거나 workflow state를 자동 진행하지 않는다.
 
 기준 문서:
 

@@ -23,6 +23,25 @@ system, or completion authority.
 `frontend`, `visual-qa`, `ast-grep`, and `lsp-setup` are optional overlays:
 they are selected only by an explicit user request and an available host tool.
 
+## Automatic Activation
+
+The portable router selects at most one compact catalog reference for the
+current turn. It applies this order: an explicit `/persona <skill-id>` command,
+then a clear direct debug, review, refactor, Git, or implementation request,
+then an ambiguous product request. An explicit command never falls back to a
+different skill when it is malformed or unavailable.
+
+An ambiguous new-product request starts `deep-interview` with one adaptive
+question, recommendation, and tradeoff. An ambiguous brownfield request starts
+the same skill in code-first discovery mode: inspect the relevant existing code
+before asking for facts the code can establish. `skip`, `defer`, and `stop`
+requests suppress a new interview start. Clear direct work bypasses discovery.
+
+Activation is a compact reference and first safe action, not a loaded skill
+body or catalog dump. The first accepted product brief hands off explicitly to
+`technical-intake`, then `plan`, optional `ralplan`, `tdd`, `implementation`,
+and `review`.
+
 ## Product Discovery
 
 The product deep interview asks one product question at a time and gives a
@@ -36,10 +55,11 @@ existing code first and ask only product intent the code cannot establish.
 
 ## Host Boundary
 
-A host adapter may show a compact route to one catalog entry. It does not load
-the full skill body, run commands, or automatically create or advance workflow
-state. Existing `ph` workflow commands remain separate user-selected product
-operations; the shared-skill adapter does not grant them authority.
+A host adapter may show a compact route to one catalog entry. It advises and
+routes only: it does not load the full skill body or catalog, run commands, or
+automatically create or advance workflow state. Existing `ph` workflow commands
+remain separate user-selected product operations; the shared-skill adapter does
+not grant them authority.
 
 ## Package Boundary
 

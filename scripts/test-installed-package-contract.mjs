@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readV082AcceptanceManifest } from "./consumer-authority-v082-acceptance-schema.mjs"
+import { readV083AcceptanceManifest } from "./consumer-authority-v083-acceptance-schema.mjs"
 import {
   observerGhStageCodeForPreflight,
   observerGhStageCodeForPrivateCopy,
@@ -55,6 +55,7 @@ const MODELED_AUTHORITY_TOPOLOGY = {
 }
 const BETA28_PRE_AUTHORITY_COMMANDS = new Map([
   ["ph bootstrap backend --strict --no-developer-mcp", { args: ["bootstrap", "backend", "--strict", "--no-developer-mcp"] }],
+  ["ph plan --accept", { args: ["plan", "--accept"] }],
   ["ph bearshell ./gradlew test", { args: ["bearshell", "./gradlew", "test"] }],
   ["ph bearshell ./gradlew compileJava", { args: ["bearshell", "./gradlew", "compileJava"] }],
   ["ph bearshell ./gradlew clean", { args: ["bearshell", "./gradlew", "clean"] }],
@@ -144,6 +145,10 @@ async function runInstalledPackageContract(options) {
     packed.tarballPath,
     packed.facts.packageContentIdentity,
   ))
+  await runPhase("opencode-interview-observation", () => assertOpenCodeInterviewObservationContract(
+    installedPackage,
+    "installed package",
+  ))
   await runPhase("repository-only-files", () => assertRepositoryOnlyFilesAreAbsent(installedPackage))
   await runPhase("canonical-publisher", () => assertCanonicalPackagePublisherPlan(installedPackage, "installed package"))
   await runPhase("observer-credential", () => assertObserverCredentialPreflight(installedPackage, consumerDirectory, "installed package"))
@@ -200,6 +205,10 @@ async function runSourceCliContract(options) {
   const { observerGh, packageExercise, producerIntakeOnly, sourceCli } = options
   const runPhase = createPackageExercisePhaseRunner(options, "source-built")
   const phPath = await runPhase("cli-binding", () => resolveSourceCliPath(sourceCli))
+  await runPhase("opencode-interview-observation", () => assertOpenCodeInterviewObservationContract(
+    repositoryRoot,
+    "source CLI",
+  ))
 
   await runPhase("producer-intake", () => assertSourceProjectFinishProducerIntake(phPath))
   await runPhase("producer-action-topology", () => assertSourceProjectFinishProducerActionTopology())
@@ -251,6 +260,222 @@ function resolveSourceCliPath(sourceCliPath) {
   const phPath = resolve(repositoryRoot, sourceCliPath)
   if (!existsSync(phPath)) throw new Error("source CLI is missing")
   return phPath
+}
+
+async function assertOpenCodeInterviewObservationContract(packageRoot, label) {
+  const scriptPath = join(packageRoot, "scripts", "opencode-interview-observation-contract.mjs")
+  if (!existsSync(scriptPath)) {
+    throw new Error(`${label} OpenCode interview observation contract is missing from the package`)
+  }
+  const contract = await import(pathToFileURL(scriptPath).href)
+  const sessionID = "installed-observation-session"
+  const result = contract.evaluateOpenCodeInterviewObservation({
+    schemaVersion: contract.OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION,
+    events: [
+      {
+        type: "message.updated",
+        properties: { info: { id: "assistant-message", sessionID, role: "assistant" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "assistant-text",
+            sessionID,
+            messageID: "assistant-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ],
+  })
+  if (
+    result.status !== "passed"
+    || result.code !== "ready"
+    || result.ambiguousInterviewFirst !== true
+    || result.responsePredicatePostModel !== true
+    || result.preApprovalNoMutation !== true
+  ) {
+    throw new Error(`${label} OpenCode interview observation contract did not accept the assistant event path`)
+  }
+  const transformedOnly = contract.evaluateOpenCodeInterviewObservation({
+    schemaVersion: contract.OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION,
+    events: [
+      {
+        type: "message.updated",
+        properties: { info: { id: "user-message", sessionID, role: "user" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "user-text",
+            sessionID,
+            messageID: "user-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ],
+  })
+  if (
+    transformedOnly.status !== "blocked"
+    || transformedOnly.code !== "assistant-response-missing"
+    || transformedOnly.responsePredicatePostModel !== false
+    || JSON.stringify(transformedOnly).includes("Which people")
+  ) {
+    throw new Error(`${label} OpenCode interview observation contract accepted transformed input or leaked response data`)
+  }
+
+  const identityDrift = contract.evaluateOpenCodeInterviewObservation({
+    schemaVersion: contract.OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION,
+    events: [
+      {
+        type: "message.updated",
+        properties: { info: { id: "drifting-message", sessionID, role: "user" } },
+      },
+      {
+        type: "message.updated",
+        properties: { info: { id: "drifting-message", sessionID, role: "assistant" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "drifting-text",
+            sessionID,
+            messageID: "drifting-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ],
+  })
+  if (
+    identityDrift.status !== "blocked"
+    || identityDrift.code !== "message-identity-conflict"
+    || identityDrift.responsePredicatePostModel !== false
+    || JSON.stringify(identityDrift).includes("drifting-message")
+  ) {
+    throw new Error(`${label} OpenCode interview observation contract accepted message identity drift or leaked identity data`)
+  }
+
+  const partPromotion = contract.evaluateOpenCodeInterviewObservation({
+    schemaVersion: contract.OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION,
+    events: [
+      {
+        type: "message.updated",
+        properties: { info: { id: "user-message", sessionID, role: "user" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "shared-text-part",
+            sessionID,
+            messageID: "user-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+      {
+        type: "message.updated",
+        properties: { info: { id: "assistant-message", sessionID, role: "assistant" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "shared-text-part",
+            sessionID,
+            messageID: "assistant-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ],
+  })
+  if (
+    partPromotion.status !== "blocked"
+    || partPromotion.code !== "part-identity-conflict"
+    || partPromotion.responsePredicatePostModel !== false
+    || JSON.stringify(partPromotion).includes("shared-text-part")
+  ) {
+    throw new Error(`${label} OpenCode interview observation contract accepted linked text promotion or leaked part identity`)
+  }
+
+  const removedReuse = contract.evaluateOpenCodeInterviewObservation({
+    schemaVersion: contract.OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION,
+    events: [
+      {
+        type: "message.updated",
+        properties: { info: { id: "assistant-message", sessionID, role: "assistant" } },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "assistant-text",
+            sessionID,
+            messageID: "assistant-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+      {
+        type: "message.part.removed",
+        properties: { sessionID, messageID: "assistant-message", partID: "assistant-text" },
+      },
+      {
+        type: "message.part.updated",
+        properties: {
+          part: {
+            id: "assistant-text",
+            sessionID,
+            messageID: "assistant-message",
+            type: "text",
+            text: "Which people should this product help first?",
+          },
+        },
+      },
+    ],
+  })
+  if (
+    removedReuse.status !== "blocked"
+    || removedReuse.code !== "part-lifecycle-invalid"
+    || removedReuse.responsePredicatePostModel !== false
+    || JSON.stringify(removedReuse).includes("assistant-text")
+  ) {
+    throw new Error(`${label} OpenCode interview observation contract accepted update-after-remove or leaked lifecycle identity`)
+  }
+
+  const unknownRemoval = contract.evaluateOpenCodeInterviewObservation({
+    schemaVersion: contract.OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION,
+    events: [
+      {
+        type: "message.updated",
+        properties: { info: { id: "assistant-message", sessionID, role: "assistant" } },
+      },
+      {
+        type: "message.part.removed",
+        properties: { sessionID, messageID: "assistant-message", partID: "unknown-part" },
+      },
+    ],
+  })
+  if (
+    unknownRemoval.status !== "blocked"
+    || unknownRemoval.code !== "part-lifecycle-invalid"
+    || unknownRemoval.responsePredicatePostModel !== false
+    || JSON.stringify(unknownRemoval).includes("unknown-part")
+  ) {
+    throw new Error(`${label} OpenCode interview observation contract accepted unknown removal or leaked lifecycle identity`)
+  }
 }
 
 async function assertPackagedConsumerAuthorityBoundary(
@@ -2221,10 +2446,7 @@ function assertWorkflowLifecycleAbsenceBlocks(fixtureRoot, phPath, label) {
 function assertCooperativeFinishWorks(fixtureRoot, phPath, label, readiness, packageRoot) {
   createCooperativeGradleFixture(fixtureRoot)
   assertUninitializedFinishBlocks(fixtureRoot, phPath, label)
-  requireSuccess(
-    `${label} bootstrap checkpoint`,
-    runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
-  )
+  prepareRetainedDraftPlan(fixtureRoot, phPath, label)
   const consumerRoot = `${fixtureRoot}-consumer`
   requireSuccess(`${label} clean consumer worktree`, runCommand(fixtureRoot, "git", ["worktree", "add", "--detach", consumerRoot, "HEAD"]))
 
@@ -2322,8 +2544,36 @@ function runCooperativeLifecyclePreparation(fixtureRoot, phPath, label, readines
   if (!status.stdout.includes("Plan: .persona/workflow/plan.md")) {
     throw new Error(`${label} public plan status did not retain the relative plan reference`)
   }
+  if (!status.stdout.includes("Status: accepted")) {
+    throw new Error(`${label} public plan status did not accept the retained draft plan`)
+  }
   assertCooperativeLifecycleState(fixtureRoot, label)
   assertAuthorityOnlyPreflight(fixtureRoot, phPath, label, readiness.expectedDefaultFinish, environment)
+}
+
+function prepareRetainedDraftPlan(fixtureRoot, phPath, label) {
+  requireSuccess(
+    `${label} retained source-bound profile`,
+    runNode(fixtureRoot, [phPath, "intake", "--default", "backend"]),
+  )
+  requireSuccess(
+    `${label} retained source-bound draft plan`,
+    runNode(fixtureRoot, [phPath, "plan"]),
+  )
+  requireSuccess(
+    `${label} retained source-bound bootstrap`,
+    runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
+  )
+  const draftStatus = runNode(fixtureRoot, [phPath, "plan", "--status"])
+  requireSuccess(`${label} retained source-bound plan status`, draftStatus)
+  if (!draftStatus.stdout.includes("Status: draft")) {
+    throw new Error(`${label} retained source-bound bootstrap did not preserve the draft approval boundary`)
+  }
+  requireSuccess(`${label} retained source-bound plan add`, runCommand(fixtureRoot, "git", ["add", "."]))
+  requireSuccess(
+    `${label} retained source-bound plan commit`,
+    runCommand(fixtureRoot, "git", ["commit", "-qm", "retain draft workflow plan"]),
+  )
 }
 
 function assertPublicOutputDoesNotExposeWorkspace(result, workspace, label) {
@@ -2683,7 +2933,7 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
 }
 
 function readGaPreAuthorityReadiness(packageRoot) {
-  const manifest = readV082AcceptanceManifest(packageRoot)
+  const manifest = readV083AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -2692,7 +2942,7 @@ function readGaPreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readV082AcceptanceManifest(packageRoot)
+    readV083AcceptanceManifest(packageRoot)
   } catch {
     throw new Error(`${label} beta.33 observer handoff contract is invalid`)
   }
@@ -2834,7 +3084,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readV082AcceptanceManifest(packageRoot)
+  const manifest = readV083AcceptanceManifest(packageRoot)
   let packageMetadata
   try {
     packageMetadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
@@ -2906,6 +3156,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
     "consumer-authority-beta33-acceptance-schema.mjs",
     "consumer-authority-beta34-acceptance-schema.mjs",
     "consumer-authority-v082-acceptance-schema.mjs",
+    "consumer-authority-v083-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
@@ -3182,6 +3433,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     "consumer-authority-beta33-acceptance-schema.mjs",
     "consumer-authority-beta34-acceptance-schema.mjs",
     "consumer-authority-v082-acceptance-schema.mjs",
+    "consumer-authority-v083-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
@@ -3226,7 +3478,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readV082AcceptanceManifest(packageRoot)
+  const manifest = readV083AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),

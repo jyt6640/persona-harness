@@ -49,8 +49,8 @@ export function parseV082AcceptanceManifest(value, packageVersion) {
 function buildExpectedManifest() {
   const manifest = canonicalV081AcceptanceManifest()
   manifest.schemaVersion = V082_ACCEPTANCE_SCHEMA_VERSION
-  manifest.package.channel = "unpublished"
-  manifest.package.scope = "source-candidate"
+  manifest.package.channel = "latest"
+  manifest.package.scope = "ga-approved"
   manifest.package.version = V082_PACKAGE_VERSION
   manifest.acceptanceResponsibilities = {
     package: {
@@ -75,13 +75,13 @@ function buildExpectedManifest() {
   manifest.hostedResidual.whyLocalCannotClose =
     "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Source and CI-shaped packed exercise prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, byte-strict primary package-record selector lifecycle, COPYFILE_EXCL private-copy reassessment, one runner-temp isolated token-free state root, fixed-placeholder exact-plan help parser preflight without artifact or network access, strict secondary validation, fixed stage and shape diagnostics. Package acceptance separately proves current package-lock-acceptance binding, exact-tar provenance, normal installation, installed-only no-source fallback, CLI approval-before-mutation behavior, complete source and fresh-installed fixture import closure, exact Linux authority-fetch child envelope behavior, trusted-unconsumed-persisted discovery result binding, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
   manifest.v081HistoricalRelease = {
-    outcome: "accepted-for-its-own-v081-tree-and-not-reusable-for-this-unpublished-v082-source-candidate-or-any-later-package",
+    outcome: "accepted-for-its-own-v081-tree-and-not-reusable-for-the-published-v082-release-or-any-later-package",
     reusableForV082: false,
     version: "0.8.1",
   }
-  manifest.authority.fixturePlan.registryInstall = "requires-authorized-release-before-registry-install-persona-harness@0.8.2"
-  manifest.authority.hostedFixture.revision = "v082-source-candidate-head-before-authorized-release"
-  manifest.hostedResidual.id = "v082-current-package-acceptance-and-authorized-current-artifact-observation"
+  manifest.authority.fixturePlan.registryInstall = "published-persona-harness@0.8.2-latest-release-record"
+  manifest.authority.hostedFixture.revision = "v082-published-latest-release-record"
+  manifest.hostedResidual.id = "v082-published-latest-release-record"
   return manifest
 }
 
