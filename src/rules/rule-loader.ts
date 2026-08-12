@@ -2,7 +2,11 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import type { FileRole } from "../runtime/types.js"
-import { loadHarnessConfigResult, resolveConfiguredPath } from "../config/harness-config.js"
+import {
+  loadHarnessConfigResult,
+  resolveConfiguredPath,
+  type BackendGuidancePack,
+} from "../config/harness-config.js"
 import {
   isRuleEligibleForTarget,
   inspectRuleCatalogPaths,
@@ -17,6 +21,7 @@ import {
   type RuleMetadata,
 } from "./rule-frontmatter.js"
 import { takePoliciesForDelivery } from "./rule-delivery.js"
+import { backendGuidanceRulePath } from "./backend-guidance-packs.js"
 import type { RuleFrontmatterDiagnostic } from "./rule-frontmatter-diagnostics.js"
 
 export type { Phase0Scenario } from "./rule-catalog.js"
@@ -127,12 +132,24 @@ function scenarioAwareRoleRules(fileRole: FileRole, scenario: Phase0Scenario): r
   return roleRules.map((rulePath) => (rulePath === STEP1_API_CONTRACT_RULE ? contractRule : rulePath))
 }
 
-export function selectRulePaths(fileRole: FileRole, scenario: Phase0Scenario = DEFAULT_SCENARIO): string[] {
+function conditionalRulePaths(packs: readonly BackendGuidancePack[]): readonly string[] {
+  return packs.map((pack) => backendGuidanceRulePath(pack))
+}
+
+export function selectRulePaths(
+  fileRole: FileRole,
+  scenario: Phase0Scenario = DEFAULT_SCENARIO,
+  packs: readonly BackendGuidancePack[] = [],
+): string[] {
   if (!isRuleFileRole(fileRole)) {
     return []
   }
 
-  return Array.from(new Set([...COMMON_RULES, ...scenarioAwareRoleRules(fileRole, scenario)]))
+  return Array.from(new Set([
+    ...COMMON_RULES,
+    ...scenarioAwareRoleRules(fileRole, scenario),
+    ...conditionalRulePaths(packs),
+  ]))
 }
 
 function supportsDeliveryRole(metadata: RuleMetadata, deliveryRole: RuleDeliveryRole): boolean {
@@ -158,7 +175,7 @@ export function loadRulesForRole(
   const rulesDir = resolveConfiguredPath(projectDir, config.rulesDir)
   const targetPath = targetPathForMatching(projectDir, fileRole, targetFile)
 
-  return selectRulePaths(fileRole, scenario).flatMap((rulePath) => {
+  return selectRulePaths(fileRole, scenario, config.backendPacks).flatMap((rulePath) => {
     if (isStepContractRule(rulePath) && !isLegacyStepFixtureTarget(targetPath)) {
       return []
     }

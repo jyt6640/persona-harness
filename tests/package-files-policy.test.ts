@@ -115,9 +115,9 @@ describe("package files policy", () => {
     const diffRuleFiles = ruleFiles.filter((filePath) => filePath.startsWith(".persona/rules/diff-rules/"))
     const packagedRuleFiles = ruleFiles.filter((filePath) => !filePath.startsWith(".persona/rules/diff-rules/"))
 
-    expect(ruleFiles).toHaveLength(48)
+    expect(ruleFiles).toHaveLength(56)
     expect(diffRuleFiles).toHaveLength(28)
-    expect(packagedRuleFiles).toHaveLength(20)
+    expect(packagedRuleFiles).toHaveLength(28)
     expect(packageJson.files).not.toContain(".persona/rules/diff-rules")
 
     for (const ruleFile of packagedRuleFiles) {

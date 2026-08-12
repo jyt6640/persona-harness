@@ -156,30 +156,15 @@ describe("Phase 0 shared skill routing", () => {
     expect(injection.block).not.toContain("packages/shared-skills/skills/programming/SKILL.md")
   })
 
-  it("surfaces backend package architecture guidance for Spring Boot application entrypoints", () => {
+  it("keeps backend package architecture guidance conditional for Spring Boot application entrypoints", () => {
     const injection = createInjectionBlock("src/main/java/com/example/library/LibraryApplication.java")
 
     expect(injection.fileRole).toBe("java-common")
     expect(injection.selectedRules).toContain("backend/layered-architecture.md")
-    expect(injection.policies.join("\n")).toContain("구현 전에 package structure plan")
-    expect(injection.policies.join("\n")).toContain("root package는 Spring Boot Application class")
-    expect(injection.policies.join("\n")).toContain("global은 root package 바로 아래")
-    expect(injection.policies.join("\n")).toContain("도메인 패키지는 global과 같은 depth")
-    expect(injection.policies.join("\n")).toContain("root/global/exception")
-    expect(injection.policies.join("\n")).toContain("root/<domain>/application")
-    expect(injection.policies.join("\n")).toContain("root/<domain>/domain")
-    expect(injection.policies.join("\n")).toContain("root/<domain>/infrastructure")
-    expect(injection.policies.join("\n")).toContain("root/<domain>/presentation")
-    expect(injection.policies.join("\n")).toContain("Application class가 com.example.library")
-    expect(injection.policies.join("\n")).toContain("library 아래에 loan 같은 추가 도메인 패키지를 만들지 않는다")
-    expect(injection.policies.join("\n")).toContain("presentation/dto/request")
-    expect(injection.policies.join("\n")).toContain("application/dto/command")
-    expect(injection.policies.join("\n")).toContain("Repository interface는 domain")
-    expect(injection.policies.join("\n")).toContain("구현체는 infrastructure")
-    expect(injection.policies.join("\n")).toContain("Presentation")
-    expect(injection.policies.join("\n")).toContain("Application")
-    expect(injection.policies.join("\n")).toContain("Domain")
-    expect(injection.policies.join("\n")).toContain("Infrastructure")
+    expect(injection.selectedRules.some((path) => path.startsWith("backend/packs/"))).toBe(false)
+    expect(injection.selectedRules).not.toContain("backend/packs/domain-layout.md")
+    expect(injection.selectedRules).not.toContain("backend/packs/persistence-jpa.md")
+    expect(injection.selectedRules).not.toContain("backend/packs/error-contract-global.md")
   })
 
   it("selects the programming shared skill for Gradle Java build files", () => {

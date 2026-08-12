@@ -23,6 +23,19 @@ import type {
 export type { ConventionLevel } from "./convention-registry.js"
 export type { EvidenceMode, EvidencePrivacyClass } from "./evidence-privacy.js"
 
+export const BACKEND_GUIDANCE_PACKS = [
+  "domain-layout",
+  "persistence-jdbc",
+  "persistence-jpa",
+  "migration-flyway",
+  "error-contract-global",
+  "testing-direct-class",
+  "testing-gwt",
+  "workflow-evidence",
+] as const
+
+export type BackendGuidancePack = (typeof BACKEND_GUIDANCE_PACKS)[number]
+
 export type HarnessConfig = {
   readonly conventions: Readonly<Record<string, ConventionLevel>>
   readonly enabled: boolean
@@ -36,6 +49,7 @@ export type HarnessConfig = {
   readonly evidenceMode: EvidenceMode
   readonly enabledDomains: readonly string[]
   readonly scenario: Phase0Scenario
+  readonly backendPacks: readonly BackendGuidancePack[]
 }
 
 export type HarnessFeaturesConfig = {
@@ -162,6 +176,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
   evidenceMode: DEFAULT_EVIDENCE_MODE,
   enabledDomains: ["backend", "programming", "workflow", "product"],
   scenario: "step1",
+  backendPacks: [],
 }
 
 const INVALID_CONFIG_PATH = ".persona/.invalid-config-path"
@@ -229,6 +244,10 @@ function isRecordIfPresent(value: Record<string, unknown>, key: string): boolean
   return value[key] === undefined || isRecord(value[key])
 }
 
+function isBackendGuidancePack(value: unknown): value is BackendGuidancePack {
+  return typeof value === "string" && BACKEND_GUIDANCE_PACKS.some((pack) => pack === value)
+}
+
 function validConfigShape(value: Record<string, unknown>): boolean {
   if (
     !isBooleanIfPresent(value, "enabled")
@@ -246,6 +265,8 @@ function validConfigShape(value: Record<string, unknown>): boolean {
     || (typeof value.maxRulesPerInjection === "number" && (!Number.isInteger(value.maxRulesPerInjection) || value.maxRulesPerInjection <= 0))
     || (value.evidenceMode !== undefined && !isEvidenceModeInput(value.evidenceMode))
     || (value.scenario !== undefined && value.scenario !== "step1" && value.scenario !== "step2-3")
+    || (value.backendPacks !== undefined
+      && (!Array.isArray(value.backendPacks) || value.backendPacks.some((pack) => !isBackendGuidancePack(pack))))
   ) {
     return false
   }
@@ -343,6 +364,13 @@ function readStringArray(value: unknown, fallback: readonly string[]): readonly 
 
 function readScenario(value: unknown, fallback: Phase0Scenario): Phase0Scenario {
   return value === "step2-3" ? "step2-3" : fallback
+}
+
+function readBackendPacks(value: unknown): readonly BackendGuidancePack[] {
+  if (!Array.isArray(value)) {
+    return DEFAULT_CONFIG.backendPacks
+  }
+  return value.filter(isBackendGuidancePack).filter((pack, index, packs) => packs.indexOf(pack) === index)
 }
 
 function readEvidenceMode(value: unknown): EvidenceMode {
@@ -597,6 +625,7 @@ export function loadHarnessConfigResult(
     evidenceMode: readEvidenceMode(parsed.evidenceMode),
     enabledDomains: readStringArray(parsed.enabledDomains, DEFAULT_CONFIG.enabledDomains),
     scenario: readScenario(parsed.scenario, DEFAULT_CONFIG.scenario),
+    backendPacks: readBackendPacks(parsed.backendPacks),
   }
   const pathDiagnostics = [
     ["rulesDir", config.rulesDir],

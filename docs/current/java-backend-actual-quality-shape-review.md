@@ -2,7 +2,7 @@
 
 ## Goal
 
-Review the actual Java/Spring backend generated in `/Users/yongtae/Desktop/persona-harness-artifacts/generated-apps/persona-real-demo`, reinforce only the backend product-code-shape guidance that is directly supported by that review, and revalidate with a clean generated run.
+Review the actual Java/Spring backend generated in `/Users/yongtae/Desktop/persona-harness-artifacts/generated-apps/persona-real-demo`, keep the directly supported product-code-shape guidance available as an explicit conditional pack, and revalidate with a clean generated run.
 
 This is not a product-quality certification. It is a backend Clean Code shape and uniformity review.
 
@@ -31,12 +31,12 @@ This is not a product-quality certification. It is a backend Clean Code shape an
 - Repository boundary was weak: generated repository implementations assembled richer aggregate objects and, in some cases, depended on other repositories.
 - The actual evidence showed only `README.md` bootstrap injection. There was no Java target evidence in the first run, so Java role rules and the `programming` shared skill did not appear to influence most code creation.
 
-## Reinforcement Basis
+## Conditional Pack Basis
 
-The reinforcement is intentionally narrow:
+The observations support an opt-in `domain-layout` pack, not a universal Java/Spring default:
 
-- Do not use `feature/features/module/modules` wrapper packages for the default Java backend MVP shape.
-- Put `global` and root-level domain packages at the same depth under the root application package.
+- Do not use `feature/features/module/modules` wrapper packages when the selected project structure requires root-level domain packages.
+- Put `global` and root-level domain packages at the same depth only when the selected project structure requires it.
 - Use explicit file DTO boundaries:
   - `root/<domain>/presentation/dto/request`
   - `root/<domain>/presentation/dto/response`
@@ -46,7 +46,7 @@ The reinforcement is intentionally narrow:
 - Avoid nested `*Response`, `*Item`, or `*View` records/classes inside application services.
 - Keep Service outputs as application results, not presentation response DTOs.
 - Keep repository aggregate assembly and cross-repository implementation dependencies visible rather than hiding them inside repository implementations.
-- During bootstrap, plan the package structure first and re-read key role files before continuing to the next role.
+- During bootstrap, plan the package structure first and re-read key role files before continuing to the next role when `domain-layout` or an equivalent project plan is selected.
 
 ## Actual Revalidation
 
@@ -107,13 +107,13 @@ The backend shape reinforcement produced a real positive signal on package depth
 
 ## Repository Boundary Follow-up
 
-Accepted next reinforcement:
+Accepted next conditional reinforcement:
 
-- Domain owns the repository contract.
-- `root/<domain>/domain/<Domain>Repository` is an interface, for example `BookRepository`.
-- Infrastructure owns the implementation.
-- `root/<domain>/infrastructure/Jdbc<Domain>Repository` or `root/<domain>/infrastructure/InMemory<Domain>Repository` is the implementation, for example `JdbcBookRepository` or `InMemoryBookRepository`.
-- Infrastructure implementations should not be named only `<Domain>Repository`, because that hides the difference between the domain contract and the persistence adapter.
+- When `domain-layout` or a project-specific architecture selects this direction, the domain owns the repository contract.
+- Under that selected layout, `root/<domain>/domain/<Domain>Repository` is an interface, for example `BookRepository`.
+- Under that selected layout, infrastructure owns the implementation.
+- Under that selected layout, `root/<domain>/infrastructure/Jdbc<Domain>Repository` or `root/<domain>/infrastructure/InMemory<Domain>Repository` is the implementation.
+- Under that selected layout, infrastructure implementations should not be named only `<Domain>Repository`, because that hides the difference between the domain contract and the persistence adapter.
 
 This is still product-code-shape guidance, not an enforcement gate or product-quality certification.
 
