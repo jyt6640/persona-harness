@@ -53,6 +53,20 @@ Before that approval, the route creates no plan, ticket, workflow state,
 branch, issue, file, or agent. For a brownfield change, read the relevant
 existing code first and ask only product intent the code cannot establish.
 
+## Auth And Security Design Hold
+
+An authentication or security request with unresolved architecture stays in
+`design-required`. The hold asks for these decisions explicitly, one at a
+time: `provider`, `domain`, `callback`, `state`, `layer`, `type-exception`,
+and `global-scope`. No Spring structure, OAuth provider, callback policy,
+state model, exception layer, or global response convention is inferred.
+
+After all seven slots are explicit, the state becomes `approval-required`.
+Bare approval cannot skip missing slots. Only an explicit approval after the
+complete decision set releases the existing technical-intake -> plan ->
+optional `ralplan` -> TDD -> implementation -> review handoff; before then,
+implementation and workflow progression remain disabled.
+
 ## Host Boundary
 
 A host adapter may show a compact route to one catalog entry. It advises and

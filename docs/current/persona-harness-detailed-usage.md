@@ -493,6 +493,16 @@ Persona Harness의 기본 철학은 `.persona/rules`에 둔다.
 
 `packages/shared-skills`에는 Persona-owned portable catalog와 skill reference를 포함한다. 파일 target routing은 TypeScript와 React/frontend TypeScript target 모두에 `programming`만 선택한다. 별도로 top-level intent routing은 명시적 `/persona <skill-id>` command, clear direct work, 또는 ambiguous product discovery에 따라 하나의 compact reference를 activate한다. `frontend`는 명시적으로 선택하는 optional overlay이며 automatic injection 대상이 아니다. Host adapter는 full skill body나 catalog를 inject하거나 workflow state를 자동 진행하지 않는다.
 
+인증/보안 요청은 provider, domain, callback, state, layer, type-exception,
+global-scope 결정이 모두 명시되기 전까지 `design-required`로 보류한다. 이
+상태에서는 implementation steering과 workflow progression을 허용하지 않으며,
+bare approval은 미답 슬롯을 우회하지 못한다. 일곱 슬롯이 채워진 뒤에도
+명시적 approval 전에는 `approval-required`로 남고, 승인 후에만 기존
+technical-intake -> plan -> optional `ralplan` -> TDD -> implementation ->
+review handoff가 열린다. Provider, OAuth 방식, callback/state 정책,
+exception/global response 구조는 프로젝트 사실이나 명시적 결정 없이 추측하지
+않는다.
+
 기준 문서:
 
 - [MVP goal](mvp-goal.md)

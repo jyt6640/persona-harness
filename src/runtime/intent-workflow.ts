@@ -1,4 +1,8 @@
 import { loadHarnessConfig } from "../config/harness-config.js"
+import {
+  AuthDesignDecisionTracker,
+  type AuthDesignDecisionRoute,
+} from "./auth-design-decision.js"
 import { writeIntentEvidence } from "./evidence.js"
 import { formatDebugWorkflowBlock } from "./debug-workflow-skill.js"
 import { formatGitWorkflowBlock } from "./git-workflow-skill.js"
@@ -21,8 +25,11 @@ import {
 import type { TransformMessagesOutput } from "./types.js"
 
 type IntentWorkflowOptions = {
+  readonly authDesignApproved?: boolean
   readonly evidenceDir?: string
 }
+
+export type AuthDesignInjectionResult = "injected" | "released" | "blocked" | "not-applicable"
 
 const IMPLEMENTATION_PROFILE_GUARD_LINES = [
   "- Before implementation, if `.persona/project-profile.jsonc` exists, read it and do not create a stack that conflicts with its language/framework/build tool/profile constraints.",
@@ -36,6 +43,27 @@ function latestUserText(output: TransformMessagesOutput): string | undefined {
   const latestUserMessage = [...output.messages].reverse().find((message) => message.info.role === "user")
   const textPart = latestUserMessage?.parts.find((part) => part.type === "text" && typeof part.text === "string")
   return textPart?.type === "text" ? textPart.text : undefined
+}
+
+export function maybeInjectAuthDesignDecision(
+  output: TransformMessagesOutput,
+  sessionID: string,
+  tracker: AuthDesignDecisionTracker,
+): AuthDesignInjectionResult {
+  const text = latestUserText(output)
+  if (text === undefined) {
+    return "not-applicable"
+  }
+  const route: AuthDesignDecisionRoute | undefined = tracker.route(sessionID, text)
+  if (route === undefined) {
+    return "not-applicable"
+  }
+  if (route.kind === "released") {
+    return "released"
+  }
+  return injectTextIntoLatestUserMessage(output, route.block, "[Persona Harness Auth Design Hold]")
+    ? "injected"
+    : "blocked"
 }
 
 export function maybeInjectProductDeepInterview(
@@ -165,7 +193,7 @@ export function maybeInjectIntentWorkflow(
   if (text === undefined) {
     return false
   }
-  const intent = detectTopLevelIntent(text)
+  const intent = detectTopLevelIntent(text, { authDesignApproved: options.authDesignApproved })
 
   if (intent?.primary === "unavailable") {
     return injectIntentWorkflowRail(

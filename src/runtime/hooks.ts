@@ -14,7 +14,12 @@ import {
 import { createInjectionBlock } from "./injection.js"
 import { IdleContinuationTracker } from "./idle-continuation.js"
 import type { IdleContinuationClient } from "./idle-continuation.js"
-import { maybeInjectIntentWorkflow, maybeInjectProductDeepInterview } from "./intent-workflow.js"
+import { AuthDesignDecisionTracker } from "./auth-design-decision.js"
+import {
+  maybeInjectAuthDesignDecision,
+  maybeInjectIntentWorkflow,
+  maybeInjectProductDeepInterview,
+} from "./intent-workflow.js"
 import { injectSystemConstitution } from "./system-constitution.js"
 import { TokenCompactionTracker } from "./token-compaction.js"
 import type { TokenCompactionClient } from "./token-compaction.js"
@@ -169,6 +174,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const compliance = new RailComplianceTracker({ evidenceDir })
   const productInterviewMode = existsSync(join(projectDir, "src")) ? "brownfield-change-discovery" : "new-product"
   const productInterview = new ProductDeepInterviewTracker({ mode: productInterviewMode })
+  const authDesignDecision = new AuthDesignDecisionTracker()
   const continuation = new ContinuationTracker({ evidenceDir })
   const entrySteering = new EntrySteeringTracker(projectDir, config)
   const runtimeInjectionEnabled = isRuntimeInjectionEnabled(config)
@@ -462,13 +468,23 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
         }
 
         if (runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "intent-workflow")) {
-          const productInterviewInjected = config.enabledDomains.includes("product")
+          const authDesignResult = maybeInjectAuthDesignDecision(output, sessionId, authDesignDecision)
+          if (authDesignResult === "injected" || authDesignResult === "blocked") {
+            store.take(sessionId)
+            return
+          }
+
+          const productInterviewInjected = authDesignResult !== "released"
+            && config.enabledDomains.includes("product")
             && maybeInjectProductDeepInterview(output, sessionId, productInterview, productInterviewMode)
           if (productInterviewInjected) {
             store.take(sessionId)
             return
           }
-          maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance, { evidenceDir })
+          maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance, {
+            authDesignApproved: authDesignResult === "released",
+            evidenceDir,
+          })
         }
 
         entrySteering.apply(sessionId, output)

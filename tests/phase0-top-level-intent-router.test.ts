@@ -70,6 +70,35 @@ describe("detectTopLevelIntent", () => {
     expect(intent?.secondary).toEqual([])
   })
 
+  it("holds unresolved auth architecture behind a structural design-required state", () => {
+    const intent = detectTopLevelIntent("Implement OAuth login for the service")
+
+    expect(intent?.primary).toBe("design-required")
+    expect(intent?.secondary).toEqual([])
+    expect(intent?.authDesignDecision).toMatchObject({
+      status: "design-required",
+      approval: "not-accepted",
+      allowImplementation: false,
+      allowWorkflowProgression: false,
+    })
+    expect(intent?.authDesignDecision?.missingSlots).toEqual([
+      "provider",
+      "domain",
+      "callback",
+      "state",
+      "layer",
+      "type-exception",
+      "global-scope",
+    ])
+  })
+
+  it("does not let an explicit auth skill command bypass unresolved architecture", () => {
+    const intent = detectTopLevelIntent("/persona programming implement OAuth login")
+
+    expect(intent?.primary).toBe("design-required")
+    expect(intent?.activation).toBeUndefined()
+  })
+
   it("returns undefined for empty messages", () => {
     expect(detectTopLevelIntent("  ")).toBeUndefined()
   })

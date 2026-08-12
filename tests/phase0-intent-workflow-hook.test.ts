@@ -131,6 +131,16 @@ describe("intent workflow hook boundary", () => {
     expect(existsSync(join(fixtureWorkspace, ".persona", "evidence"))).toBe(false)
   })
 
+  it("holds an auth implementation request before any workflow route or project state", async () => {
+    const text = await transformPrompt("session-auth-design-hold", "Implement OAuth login for the service")
+
+    expect(text).toContain("[Persona Harness Auth Design Hold]")
+    expect(text).not.toContain("[Persona Harness Programming Workflow]")
+    expect(text).not.toContain("[Persona Harness Requirements Workflow]")
+    expect(existsSync(join(fixtureWorkspace, ".persona", "workflow"))).toBe(false)
+    expect(existsSync(join(fixtureWorkspace, ".persona", "evidence"))).toBe(false)
+  })
+
   it("selects code-first brownfield discovery when the project already has source", async () => {
     mkdirSync(join(fixtureWorkspace, "src"), { recursive: true })
     writeFileSync(join(fixtureWorkspace, "src", "existing.ts"), "export const existing = true\n", { encoding: "utf8", flag: "w" })

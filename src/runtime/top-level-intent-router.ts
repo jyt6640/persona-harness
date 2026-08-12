@@ -9,9 +9,14 @@ import {
   type PersonaProductDiscoveryMode,
   type PersonaSharedSkillActivation,
 } from "./persona-shared-skill-activation.js"
+import {
+  initialAuthDesignDecision,
+  isAuthSecurityRequest,
+  type AuthDesignDecisionSummary,
+} from "./auth-design-decision.js"
 import { isProductDeepInterviewStart } from "./product-deep-interview.js"
 
-export type TopLevelIntentKind = "product-interview" | "requirements" | "debug" | "review" | "refactor" | "git" | "programming" | "unavailable"
+export type TopLevelIntentKind = "product-interview" | "requirements" | "debug" | "review" | "refactor" | "git" | "programming" | "design-required" | "unavailable"
 
 export type TopLevelIntent = {
   readonly activation?: PersonaSharedSkillActivation
@@ -20,9 +25,11 @@ export type TopLevelIntent = {
   readonly secondary: readonly TopLevelIntentKind[]
   readonly reason: string
   readonly requirementsIntent?: RequirementsIntent
+  readonly authDesignDecision?: AuthDesignDecisionSummary
 }
 
 export type TopLevelIntentOptions = {
+  readonly authDesignApproved?: boolean
   readonly productMode?: PersonaProductDiscoveryMode
 }
 
@@ -104,6 +111,15 @@ export function detectTopLevelIntent(message: string, options: TopLevelIntentOpt
   }
 
   const productMode = options.productMode ?? "new-product"
+  if (!options.authDesignApproved && isAuthSecurityRequest(normalized)) {
+    return {
+      primary: "design-required",
+      reason: "Authentication or security architecture decisions are unresolved; implementation remains held.",
+      secondary: [],
+      authDesignDecision: initialAuthDesignDecision(),
+    }
+  }
+
   const explicitCommand = parseExplicitPersonaSkillCommand(normalized)
   if (explicitCommand.kind === "malformed") {
     return unavailableIntent("malformed-explicit-skill-command")
