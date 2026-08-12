@@ -370,9 +370,9 @@ npx ph init
 }
 ```
 
-그 프로젝트에서 OpenCode가 `src/main/java/**/*.java` target file을 읽거나 수정하면 Persona Harness가 파일 역할을 판정하고, 해당 Java/Spring Clean Code rules를 after hook의 tool output에 우선 주입한다. tool output을 사용할 수 없는 host shape에서만 다음 model input으로 bounded fallback을 사용한다. evidence는 해당 프로젝트의 `.persona/evidence/phase0` 아래에 남는다.
+그 프로젝트에서 OpenCode가 `src/main/java/**/*.java` target file을 읽거나 수정하면 Persona Harness가 파일 역할을 판정하고, semantic-section payload를 after hook의 tool output에 우선 주입한다. PH-owned marker가 message collection에 확인되지 않는 host shape에서만 다음 model input으로 bounded fallback을 사용한다. evidence는 해당 프로젝트의 `.persona/evidence/phase0` 아래에 남는다.
 
-runtime context delivery는 기존 `runtimeInjection` opt-in 안에서만 동작한다. before hook이나 무관한 tool call은 context block/store/evidence를 만들지 않는다. profile, overlay, selected rules, selected skills guidance는 내부 semantic section별 안정적인 `sha256:` digest로 묶이며, 같은 session의 중복 digest는 억제하고 서로 다른 pending context는 순서를 보존한 bounded queue에 둔다. `phase0.runtime-context.1` evidence에는 상태(`offered`, `tool-output-emitted`, `model-input-observed`, `model-input-fallback`, `duplicate-suppressed`)와 digest/count metadata만 남고 prompt, source, rule, capsule 본문은 남기지 않는다. 사용자가 입력한 marker 문자열은 model-input 관찰 증거로 인정하지 않는다.
+runtime context delivery는 기존 `runtimeInjection` opt-in 안에서만 동작한다. before hook이나 무관한 tool call은 context block/store/evidence를 만들지 않는다. 실제 payload는 target/profile/overlay/selected rules/selected skills/guidance를 순서 있는 semantic section에서 렌더링하며, legacy block 문자열을 다시 렌더링하지 않는다. tool after 결과에는 PH-owned metadata marker를 남기고, 다음 message collection의 같은 session tool part에서 그 marker와 section digest가 확인될 때만 `tool-output-emitted`로 확정한다. collection에서 확인되지 않으면 semantic payload를 최신 user message에 bounded fallback으로 넣는다. 같은 session에서는 section digest별로 중복을 억제하고 pending queue는 bounded이며, session deleted/compacted cleanup과 tracked-session 상한을 적용한다. `phase0.runtime-context.1` evidence에는 상태(`offered`, `tool-output-emitted`, `model-input-observed`, `model-input-fallback`, `duplicate-suppressed`)와 digest/count metadata만 남고 prompt, source, rule, capsule 본문은 남기지 않는다. 사용자가 입력한 marker 문자열은 model-input 관찰 증거로 인정하지 않는다.
 
 Java file이 아직 없는 0-start 상황에서는 `README.md`, `requirements.md`, `build.gradle`, `settings.gradle` target에 한해 Java backend bootstrap guidance를 주입한다. 일반 markdown 문서, `docs/` 내부 문서, `CHANGELOG.md`, 임의 note 파일에는 bootstrap injection을 걸지 않는다.
 
@@ -519,8 +519,8 @@ export default {
 Phase 0 hook:
 
 - `tool.execute.before`: read/edit/write 계열 도구 인자에서 Java `targetFile`을 포착한다.
-- `tool.execute.after`: read 결과에 injection block을 붙여 같은 모델 턴에서 규칙을 볼 수 있게 한다.
-- `experimental.chat.messages.transform`: pending injection block을 다음 모델 입력의 최신 user message 앞에 붙인다.
+- `tool.execute.after`: semantic section으로 렌더링한 payload와 PH-owned delivery metadata를 read 결과에 붙인다.
+- `experimental.chat.messages.transform`: message collection에서 PH-owned tool delivery가 확인되지 않은 pending payload만 최신 user message 앞에 붙인다.
 
 OMO처럼 “모델이 알아서 좋은 스킬을 고르길 기대하는 방식”이 아니라, 파일 경로와 파일명으로 하네스가 먼저 발동한다.
 
@@ -573,9 +573,9 @@ npm run demo:java-mvp
 - 패키지 안에 `dist/index.js`, `.persona/harness.jsonc`, `.persona/rules`가 포함된다.
 - `persona-harness init`이 `.persona/evidence`를 복사하지 않는다.
 - README target이 `project-bootstrap` file role로 잡힌다.
-- `tool.execute.after`가 Java Controller target에 `[Persona Harness Injection]`을 붙인다.
+- `tool.execute.after`가 Java Controller target에 semantic-section payload를 붙이고 PH-owned marker를 남긴다.
 - injection block에 `backend/java-common.md`, `backend/spring-controller.md`가 포함된다.
-- `experimental.chat.messages.transform`이 같은 injection을 model input 쪽 user message에 붙인다.
+- `experimental.chat.messages.transform`이 collection 확인 결과에 따라 같은 payload를 중복하지 않거나 model input에 bounded fallback한다.
 - 임시 프로젝트의 ignored `.persona/evidence/phase0` 아래 evidence JSON이 생성된다.
 
 검증하지 않는 것:

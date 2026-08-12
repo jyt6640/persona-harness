@@ -86,6 +86,28 @@ export function createInjectionBlock(
     severity: rule.metadata.severity,
   }))
   const policies = dedupePolicies(loadedRules.flatMap((rule) => rule.policies)).slice(0, config.maxRulesPerInjection)
+  const guidanceLines = [
+    ...(projectProfileState !== undefined && projectProfileState.status !== "ready"
+      ? [
+          "Project profile status:",
+          `- ${projectProfileState.message}`,
+          "- In a user-operated terminal, run `npx ph init` or `npx ph intake --interactive` to complete the profile interview.",
+          "- In an AI/non-TTY shell, do not attempt interactive prompts; run `npx ph bootstrap backend`.",
+          "- Do not start the Harness workflow implementation rail until the profile is ready.",
+          "",
+        ]
+      : []),
+    ...(configResult.diagnostics.length > 0
+      ? [
+          "Config diagnostics:",
+          ...configResult.diagnostics.map((diagnostic) => `- ${diagnostic.code}: ${diagnostic.message}`),
+          "",
+        ]
+      : []),
+    "Notes:",
+    ...tier0GuidanceLines(),
+    ...(shouldLoadJavaRules ? ["", ...tier1WorkflowRailLines(), "", ...tier3ClosureLines()] : []),
+  ]
   const block = [
     "[Persona Harness Injection]",
     "",
@@ -128,6 +150,7 @@ export function createInjectionBlock(
   ].join("\n")
 
   const semanticSections = createRuntimeContextSections({
+    target: { targetFile, fileRole },
     profile: projectProfileSummary,
     overlay: {
       metadata: policyOverlay.metadata,
@@ -139,6 +162,7 @@ export function createInjectionBlock(
       selectedRules,
     },
     skills: selectedSharedSkills,
+    guidance: guidanceLines,
   })
 
   return {

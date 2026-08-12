@@ -6,7 +6,7 @@ import type {
   SelectedSharedSkill,
 } from "./types.js"
 
-export const RUNTIME_CONTEXT_SECTION_KINDS = ["profile", "overlay", "rules", "skills"] as const
+export const RUNTIME_CONTEXT_SECTION_KINDS = ["target", "profile", "overlay", "rules", "skills", "guidance"] as const
 
 export type RuntimeContextSectionKind = (typeof RUNTIME_CONTEXT_SECTION_KINDS)[number]
 
@@ -18,6 +18,10 @@ export type RuntimeContextSection = {
 }
 
 export type RuntimeContextSectionInput = {
+  readonly target?: {
+    readonly targetFile: string
+    readonly fileRole: string
+  }
   readonly profile: readonly string[]
   readonly overlay: {
     readonly summaryLines: readonly string[]
@@ -29,6 +33,7 @@ export type RuntimeContextSectionInput = {
     readonly policies: readonly string[]
   }
   readonly skills: readonly SelectedSharedSkill[]
+  readonly guidance?: readonly string[]
 }
 
 function stableSerialize(value: unknown): string {
@@ -66,6 +71,18 @@ function section(
 }
 
 export function createRuntimeContextSections(input: RuntimeContextSectionInput): readonly RuntimeContextSection[] {
+  const target = input.target === undefined
+    ? undefined
+    : section(
+        "target",
+        input.target,
+        [
+          "[Persona Harness Injection]",
+          "",
+          `Current file: ${input.target.targetFile}`,
+          `File role: ${input.target.fileRole}`,
+        ],
+      )
   const profile = section(
     "profile",
     { summaryLines: input.profile },
@@ -101,8 +118,23 @@ export function createRuntimeContextSections(input: RuntimeContextSectionInput):
     { skills: input.skills },
     input.skills.length > 0 ? skillsBody : [],
   )
+  const guidance = section(
+    "guidance",
+    { lines: input.guidance ?? [] },
+    input.guidance ?? [],
+  )
 
-  return [profile, overlay, rules, skills].filter((value): value is RuntimeContextSection => value !== undefined)
+  return [target, profile, overlay, rules, skills, guidance].filter(
+    (value): value is RuntimeContextSection => value !== undefined,
+  )
+}
+
+export function renderRuntimeContextSections(sections: readonly RuntimeContextSection[]): string {
+  const lines = ["[Persona Harness Runtime Context]", ""]
+  for (const current of sections) {
+    lines.push(`[${current.kind}]`, "", ...current.body, "")
+  }
+  return lines.join("\n").trimEnd()
 }
 
 export function runtimeContextDigest(sections: readonly RuntimeContextSection[]): string {
