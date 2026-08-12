@@ -501,7 +501,9 @@ bare approval은 미답 슬롯을 우회하지 못한다. 일곱 슬롯이 채�
 technical-intake -> plan -> optional `ralplan` -> TDD -> implementation ->
 review handoff가 열린다. Provider, OAuth 방식, callback/state 정책,
 exception/global response 구조는 프로젝트 사실이나 명시적 결정 없이 추측하지
-않는다.
+않는다. 같은 slot에 상충하는 명시값이 들어오면 `design-required`를 유지하며,
+`resolve <slot>: <value>` 형태의 별도 명시 응답이 있을 때만 해당 slot을
+해소한다. 일반적인 반복 답변으로는 어느 값을 선택하지 않는다.
 
 기준 문서:
 

@@ -45,6 +45,42 @@ describe("auth design decision hold", () => {
     expect(tracker.isApproved("session-approval")).toBe(false)
   })
 
+  it.each(AUTH_DESIGN_DECISION_SLOTS)("keeps a conflicting %s decision blocked", (slot) => {
+    const tracker = new AuthDesignDecisionTracker()
+    tracker.route(`session-conflict-${slot}`, "Implement OAuth login for the service")
+    tracker.route(`session-conflict-${slot}`, `${slot}: first-choice`)
+
+    const conflict = tracker.route(`session-conflict-${slot}`, `${slot}: second-choice`)
+
+    expect(conflict).toMatchObject({
+      kind: "design-required",
+      decision: {
+        state: "design-required",
+        approval: "not-accepted",
+        allowImplementation: false,
+        allowWorkflowProgression: false,
+        conflictedSlots: [slot],
+      },
+    })
+    expect(tracker.route(`session-conflict-${slot}`, "approve")).toMatchObject({
+      kind: "design-required",
+      decision: { conflictedSlots: [slot], allowImplementation: false },
+    })
+  })
+
+  it("requires an explicit resolution command and never selects a conflicting value", () => {
+    const tracker = new AuthDesignDecisionTracker()
+    tracker.route("session-resolution", "Implement OAuth login for the service")
+    tracker.route("session-resolution", "provider: first-choice")
+    tracker.route("session-resolution", "provider: second-choice")
+
+    const unresolved = tracker.route("session-resolution", "provider: third-choice")
+    expect(unresolved).toMatchObject({ kind: "design-required", decision: { conflictedSlots: ["provider"] } })
+
+    const resolved = tracker.route("session-resolution", "resolve provider: explicitly-chosen")
+    expect(resolved).toMatchObject({ kind: "design-required", decision: { conflictedSlots: [], answeredSlots: ["provider"] } })
+  })
+
   it("releases the existing handoff only after all named decisions and explicit approval", () => {
     const tracker = new AuthDesignDecisionTracker()
     tracker.route("session-complete", "Implement SSO for the service")

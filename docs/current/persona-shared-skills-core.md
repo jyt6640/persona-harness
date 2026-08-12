@@ -66,6 +66,9 @@ Bare approval cannot skip missing slots. Only an explicit approval after the
 complete decision set releases the existing technical-intake -> plan ->
 optional `ralplan` -> TDD -> implementation -> review handoff; before then,
 implementation and workflow progression remain disabled.
+If a slot receives conflicting explicit values, it remains unresolved; only a
+dedicated `resolve <slot>: <value>` answer clears that slot. Repeated ordinary
+answers never choose between conflicting values.
 
 ## Host Boundary
 
