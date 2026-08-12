@@ -6,31 +6,56 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { AUTHORITY_BINDING_REASONS } from "../src/cli/authority-artifact-binding.js"
 import {
-  V083AcceptanceManifestError,
-  canonicalV083AcceptanceManifest,
-  parseV083AcceptanceManifest,
-} from "../scripts/consumer-authority-v083-acceptance-schema.mjs"
+  V086AcceptanceManifestError,
+  canonicalV086AcceptanceManifest,
+  parseV086AcceptanceManifest,
+  readV086AcceptanceManifest,
+} from "../scripts/consumer-authority-v086-acceptance-schema.mjs"
 import {
   parseV082AcceptanceManifest,
 } from "../scripts/consumer-authority-v082-acceptance-schema.mjs"
+import {
+  parseV085AcceptanceManifest,
+} from "../scripts/consumer-authority-v085-acceptance-schema.mjs"
 
 const repositoryRoot = process.cwd()
 
-describe("historical consumer authority 0.8.3 acceptance schema", () => {
-  it("keeps the strict 0.8.3 record separate from the current package", () => {
-    const manifest = parseV083AcceptanceManifest(
-      JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v083-acceptance.json"), "utf8")),
-      "0.8.3",
-    )
+describe("consumer authority 0.8.6 acceptance schema", () => {
+  it("binds the current package and lock to a new strict 0.8.6 record while preserving v082 history", () => {
+    const manifest = readV086AcceptanceManifest(repositoryRoot)
+    const packageLock = JSON.parse(readFileSync(join(repositoryRoot, "package-lock.json"), "utf8"))
     const v082 = parseV082AcceptanceManifest(
       JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v082-acceptance.json"), "utf8")),
       "0.8.2",
     )
+    const v085 = parseV085AcceptanceManifest(
+      JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v085-acceptance.json"), "utf8")),
+      "0.8.5",
+    )
+    const currentProtocol = record(record(record(manifest.packageBoundary).authoritativeBundleContract).exercisePhaseProtocol)
+    const historicalProtocol = record(record(record(v085.packageBoundary).authoritativeBundleContract).exercisePhaseProtocol)
+    const currentClosure = record(manifest.closureCompleteness)
+    const historicalClosure = record(v085.closureCompleteness)
 
-    expect(manifest.package).toMatchObject({ scope: "source-candidate", version: "0.8.3" })
-    expect(manifest.v082HistoricalRelease).toMatchObject({ reusableForV083: false, version: "0.8.2" })
+    expect(manifest.package).toMatchObject({ scope: "source-candidate", version: "0.8.6" })
+    expect(packageLock).toMatchObject({ version: manifest.package.version })
+    expect(packageLock.packages[""]).toMatchObject({ version: manifest.package.version })
+    expect(manifest.v082HistoricalRelease).toMatchObject({ reusableForV086: false, version: "0.8.2" })
+    expect(manifest.v083HistoricalRelease).toMatchObject({ reusableForV086: false, version: "0.8.3" })
+    expect(manifest.v085HistoricalRelease).toMatchObject({ reusableForV086: false, version: "0.8.5" })
+    expect(manifest.preAuthorityReadiness.commands).toEqual(v085.preAuthorityReadiness.commands)
+    expect(arrayValue(currentProtocol.freshTar)).toEqual(arrayValue(historicalProtocol.freshTar))
+    expect(arrayValue(currentProtocol.sourceBuilt)).toEqual(arrayValue(historicalProtocol.sourceBuilt))
+    expect(arrayValue(currentClosure.deterministicLinks)).toEqual(arrayValue(historicalClosure.deterministicLinks))
     expect(v082.package).toMatchObject({ channel: "latest", scope: "ga-approved", version: "0.8.2" })
+    expect(manifest.authority.fetchBindingReason).toEqual({
+      allowedReasons: AUTHORITY_BINDING_REASONS,
+      output: "fixed-enum-only-no-values-paths-tokens-urls-or-raw-output",
+      publicState: "binding-mismatch",
+      schemaVersion: "consumer-authority-fetch-binding-reason.1",
+    })
     expect(manifest.acceptanceResponsibilities.package).toMatchObject({
       excludes: ["attestation-parser", "observer-gh-selector"],
       requires: expect.arrayContaining(["post-model-assistant-response-and-pre-approval-trace"]),
@@ -53,17 +78,17 @@ describe("historical consumer authority 0.8.3 acceptance schema", () => {
   })
 
   it("rejects neighboring versions and records that attempt to reuse v082 as current", () => {
-    const fixture = canonicalV083AcceptanceManifest()
+    const fixture = canonicalV086AcceptanceManifest()
     const packageRecord = fixture.package as Record<string, unknown>
     packageRecord.version = "0.8.2"
 
-    expect(() => parseV083AcceptanceManifest(fixture, "0.8.3")).toThrow(V083AcceptanceManifestError)
-    expect(() => parseV083AcceptanceManifest(canonicalV083AcceptanceManifest(), "0.8.2")).toThrow(V083AcceptanceManifestError)
-    expect(() => parseV082AcceptanceManifest(canonicalV083AcceptanceManifest(), "0.8.3")).toThrow()
+    expect(() => parseV086AcceptanceManifest(fixture, "0.8.6")).toThrow(V086AcceptanceManifestError)
+    expect(() => parseV086AcceptanceManifest(canonicalV086AcceptanceManifest(), "0.8.2")).toThrow(V086AcceptanceManifestError)
+    expect(() => parseV082AcceptanceManifest(canonicalV086AcceptanceManifest(), "0.8.6")).toThrow()
   })
 
   it("explicitly accepts a retained draft plan before V4 readiness can reach authority-only blocking", () => {
-    const root = mkdtempSync(join(tmpdir(), "persona-v083-retained-plan-"))
+    const root = mkdtempSync(join(tmpdir(), "persona-v086-retained-plan-"))
     try {
       const cliOptions = { cwd: root, env: {}, invocationName: "ph", packageRoot: repositoryRoot }
       expect(runPersonaCli(["intake", "--default", "backend"], cliOptions).status).toBe(0)
@@ -72,7 +97,7 @@ describe("historical consumer authority 0.8.3 acceptance schema", () => {
       const bootstrap = runPersonaCli(["bootstrap", "backend", "--strict", "--no-developer-mcp"], cliOptions)
       const beforeAcceptance = runPersonaCli(["plan", "--status"], cliOptions)
       const beforeClosure = runPersonaCli(["workflow", "closure", "next", "--json"], cliOptions)
-      const manifest = canonicalV083AcceptanceManifest()
+      const manifest = readV086AcceptanceManifest(repositoryRoot)
       const readiness = record(manifest.preAuthorityReadiness)
 
       expect(bootstrap.status).toBe(0)
@@ -107,8 +132,8 @@ describe("historical consumer authority 0.8.3 acceptance schema", () => {
     }
   })
 
-  it("keeps both direct current preflights on the newer strict schema", () => {
-    const root = mkdtempSync(join(tmpdir(), "persona-v083-preflight-"))
+  it("routes both direct current preflights through v086 without changing their bounded behavior", () => {
+    const root = mkdtempSync(join(tmpdir(), "persona-v086-preflight-"))
     const ghPath = join(root, "gh")
     try {
       writeFileSync(ghPath, [
@@ -158,4 +183,11 @@ function record(value: unknown): Record<string, unknown> {
     throw new TypeError("expected record")
   }
   return value as Record<string, unknown>
+}
+
+function arrayValue(value: unknown): readonly unknown[] {
+  if (!Array.isArray(value)) {
+    throw new TypeError("expected array")
+  }
+  return value
 }

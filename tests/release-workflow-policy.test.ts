@@ -10,7 +10,7 @@ import {
   checkReleaseState,
   checkTagSource,
 } from "../scripts/release-workflow-policy.mjs"
-import { readV085AcceptanceManifest } from "../scripts/consumer-authority-v085-acceptance-schema.mjs"
+import { readV086AcceptanceManifest } from "../scripts/consumer-authority-v086-acceptance-schema.mjs"
 
 const MAIN_SHA = "a".repeat(40)
 const TAG_SHA = "b".repeat(40)
@@ -182,7 +182,7 @@ describe("release workflow policy", () => {
 
   it("keeps the current source candidate unpublishable until a matching approval is recorded", () => {
     const packageVersion = readPackageVersion(join(repositoryRoot, "package.json"))
-    const acceptance = readV085AcceptanceManifest(repositoryRoot)
+    const acceptance = readV086AcceptanceManifest(repositoryRoot)
 
     expect(packageVersion).toBe(acceptance.package.version)
     expect(readPackageVersion(join(repositoryRoot, "package-lock.json"))).toBe(acceptance.package.version)
