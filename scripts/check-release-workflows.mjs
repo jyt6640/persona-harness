@@ -480,7 +480,7 @@ async function main() {
     observerGhPackageRecord,
     observerGhTool,
     packageManifest,
-    v084AcceptanceManifest,
+    v085AcceptanceManifest,
   } = inputs
   const failures = []
   for (const [name, path, predicate] of requirements) {
@@ -553,7 +553,7 @@ async function main() {
   if (!hasWorkflowOwnedObserverGhProvisioner(observerGhProvisioner, observerGhSelector, observerGhPackageRecord, observerGhTool)) {
     failures.push("workflow-owned observer gh provisioner")
   }
-  if (!hasPackageObserverResponsibility(packageManifest, v084AcceptanceManifest)) {
+  if (!hasPackageObserverResponsibility(packageManifest, v085AcceptanceManifest)) {
     failures.push("Package observer responsibility")
   }
   if (failures.length > 0) {
