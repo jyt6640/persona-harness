@@ -86,7 +86,9 @@ function buildExpectedManifest() {
   }
   manifest.authority.fixturePlan.registryInstall = "requires-authorized-release-before-registry-install-persona-harness@0.8.5"
   manifest.authority.hostedFixture.revision = "v085-source-candidate-head-before-authorized-release"
-  manifest.preAuthorityReadiness.commands.splice(1, 0, "ph plan --accept")
+  if (!manifest.preAuthorityReadiness.commands.includes("ph plan --accept")) {
+    manifest.preAuthorityReadiness.commands.splice(1, 0, "ph plan --accept")
+  }
   manifest.preAuthorityReadiness.initialization.acceptedPlan = "ph plan --accept"
   manifest.preAuthorityReadiness.initialization.retainedDraftPlan =
     "bootstrap preserves an existing draft plan; public readiness must accept it explicitly"
@@ -105,12 +107,19 @@ function buildExpectedManifest() {
   }
   delete completeness["-1"]
   const exerciseProtocol = manifest.packageBoundary.authoritativeBundleContract.exercisePhaseProtocol
-  exerciseProtocol.freshTar.splice(exerciseProtocol.freshTar.indexOf("repository-only-files"), 0, "opencode-interview-observation")
-  exerciseProtocol.sourceBuilt.splice(exerciseProtocol.sourceBuilt.indexOf("producer-intake"), 0, "opencode-interview-observation")
+  if (!exerciseProtocol.freshTar.includes("opencode-interview-observation")) {
+    exerciseProtocol.freshTar.splice(exerciseProtocol.freshTar.indexOf("repository-only-files"), 0, "opencode-interview-observation")
+  }
+  if (!exerciseProtocol.sourceBuilt.includes("opencode-interview-observation")) {
+    exerciseProtocol.sourceBuilt.splice(exerciseProtocol.sourceBuilt.indexOf("producer-intake"), 0, "opencode-interview-observation")
+  }
   if (!manifest.acceptanceResponsibilities.package.requires.includes("post-model-assistant-response-and-pre-approval-trace")) {
     manifest.acceptanceResponsibilities.package.requires.push("post-model-assistant-response-and-pre-approval-trace")
   }
-  manifest.closureCompleteness.deterministicLinks.push("actual-opencode-first-assistant-response-linked-event-and-zero-pre-approval-mutation-trace-without-transformed-input-substitution")
+  const opencodeLink = "actual-opencode-first-assistant-response-linked-event-and-zero-pre-approval-mutation-trace-without-transformed-input-substitution"
+  if (!manifest.closureCompleteness.deterministicLinks.includes(opencodeLink)) {
+    manifest.closureCompleteness.deterministicLinks.push(opencodeLink)
+  }
   manifest.hostedResidual.whyLocalCannotClose =
     "A real current signed artifact, leaf-certificate validity window, isolated external credential, online verification, and GitHub Actions discovery cannot be produced locally. Source and CI-shaped packed exercise prove v4 tracked-binding, stage-scoped residue cleanliness, workflow-selected observer-gh ownership, byte-strict primary package-record selector lifecycle, COPYFILE_EXCL private-copy reassessment, one runner-temp isolated token-free state root, fixed-placeholder exact-plan help parser preflight without artifact or network access, strict secondary validation, fixed stage and shape diagnostics. Package acceptance separately proves current package-lock-acceptance binding, exact-tar provenance, normal installation, installed-only no-source fallback, CLI approval-before-mutation behavior, complete source and fresh-installed fixture import closure, explicit public acceptance of a retained draft plan, exact Linux authority-fetch child envelope behavior, trusted-unconsumed-persisted discovery result binding, public readiness, privacy, trusted modeled fetch, one Finish consumption, and replay block without accessing a live artifact."
   manifest.hostedResidual.id = "v085-current-package-acceptance-and-authorized-current-artifact-observation"

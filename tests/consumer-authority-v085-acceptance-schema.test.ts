@@ -16,6 +16,9 @@ import {
 import {
   parseV082AcceptanceManifest,
 } from "../scripts/consumer-authority-v082-acceptance-schema.mjs"
+import {
+  parseV084AcceptanceManifest,
+} from "../scripts/consumer-authority-v084-acceptance-schema.mjs"
 
 const repositoryRoot = process.cwd()
 
@@ -27,6 +30,14 @@ describe("consumer authority 0.8.5 acceptance schema", () => {
       JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v082-acceptance.json"), "utf8")),
       "0.8.2",
     )
+    const v084 = parseV084AcceptanceManifest(
+      JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v084-acceptance.json"), "utf8")),
+      "0.8.4",
+    )
+    const currentProtocol = record(record(record(manifest.packageBoundary).authoritativeBundleContract).exercisePhaseProtocol)
+    const historicalProtocol = record(record(record(v084.packageBoundary).authoritativeBundleContract).exercisePhaseProtocol)
+    const currentClosure = record(manifest.closureCompleteness)
+    const historicalClosure = record(v084.closureCompleteness)
 
     expect(manifest.package).toMatchObject({ scope: "source-candidate", version: "0.8.5" })
     expect(packageLock).toMatchObject({ version: manifest.package.version })
@@ -34,6 +45,10 @@ describe("consumer authority 0.8.5 acceptance schema", () => {
     expect(manifest.v082HistoricalRelease).toMatchObject({ reusableForV085: false, version: "0.8.2" })
     expect(manifest.v083HistoricalRelease).toMatchObject({ reusableForV085: false, version: "0.8.3" })
     expect(manifest.v084HistoricalRelease).toMatchObject({ reusableForV085: false, version: "0.8.4" })
+    expect(manifest.preAuthorityReadiness.commands).toEqual(v084.preAuthorityReadiness.commands)
+    expect(arrayValue(currentProtocol.freshTar)).toEqual(arrayValue(historicalProtocol.freshTar))
+    expect(arrayValue(currentProtocol.sourceBuilt)).toEqual(arrayValue(historicalProtocol.sourceBuilt))
+    expect(arrayValue(currentClosure.deterministicLinks)).toEqual(arrayValue(historicalClosure.deterministicLinks))
     expect(v082.package).toMatchObject({ channel: "latest", scope: "ga-approved", version: "0.8.2" })
     expect(manifest.authority.fetchBindingReason).toEqual({
       allowedReasons: AUTHORITY_BINDING_REASONS,
@@ -168,4 +183,11 @@ function record(value: unknown): Record<string, unknown> {
     throw new TypeError("expected record")
   }
   return value as Record<string, unknown>
+}
+
+function arrayValue(value: unknown): readonly unknown[] {
+  if (!Array.isArray(value)) {
+    throw new TypeError("expected array")
+  }
+  return value
 }

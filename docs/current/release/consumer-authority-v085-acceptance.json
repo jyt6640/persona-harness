@@ -65,7 +65,6 @@
           "package-identity",
           "package-content-identity",
           "opencode-interview-observation",
-          "opencode-interview-observation",
           "repository-only-files",
           "canonical-publisher",
           "observer-credential",
@@ -92,7 +91,6 @@
         "schemaVersion": "clean-package-exercise-phase.1",
         "sourceBuilt": [
           "cli-binding",
-          "opencode-interview-observation",
           "opencode-interview-observation",
           "producer-intake",
           "producer-action-topology",
@@ -183,7 +181,6 @@
     "consumer": "exact-registry-installed-java-spring-gradle",
     "commands": [
       "ph bootstrap backend --strict --no-developer-mcp",
-      "ph plan --accept",
       "ph plan --accept",
       "ph bearshell ./gradlew test",
       "ph bearshell ./gradlew compileJava",
@@ -933,7 +930,6 @@
       "one-Finish-consumption-and-immediate-replay-block",
       "current-package-lock-acceptance-version-binding-and-complete-source-and-fresh-installed-fixture-import-closure-without-source-fallback",
       "workflow-private-copy-reassessment-and-fixed-placeholder-exact-plan-help-parser-preflight-without-artifact-network-token-or-ambient-state",
-      "actual-opencode-first-assistant-response-linked-event-and-zero-pre-approval-mutation-trace-without-transformed-input-substitution",
       "actual-opencode-first-assistant-response-linked-event-and-zero-pre-approval-mutation-trace-without-transformed-input-substitution"
     ],
     "localProof": "clean-linux-node20-source-built-and-fresh-packed-installed-v4-cleanliness-qualified-dpkg-ownership-byte-strict-primary-with-optional-known-completion-mode-independent-validation-and-strict-secondary-package-record-copyfile-excl-private-copy-reassessment-runner-temp-isolated-token-free-gh-state-fixed-placeholder-exact-plan-help-parser-preflight-fixed-stage-and-shape-diagnostics-current-package-lock-acceptance-binding-complete-fixture-import-closure-and-authority-child-contracts-with-exact-linux-runtime-envelope-and-trusted-unconsumed-persisted-discovery-result-binding",
