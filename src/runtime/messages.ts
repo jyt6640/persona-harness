@@ -1,12 +1,92 @@
 import type { Part } from "@opencode-ai/sdk"
 
+import { renderRuntimeContextSections } from "./runtime-context.js"
 import type { PendingInjection, TransformMessagesOutput } from "./types.js"
+import type { ToolAfterOutput } from "./types.js"
 
 export type RuntimeContextMessageInjectionResult =
   | "observed"
   | "fallback"
   | "duplicate-suppressed"
   | "unavailable"
+
+export const RUNTIME_CONTEXT_TOOL_METADATA_KEY = "personaHarnessRuntimeContext"
+const RUNTIME_CONTEXT_TOOL_METADATA_SCHEMA = "runtime-context-tool-delivery.1"
+
+type RuntimeContextToolMetadata = {
+  readonly schemaVersion: typeof RUNTIME_CONTEXT_TOOL_METADATA_SCHEMA
+  readonly digest: string
+  readonly sectionDigests: readonly string[]
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function isRuntimeContextToolMetadata(value: unknown): value is RuntimeContextToolMetadata {
+  if (!isRecord(value) || value.schemaVersion !== RUNTIME_CONTEXT_TOOL_METADATA_SCHEMA) {
+    return false
+  }
+  return typeof value.digest === "string"
+    && Array.isArray(value.sectionDigests)
+    && value.sectionDigests.every((digest): digest is string => typeof digest === "string")
+}
+
+function matchesRuntimeContextToolMetadata(value: unknown, injection: PendingInjection): boolean {
+  if (!isRuntimeContextToolMetadata(value) || value.digest !== injection.contextDigest) {
+    return false
+  }
+  const expected = injection.semanticSections.map((section) => section.digest)
+  return value.sectionDigests.length === expected.length
+    && value.sectionDigests.every((digest, index) => digest === expected[index])
+}
+
+export function markRuntimeContextToolOutput(output: ToolAfterOutput, injection: PendingInjection): void {
+  const metadata = isRecord(output.metadata) ? output.metadata : {}
+  output.metadata = {
+    ...metadata,
+    [RUNTIME_CONTEXT_TOOL_METADATA_KEY]: {
+      schemaVersion: RUNTIME_CONTEXT_TOOL_METADATA_SCHEMA,
+      digest: injection.contextDigest,
+      sectionDigests: injection.semanticSections.map((section) => section.digest),
+    } satisfies RuntimeContextToolMetadata,
+  }
+}
+
+export function hasObservedRuntimeContextToolOutput(
+  output: TransformMessagesOutput,
+  sessionID: string,
+  injection: PendingInjection,
+): boolean {
+  for (const message of output.messages) {
+    if (message.info.sessionID !== sessionID) {
+      continue
+    }
+    for (const part of message.parts) {
+      if (part.type !== "tool") {
+        continue
+      }
+      const rawPart = part as unknown as Record<string, unknown>
+      if (typeof rawPart.sessionID === "string" && rawPart.sessionID !== sessionID) {
+        continue
+      }
+      const state = isRecord(rawPart.state) ? rawPart.state : undefined
+      const metadataCandidates = [
+        rawPart.metadata,
+        state?.metadata,
+      ]
+      if (metadataCandidates.some((metadata) => {
+        return isRecord(metadata) && matchesRuntimeContextToolMetadata(
+          metadata[RUNTIME_CONTEXT_TOOL_METADATA_KEY],
+          injection,
+        )
+      })) {
+        return true
+      }
+    }
+  }
+  return false
+}
 
 function isTextPart(part: Part): part is Extract<Part, { type: "text" }> {
   return part.type === "text" && typeof part.text === "string"
@@ -79,9 +159,10 @@ export function injectRuntimeContextIntoLatestUserMessage(
       personaHarnessContextDigest: injection.contextDigest,
       personaHarnessContextSectionDigests: injection.semanticSections.map((section) => section.digest),
     }
+    const renderedPayload = renderRuntimeContextSections(injection.semanticSections)
     if (textPart !== undefined) {
       try {
-        textPart.text = `${injection.block}\n\n---\n\n${textPart.text}`
+        textPart.text = `${renderedPayload}\n\n---\n\n${textPart.text}`
         ;(textPart as typeof textPart & { metadata?: Record<string, unknown> }).metadata = metadata
         return "observed"
       } catch {
@@ -93,7 +174,7 @@ export function injectRuntimeContextIntoLatestUserMessage(
           message.parts.splice(partIndex, 1, {
             ...textPart,
             id: `persona-harness-runtime-context-fallback-${injection.contextDigest.slice(-16)}`,
-            text: `${injection.block}\n\n---\n\n${textPart.text}`,
+            text: `${renderedPayload}\n\n---\n\n${textPart.text}`,
             synthetic: true,
           } as Part)
           return "fallback"
@@ -109,7 +190,7 @@ export function injectRuntimeContextIntoLatestUserMessage(
         sessionID: message.info.sessionID,
         messageID: message.info.id,
         type: "text",
-        text: injection.block,
+        text: renderedPayload,
         synthetic: true,
         metadata,
       } as Part)

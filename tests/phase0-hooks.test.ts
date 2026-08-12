@@ -8,7 +8,7 @@ import { createPhase0Hooks } from "../src/runtime/hooks.js"
 import { createInjectionBlock } from "../src/runtime/injection.js"
 import { loadRulesForRole } from "../src/rules/rule-loader.js"
 import { PendingInjectionStore } from "../src/runtime/store.js"
-import type { FileRole, TransformMessagesOutput } from "../src/runtime/types.js"
+import type { EventInput, FileRole, TransformMessagesOutput } from "../src/runtime/types.js"
 
 const fixtureRoot = join(process.cwd(), ".persona-test-fixtures", "src", "main", "java", "com", "example")
 const fixtureWorkspace = join(process.cwd(), ".persona-test-fixtures")
@@ -725,7 +725,8 @@ describe("Phase 0 OpenCode hook feasibility", () => {
 
   it("does not duplicate a context already emitted in tool output", async () => {
     writeOptInHarnessConfig(fixtureWorkspace)
-    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const store = new PendingInjectionStore()
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace, store })
     const sessionID = "session-tool-output-lifecycle"
     const targetFile = fixturePath("ReservationController.java")
     const toolOutput = { title: "read", output: "class ReservationController {}", metadata: {} }
@@ -734,17 +735,81 @@ describe("Phase 0 OpenCode hook feasibility", () => {
       { tool: "read", sessionID, callID: "after-call", args: { filePath: targetFile } },
       toolOutput,
     )
+    const expectedInjection = createInjectionBlock(targetFile, fixtureWorkspace)
+    expect(store.delivery(sessionID, expectedInjection.contextDigest)?.state).toBe("offered")
     const output = modelInput(sessionID)
+    const marker = (toolOutput.metadata as Record<string, unknown>).personaHarnessRuntimeContext
+    const userMessage = output.messages[0]
+    if (userMessage === undefined) {
+      throw new Error("expected a user message")
+    }
+    userMessage.parts.unshift({
+      id: "tool-part",
+      sessionID,
+      messageID: userMessage.info.id,
+      type: "tool",
+      callID: "after-call",
+      tool: "read",
+      state: { status: "completed", output: toolOutput.output, metadata: { personaHarnessRuntimeContext: marker } },
+    } as unknown as Part)
     await hooks["experimental.chat.messages.transform"]?.({}, output)
 
-    expect(toolOutput.output).toContain("[Persona Harness Injection]")
+    expect(toolOutput.output).toContain("[Persona Harness Runtime Context]")
     expect(output.messages[0]?.parts.some((part) => part.type === "text" && part.synthetic === true)).toBe(false)
+    expect(store.delivery(sessionID, expectedInjection.contextDigest)?.state).toBe("tool-output-emitted")
     const runtimeEvidence = evidencePayloads(fixtureWorkspace).find(
       (payload) => payload.schemaVersion === "phase0.runtime-context.1" && payload.state === "tool-output-emitted",
     )
     expect(runtimeEvidence).toBeDefined()
     expect(JSON.stringify(runtimeEvidence)).not.toContain(targetFile)
     expect(JSON.stringify(runtimeEvidence)).not.toContain("[Persona Harness Injection]")
+  })
+
+  it("falls back to model input when tool output is not present in the message collection", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const store = new PendingInjectionStore()
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace, store })
+    const sessionID = "session-tool-output-missing-from-collection"
+    const targetFile = fixturePath("ReservationController.java")
+    const toolOutput = { title: "read", output: "class ReservationController {}", metadata: {} }
+
+    await hooks["tool.execute.after"]?.(
+      { tool: "read", sessionID, callID: "after-call", args: { filePath: targetFile } },
+      toolOutput,
+    )
+    const expectedInjection = createInjectionBlock(targetFile, fixtureWorkspace)
+    expect(store.delivery(sessionID, expectedInjection.contextDigest)?.state).toBe("offered")
+
+    const output = modelInput(sessionID)
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    expect(firstText(output)).toContain("[Persona Harness Runtime Context]")
+    expect(store.delivery(sessionID, expectedInjection.contextDigest)?.state).toBe("model-input-observed")
+  })
+
+  it("clears runtime context state when the host ends a session", async () => {
+    writeOptInHarnessConfig(fixtureWorkspace)
+    const store = new PendingInjectionStore()
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace, store })
+    const sessionID = "session-lifecycle-cleanup"
+    const targetFile = fixturePath("ReservationController.java")
+
+    await hooks["tool.execute.after"]?.(
+      { tool: "read", sessionID, callID: "after-call", args: { filePath: targetFile } },
+      { title: "read", output: undefined as unknown as string, metadata: {} },
+    )
+    const injection = createInjectionBlock(targetFile, fixtureWorkspace)
+    expect(store.delivery(sessionID, injection.contextDigest)).toBeDefined()
+
+    await hooks.event?.({
+      event: {
+        type: "session.deleted",
+        properties: { info: { id: sessionID } },
+      },
+    } as unknown as EventInput)
+
+    expect(store.pendingCount(sessionID)).toBe(0)
+    expect(store.delivery(sessionID, injection.contextDigest)).toBeUndefined()
   })
 
   it("retains distinct pending contexts in order instead of overwriting silently", () => {

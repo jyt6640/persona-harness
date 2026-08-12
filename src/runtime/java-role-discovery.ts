@@ -118,6 +118,7 @@ export function createJavaRoleReadFollowUp(injections: readonly PendingInjection
     "Discovered Java role files must be read so role-specific rule injection reaches model input before further edits.",
   ]
   const semanticSections = createRuntimeContextSections({
+    target: { targetFile: "<java-role-read-follow-up>", fileRole: "java-common" },
     profile: [],
     overlay: { metadata: { enabled: false, sources: [], diagnostics: [] }, summaryLines: [] },
     rules: {
@@ -126,6 +127,14 @@ export function createJavaRoleReadFollowUp(injections: readonly PendingInjection
       selectedRules: uniqueValues(injections.flatMap((injection) => injection.selectedRules)),
     },
     skills: uniqueSharedSkills(injections),
+    guidance: [
+      "[Persona Harness Java Role Read Follow-up]",
+      "",
+      "Open the discovered Java role files with a read tool before the next edit.",
+      "This step routes Controller/Service/Repository/Request DTO/Response DTO role-specific rule injection into actual model input.",
+      "",
+      ...readLines,
+    ],
   })
   return {
     targetFile: "<java-role-read-follow-up>",
