@@ -83,6 +83,22 @@ npx persona-harness init
 
 `.persona/evidence/`는 init template가 아니라 hook runtime evidence다. OpenCode가 README/requirements/Gradle/Java target을 실제로 읽거나 수정할 때 대상 프로젝트 안에 생성된다.
 
+### Java/Spring guidance core와 명시적 conditional pack
+
+기본 Java/Spring rule은 작게 유지한다. Controller→Application→Domain, Repository/persistence boundary, API DTO와 Entity 분리, constructor injection, public setter 금지, domain invariant, security fail-closed 같은 공통 경계만 기본 주입한다. JPA, 전역 exception/response contract, 특정 package tree, GWT 또는 모든 production class 직접 테스트, report/evidence/finish는 기본값이 아니다.
+
+프로젝트가 기술이나 테스트 convention을 명시적으로 선택했을 때 `.persona/harness.jsonc`의 `backendPacks`에 pack을 적는다.
+
+```jsonc
+{
+  "backendPacks": ["persistence-jdbc", "migration-flyway"]
+}
+```
+
+사용 가능한 pack은 `domain-layout`, `persistence-jdbc`, `persistence-jpa`, `migration-flyway`, `error-contract-global`, `testing-direct-class`, `testing-gwt`, `workflow-evidence`다. JDBC를 선택해도 JPA나 global error/response pack은 따라오지 않으며, OAuth provider/domain/callback/state/layer/type-exception/global-scope가 미결정이면 구현을 시작하지 않고 `design-required`로 둔다. Flyway를 선택한 경우에도 적용된 migration은 수정하지 않고 새 forward-only migration만 만든다.
+
+`workflow-evidence`는 public workflow boundary가 실제로 바뀌는 작업에서만 선택한다. guidance-only 또는 일반 product code 작업은 report/evidence/finish 산출물을 자동으로 요구하지 않는다.
+
 기본 검증:
 
 ```bash

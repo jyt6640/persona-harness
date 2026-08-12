@@ -33,8 +33,8 @@
 
 - Gradle 고정, Maven 생성 금지.
 - Spring Boot backend project로 시작.
-- root package 아래 `global`과 feature package를 같은 depth로 둔다.
-- feature package 내부는 presentation/application/domain/infrastructure 흐름을 기본으로 둔다.
+- package depth, `global` 위치, feature/domain 구조는 README, 기존 코드, project profile 또는 명시적으로 선택한 `domain-layout` pack에서 결정한다.
+- 선택한 구조가 있으면 presentation/application/domain/infrastructure 경계를 그 계획에 맞춰 적용한다.
 - Presentation은 HTTP와 DTO boundary를 맡고 Application Service에 위임한다.
 - Application Service는 use-case orchestration만 담당한다.
 - Service는 Map/List/AtomicLong/nextId/idCounter 같은 storage state나 id sequence를 직접 소유하지 않는다.
@@ -44,6 +44,7 @@
 ## Non-Goals
 
 - `.md` 전체에 무조건 injection을 걸지 않는다.
+- 선택하지 않은 persistence, global error/response, test style, package layout, workflow evidence를 기본 생성하지 않는다.
 - generated Spring app product-quality 보증이 아니다.
 - test-quality gate가 아니다.
 - AST/linter/Guard/enforcement가 아니다.

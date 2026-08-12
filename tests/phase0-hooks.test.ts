@@ -170,16 +170,16 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     expect(text).toContain("Selected rules:")
     expect(text).toContain("backend/spring-controller.md")
     expect(text).toContain(
-      "Java/Spring 프로젝트는 Gradle을 기본 빌드 도구로 사용하고 Maven 파일을 생성하지 않으며, Spring Boot main application class는 root package에 하나만 두고 feature/domain package 아래에 추가 *Application.java를 만들지 않는다.",
+      "Java/Spring 프로젝트는 Gradle을 기본 빌드 도구로 사용하고 Maven 파일을 생성하지 않으며, Spring Boot main application class는 root package에 하나만 둔다.",
     )
     expect(text).toContain(
-      "presentation → application → domain 흐름을 기본으로 두고, infrastructure는 domain을 사용할 수 있지만 domain은 infrastructure를 알지 않는다.",
+      "presentation → application → domain 흐름을 기본으로 두고, Controller가 Repository를 직접 호출하거나 presentation이 infrastructure를 건너뛰어 결합하지 않게 한다.",
     )
     expect(text).toContain(
       "Controller에는 Repository 의존성, Map/List 저장 상태, id sequence, 저장소 구현 세부사항을 넣지 않는다.",
     )
     expect(text).toContain(
-      "Controller/Service response path는 domain entity를 직접 외부 응답으로 노출하지 않고 Response DTO boundary를 둔다.",
+      "Request DTO는 외부 입력 계약과 검증 경계를 표현한다.",
     )
     expect(text).toContain("API 경로, 메서드, status code, request body, response body는 요구사항의 외부 계약을 그대로")
     expect(text).not.toContain("backend/step1-api-contract.md")
@@ -492,7 +492,7 @@ describe("Phase 0 OpenCode hook feasibility", () => {
       "Service는 List, Map, AtomicLong, nextId, idCounter, sequence 같은 저장소 상태나 id sequence를 직접 소유하지 않는다.",
     )
     expect(text).toContain(
-      "Service response path는 저장 결과를 domain entity 그대로 노출하지 않고 Response DTO로 변환한다.",
+      "Controller가 아니라 Service가 Repository를 호출하고, 생성/조회/삭제 흐름을 조율한다.",
     )
   })
 

@@ -18,6 +18,7 @@ import {
 } from "./rule-delivery-context.js"
 import type { RuleDeliveryRole } from "./rule-frontmatter.js"
 import type { RuleFrontmatterDiagnostic } from "./rule-frontmatter-diagnostics.js"
+import { isBackendGuidanceRuleEnabled } from "./backend-guidance-packs.js"
 
 export { RULE_DELIVERY_STAGE_RELEVANCE, ruleDeliveryStageForBlocker } from "./rule-delivery-context.js"
 
@@ -94,13 +95,14 @@ export function rulePackContentHash(
   boundary?: ProjectReadBoundary,
   snapshot?: ProjectReadSnapshot,
 ): string {
+  const config = loadHarnessConfig(projectDir, boundary)
   const catalog = loadRuleCatalog(projectDir, boundary, snapshot)
   const payload = catalog.map((entry) => ({
     metadata: entry.metadata,
     path: entry.path,
     policies: entry.policies,
   }))
-  return `sha256:${createHash("sha256").update(JSON.stringify(payload)).digest("hex")}`
+  return `sha256:${createHash("sha256").update(JSON.stringify({ backendPacks: config.backendPacks, rules: payload })).digest("hex")}`
 }
 
 function estimatedTokensForLines(lines: readonly string[]): number {
@@ -130,6 +132,7 @@ export function selectRulesForDelivery(
   const catalog = loadRuleCatalog(projectDir)
   const diagnostics = catalog.flatMap((entry) => entry.diagnostics)
   const eligibleRules = catalog
+    .filter((entry) => isBackendGuidanceRuleEnabled(entry.path, config.backendPacks))
     .filter((entry) => supportsRole(entry, role))
     .filter((entry) => matchesScenario(entry, config.scenario))
     .filter((entry) => (options.stage === undefined ? true : isRuleRelevantForStage(entry, options.stage)))

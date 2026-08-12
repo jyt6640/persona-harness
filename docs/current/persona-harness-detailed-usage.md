@@ -86,7 +86,17 @@ npx ph bootstrap backend
 - `.persona/workflow/implementation-report.md`
 - `.persona/workflow/review-report.md`
 
-`ph intake --interactive`는 bootstrap 대신 profile을 직접 선택할 때 쓰는 수동 단계다. 프로젝트 규모, 저장소 방식, persistence, migration, package style, architecture style 같은 backend planning 질문을 한 번에 하나씩 묻는다. 모르면 추천값을 써도 된다.
+`ph intake --interactive`는 bootstrap 대신 profile을 직접 선택할 때 쓰는 수동 단계다. 프로젝트 규모, 저장소 방식, persistence, migration, package style, architecture style 같은 backend planning 질문을 한 번에 하나씩 묻는다. 모르면 추천값을 써도 되지만, 선택하지 않은 기술이나 인증 구조를 자동으로 확정하지 않는다.
+
+Java/Spring rule은 공통 경계와 명시 선택 pack으로 나뉜다. 기본 core는 controller/application/domain, repository boundary, API DTO/entity, constructor injection, no-public-setter, domain invariant와 fail-closed 보안 결정을 다룬다. JPA, global exception/response, 특정 package layout, GWT/직접 클래스 테스트는 `.persona/harness.jsonc`의 `backendPacks`에서만 선택한다.
+
+```jsonc
+{
+  "backendPacks": ["persistence-jdbc", "migration-flyway"]
+}
+```
+
+JDBC 선택은 JPA나 global error/response를 자동 활성화하지 않는다. OAuth provider/domain/callback/state/layer/type-exception/global-scope가 미결정이면 `design-required` 상태를 유지하며 제품 구현이나 workflow progression을 시작하지 않는다. `workflow-evidence`와 report/evidence/finish 단계도 public workflow boundary가 바뀌는 경우에만 선택한다.
 
 `ph policy init`은 회사/팀 정책과 개인 철학을 적는 backend-only overlay 파일을 만든다. 비워두면 Clean Code baseline만 쓴다. 정책 우선순위는 `company > personal > Clean Code baseline`이다.
 
@@ -130,7 +140,7 @@ accepted plan을 읽고 구현하게 한다.
 
 ```bash
 opencode run --dir . --model openai/gpt-5.4-mini-fast --dangerously-skip-permissions \
-  "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 plan이 accepted 상태인지 확인한 뒤 Java/Spring Gradle 기반으로 요구사항 전체를 구현해줘. 구현 후 gradle test, gradle build, gradle bootRun, HTTP happy path와 failure path smoke를 실행하고 .persona/workflow/implementation-report.md와 .persona/workflow/review-report.md를 채워줘."
+  "README.md, .persona/project-profile.jsonc, .persona/policies, .persona/workflow/plan.md를 읽고 plan이 accepted 상태인지 확인한 뒤 Java/Spring Gradle 기반으로 요구사항 전체를 구현해줘. 구현 후 요구사항에 맞는 검증을 실행해줘. public workflow boundary를 바꾼 경우에만 기존 implementation/review report와 finish 절차를 따른다."
 ```
 
 ### 7. 결과 확인
@@ -143,21 +153,21 @@ gradle test
 gradle build
 npx ph plan --report-filled implementation
 npx ph plan --report-filled review
-find .persona/evidence -type f | sort
+find .persona/evidence -type f | sort  # public workflow boundary 변경 시에만
 ```
 
 특히 다음을 본다.
 
 - `build.gradle`, `settings.gradle`은 있고 `pom.xml`은 없는가
-- `presentation`, `application`, `domain`, `infrastructure`, `global` 경계가 보이는가
-- domain에 repository interface가 있고 infrastructure에 구현체가 있는가
+- `domain-layout` pack 또는 project profile이 선택된 경우에만 그 계획에 맞는 `presentation`, `application`, `domain`, `infrastructure`, `global` 경계를 확인하는가
+- repository interface와 infrastructure 구현체의 위치·이름은 profile, 기존 코드, 요구사항의 선택과 일치하는가
 - Application Service가 `Map`, `List`, `AtomicLong`, `nextId`, `idCounter` 같은 저장소 상태/id sequence를 직접 소유하지 않는가
 - domain model이 단순 record가 아니라 자기 필드로 상태 판단/행동을 하는가
 - `gradle build`에서 executable Spring Boot app의 `bootJar`를 꺼버리지 않았는가
 
 ### 8. 사용 후 기록 남기기
 
-한 번 쓴 workflow 산출물은 history로 남긴다.
+public workflow boundary를 바꾼 경우 한 번 쓴 workflow 산출물은 history로 남긴다. 일반 Java/Spring product implementation이나 guidance-only 변경에는 report/evidence/finish를 자동으로 만들지 않는다.
 
 ```bash
 npx ph history --id first-clean-run

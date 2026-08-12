@@ -353,7 +353,7 @@ enforcement: inject_only
     expect(layeredArchitecture).toContain("Request DTO를 Application Command/Query로 변환한다")
     expect(layeredArchitecture).toContain("Infrastructure는 Repository 인터페이스를 구현한다")
     expect(springTest).toContain("Domain public behavior 테스트부터")
-    expect(springTest).toContain("Acceptance Test는 마지막 전체 시나리오 검증으로만 사용한다")
+    expect(springTest).toContain("Acceptance Test는 마지막 전체 시나리오 검증으로 사용하며")
     expect(methodDesign).toContain("validateAndCancel")
     expect(methodDesign).toContain("boolean 파라미터")
   })

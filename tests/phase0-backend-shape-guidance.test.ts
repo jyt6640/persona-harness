@@ -2,125 +2,39 @@ import { describe, expect, it } from "vitest"
 
 import { createInjectionBlock } from "../src/runtime/injection.js"
 
-function policiesFor(targetFile: string): string {
-  return createInjectionBlock(targetFile, process.cwd()).policies.join("\n")
-}
-
-function blockFor(targetFile: string): string {
-  return createInjectionBlock(targetFile, process.cwd()).block
-}
-
 describe("Phase 0 backend product-code shape guidance", () => {
-  it("keeps project bootstrap guidance on root domain packages instead of feature wrappers", () => {
-    const policies = policiesFor("README.md")
+  it("keeps the default bootstrap surface on the core rule set", () => {
+    const injection = createInjectionBlock("README.md", process.cwd())
 
-    expect(policies).toContain("package structure plan")
-    expect(policies).toContain("root package 바로 아래")
-    expect(policies).toContain("global")
-    expect(policies).toContain("root/<domain>/presentation")
-    expect(policies).toContain("root/<domain>/application")
-    expect(policies).toContain("root/<domain>/domain")
-    expect(policies).toContain("root/<domain>/infrastructure")
-    expect(policies).toContain("feature/features/module/modules")
-    expect(policies).toContain("presentation/dto/request")
-    expect(policies).toContain("presentation/dto/response")
-    expect(policies).toContain("application/dto/command")
-    expect(policies).toContain("application/dto/result")
-    expect(policies).toContain("book/controller")
-    expect(policies).toContain("book/service")
-    expect(policies).toContain("book/repository")
-    expect(policies).toContain("book/dto/request")
+    expect(injection.selectedRules).toContain("backend/java-backend-bootstrap.md")
+    expect(injection.selectedRules).not.toContain("backend/packs/domain-layout.md")
+    expect(injection.selectedRules).not.toContain("backend/packs/persistence-jpa.md")
+    expect(injection.selectedRules).not.toContain("backend/packs/error-contract-global.md")
+    expect(injection.selectedRules).not.toContain("backend/packs/workflow-evidence.md")
   })
 
-  it("tells bootstrap runs to plan and re-open role-specific Java targets before continuing", () => {
-    const policies = policiesFor("README.md")
+  it("keeps core Java roles separate without assuming a package layout", () => {
+    const controller = createInjectionBlock("src/main/java/example/presentation/BookController.java", process.cwd())
+    const service = createInjectionBlock("src/main/java/example/application/BookService.java", process.cwd())
+    const repository = createInjectionBlock("src/main/java/example/domain/BookRepository.java", process.cwd())
+    const entity = createInjectionBlock("src/main/java/example/domain/BookEntity.java", process.cwd())
 
-    expect(policies).toContain("구현 전에 package structure plan")
-    expect(policies).toContain("Domain")
-    expect(policies).toContain("Repository")
-    expect(policies).toContain("Service")
-    expect(policies).toContain("DTO")
-    expect(policies).toContain("Controller")
-    expect(policies).toContain("다시 읽고")
-  })
-
-  it("keeps common Java guidance explicit about root/global/domain package depth", () => {
-    const policies = policiesFor("src/main/java/com/example/library/LibraryApplication.java")
-
-    expect(policies).toContain("feature/features/module/modules")
-    expect(policies).toContain("root/global/exception")
-    expect(policies).toContain("root/<domain>/application/dto/command")
-    expect(policies).toContain("root/<domain>/application/dto/result")
-    expect(policies).toContain("root/<domain>/presentation/dto/request")
-    expect(policies).toContain("root/<domain>/presentation/dto/response")
-    expect(policies).toContain("controller/service/repository/dto")
-  })
-
-  it("keeps common Java guidance explicit about domain repository interfaces and infrastructure implementations", () => {
-    const policies = policiesFor("src/main/java/com/example/library/LibraryApplication.java")
-
-    expect(policies).toContain("root/<domain>/domain/<Domain>Repository")
-    expect(policies).toContain("interface")
-    expect(policies).toContain("root/<domain>/infrastructure/Jdbc<Domain>Repository")
-    expect(policies).toContain("InMemory<Domain>Repository")
-    expect(policies).toContain("infrastructure class 이름을 <Domain>Repository로 끝내지 않는다")
-  })
-
-  it("keeps controller DTO guidance out of nested controller records", () => {
-    const block = blockFor("src/main/java/com/example/library/presentation/BookController.java")
-
-    expect(block).toContain("backend/spring-dto.md")
-    expect(block).toContain("Controller 내부 중첩")
-    expect(block).toContain("presentation/dto/request")
-    expect(block).toContain("presentation/dto/response")
-    expect(block).toContain("Request DTO를 Command")
-    expect(block).toContain("Result를 Response DTO")
-  })
-
-  it("keeps service guidance out of nested response records and presentation DTO returns", () => {
-    const block = blockFor("src/main/java/com/example/library/application/BookService.java")
-
-    expect(block).toContain("backend/spring-service.md")
-    expect(block).toContain("Service 내부 중첩")
-    expect(block).toContain("*Response/*Item/*View")
-    expect(block).toContain("presentation Response DTO")
-    expect(block).toContain("application/dto/result")
-  })
-
-  it("keeps repository guidance from cross-repository aggregate assembly", () => {
-    const block = blockFor("src/main/java/com/example/library/domain/BookRepository.java")
-
-    expect(block).toContain("backend/spring-repository.md")
-    expect(block).toContain("domain package의 BookRepository 같은 interface")
-    expect(block).toContain("JdbcBookRepository")
-    expect(block).toContain("InMemoryBookRepository")
-    expect(block).toContain("다른 Repository 구현체를 주입받아")
-    expect(block).toContain("aggregate")
-    expect(block).toContain("N+1")
-  })
-
-  it("keeps Spring test relay guidance explicit for test-writer scope", () => {
-    const block = blockFor("src/test/java/com/example/library/application/BookServiceTest.java")
-
-    expect(block).toContain("backend/spring-test.md")
-    expect(block).toContain("test-writer")
-    expect(block).toContain("failing/verification tests")
-    expect(block).toContain("does not implement product code")
-    expect(block).toContain("implementer")
-    expect(block).toContain("reviewer")
-    expect(block).toContain("workflow finish implement")
-  })
-
-  it("uses programming as limited support without replacing backend Java rules", () => {
-    const service = createInjectionBlock("src/main/java/com/example/library/application/BookService.java")
-    const gradle = createInjectionBlock("build.gradle")
-
-    expect(service.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming"])
+    expect(controller.selectedRules).toContain("backend/spring-controller.md")
     expect(service.selectedRules).toContain("backend/spring-service.md")
-    expect(service.selectedRules.length).toBeGreaterThan(0)
-    expect(service.selectedSharedSkills.map((skill) => skill.name)).not.toContain("frontend")
+    expect(repository.selectedRules).toContain("backend/spring-repository.md")
+    expect(entity.selectedRules).toContain("backend/spring-entity.md")
+    for (const injection of [controller, service, repository, entity]) {
+      expect(injection.selectedRules.some((path) => path.startsWith("backend/packs/"))).toBe(false)
+    }
+  })
 
-    expect(gradle.selectedSharedSkills.map((skill) => skill.name)).toEqual(["programming"])
-    expect(gradle.selectedRules).toContain("backend/gradle-bootstrap.md")
+  it("keeps API, entity, constructor, and repository boundaries in the core roles", () => {
+    const controller = createInjectionBlock("src/main/java/example/presentation/BookController.java", process.cwd())
+    const entity = createInjectionBlock("src/main/java/example/domain/BookEntity.java", process.cwd())
+    const repository = createInjectionBlock("src/main/java/example/domain/BookRepository.java", process.cwd())
+
+    expect(controller.selectedRules).toEqual(expect.arrayContaining(["backend/spring-controller.md", "backend/spring-dto.md"]))
+    expect(entity.selectedRules).toContain("backend/spring-entity.md")
+    expect(repository.selectedRules).toContain("backend/spring-repository.md")
   })
 })

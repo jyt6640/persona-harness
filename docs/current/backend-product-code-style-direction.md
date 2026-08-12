@@ -41,6 +41,22 @@ The default backend baseline should prefer:
 
 The baseline should not force a specific persistence stack such as H2, JdbcTemplate, JPA, MyBatis, Flyway, or schema.sql unless the user chooses that stack or the project requirements imply it.
 
+## Java Guidance Packs
+
+The shipped Java/Spring guidance has a small default core and explicit conditional packs. The core preserves controller-to-application-to-domain boundaries, repository/persistence separation, API DTO/entity separation, constructor injection, no public entity setters, domain-owned invariants, and fail-closed security decisions.
+
+Optional persistence, migration, global error-contract, test-style, package-layout, and workflow-evidence guidance is selected in `.persona/harness.jsonc`; it is never inferred from a filename or silently enabled by a JDBC profile. For example:
+
+```jsonc
+{
+  "backendPacks": ["persistence-jdbc", "migration-flyway"]
+}
+```
+
+`persistence-jpa`, `error-contract-global`, `testing-direct-class`, `testing-gwt`, `domain-layout`, and `workflow-evidence` are similarly opt-in. A JDBC selection therefore does not add JPA mappings or a global exception/response contract. OAuth/provider/domain/callback decisions remain an explicit `design-required` product decision; this guidance pack does not implement or infer authentication architecture.
+
+Workflow reports, evidence, and finish steps are selected only when the public workflow boundary itself changes. `runtimeInjection` remains off by default, and Flyway migrations remain immutable once applied.
+
 ## Strong Rule Candidates
 
 These are strong enough to be considered baseline rule or prompt candidates:
