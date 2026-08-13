@@ -195,7 +195,6 @@ function commitBootstrapCheckpoint(projectDir: string): void {
   execFileSync("git", ["add", "--all"], { cwd: projectDir })
   execFileSync("git", ["reset", "--", ".persona/evidence", ".persona/workflow"], { cwd: projectDir })
   const staticPersonaPaths = [
-    ".persona/.ph-init-manifest.json",
     ".persona/conventions",
     ".persona/harness.jsonc",
     ".persona/policies",

@@ -3,9 +3,9 @@ import { join, relative, resolve, sep } from "node:path"
 import process from "node:process"
 
 import type { InitOptions } from "./init.js"
+import { preserveBootstrapHarnessOptIns } from "./init-harness-overlay.js"
 import {
   createInitManifest,
-  INIT_MANIFEST_RELATIVE_PATH,
   readInitManifest,
   sha256Bytes,
   type InitManifest,
@@ -13,6 +13,7 @@ import {
   type InitPackageBinding,
   type InitProjectBinding,
 } from "./init-manifest.js"
+import { verifyInitOwnership, type VerifiedInitOwnership } from "./init-ownership.js"
 import {
   buildTargets,
   ensureRegularOrMissing,
@@ -24,8 +25,6 @@ import {
 import type { InitTarget } from "./init-transaction.js"
 import { InitManifestError } from "./init-manifest.js"
 
-const MANAGED_PATH_PREFIXES = [".persona/", ".opencode/opencode.json", ".gitignore", "AGENTS.md"] as const
-
 export type PreparedInit = {
   readonly currentManifest: InitManifest | null
   readonly manifest: InitManifest
@@ -33,10 +32,6 @@ export type PreparedInit = {
   readonly pluginPath: string
   readonly projectDir: string
   readonly targets: readonly InitTarget[]
-}
-
-function managedPath(relativePath: string): boolean {
-  return MANAGED_PATH_PREFIXES.some((prefix) => relativePath === prefix || relativePath.startsWith(prefix))
 }
 
 function ensureNoFollowPath(projectDir: string, relativePath: string): void {
@@ -72,36 +67,19 @@ function existingBytes(projectDir: string, relativePath: string): Buffer | null 
   return readFileSync(path)
 }
 
-function assertManifestBinding(
+function verifiedManifestBinding(
   projectDir: string,
   manifest: InitManifest,
   currentPackage: InitPackageBinding,
   currentProfileDigest: string | null,
-): void {
-  if (manifest.project.realPath !== realpathSync(projectDir)) {
-    throw new InitManifestError("Project binding mismatch; no files were changed.")
-  }
-  if (manifest.project.profileDigest !== currentProfileDigest) {
-    throw new InitManifestError("Project profile binding mismatch; no files were changed.")
-  }
-  if (manifest.package.name !== currentPackage.name) {
-    throw new InitManifestError("Package binding mismatch; no files were changed.")
-  }
-  if (
-    manifest.package.version === currentPackage.version
-    && manifest.package.templateDigest !== currentPackage.templateDigest
-  ) {
-    throw new InitManifestError("Package binding mismatch; no files were changed.")
-  }
-  for (const entry of manifest.files) {
-    if (!managedPath(entry.path) || entry.path === INIT_MANIFEST_RELATIVE_PATH) {
-      throw new InitManifestError(`Init ownership manifest contains an unsupported path: ${entry.path}`)
-    }
-    const current = existingBytes(projectDir, entry.path)
-    if (current === null || sha256Bytes(current) !== entry.digest) {
-      throw new InitManifestError(`Init ownership conflict at ${entry.path}; no files were changed.`)
-    }
-  }
+): VerifiedInitOwnership {
+  return verifyInitOwnership(manifest, {
+    ownedFileCheck: { kind: "exact" },
+    packageBinding: currentPackage,
+    profileBinding: { kind: "exact", digest: currentProfileDigest },
+    projectRealPath: realpathSync(projectDir),
+    readOwnedFile: (relativePath) => existingBytes(projectDir, relativePath) ?? undefined,
+  })
 }
 
 function rejectForeignNewTargets(
@@ -120,16 +98,22 @@ function rejectForeignNewTargets(
   }
 }
 
-function nextManifest(
+function nextInitState(
   projectDir: string,
   packageRoot: string,
-  targets: readonly InitTarget[],
+  sourceTargets: readonly InitTarget[],
   current: InitManifest | null,
-): InitManifest {
+): { readonly manifest: InitManifest; readonly targets: readonly InitTarget[] } {
   const currentProfileDigest = profileDigest(projectDir)
-  const currentPackage = packageBinding(packageRoot, sourceTemplateDigest(targets))
+  const currentPackage = packageBinding(packageRoot, sourceTemplateDigest(sourceTargets))
+  let verified: VerifiedInitOwnership | undefined
   if (current !== null) {
-    assertManifestBinding(projectDir, current, currentPackage, currentProfileDigest)
+    verified = verifiedManifestBinding(projectDir, current, currentPackage, currentProfileDigest)
+  }
+  const targets = verified === undefined
+    ? sourceTargets
+    : preserveBootstrapHarnessOptIns(sourceTargets, verified.ownedFiles)
+  if (current !== null) {
     rejectForeignNewTargets(projectDir, current, targets)
   }
   const projectBinding: InitProjectBinding = {
@@ -153,7 +137,10 @@ function nextManifest(
       nextByPath.set(path, entry)
     }
   }
-  return createInitManifest(currentPackage, projectBinding, [...nextByPath.values()])
+  return {
+    manifest: createInitManifest(currentPackage, projectBinding, [...nextByPath.values()]),
+    targets,
+  }
 }
 
 function partialInitialization(projectDir: string): boolean {
@@ -171,21 +158,44 @@ function partialInitialization(projectDir: string): boolean {
   return true
 }
 
+function prepareBootstrapPersonaTargets(
+  projectDir: string,
+  targets: readonly InitTarget[],
+): readonly InitTarget[] {
+  const harnessBytes = existingBytes(projectDir, ".persona/harness.jsonc")
+  const effectiveTargets = harnessBytes === null
+    ? targets
+    : preserveBootstrapHarnessOptIns(targets, new Map([[".persona/harness.jsonc", harnessBytes]]))
+  for (const target of effectiveTargets) {
+    if (!target.relativePath.startsWith(".persona/")) continue
+    const current = existingBytes(projectDir, target.relativePath)
+    if (current !== null && !current.equals(target.nextBytes)) {
+      throw new InitManifestError(
+        `A preinitialized Persona directory already contains init target ${target.relativePath}; no files were changed.`,
+      )
+    }
+  }
+  return effectiveTargets
+}
+
 export function prepareInit(options: InitOptions, defaultPackageRoot: string): PreparedInit {
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const packageRoot = resolve(options.packageRoot ?? defaultPackageRoot)
   const pluginPath = join(packageRoot, "dist", "index.js")
   const currentManifest = readInitManifest(projectDir)
-  if (currentManifest === null && partialInitialization(projectDir)) {
+  const partialPersona = currentManifest === null && partialInitialization(projectDir)
+  if (partialPersona && options.bootstrapPersonaState?.kind !== "preinitialized") {
     throw new InitManifestError("A partial or unrecognized Persona Harness initialization exists; no files were changed.")
   }
-  const targets = buildTargets(projectDir, packageRoot, pluginPath)
+  const builtTargets = buildTargets(projectDir, packageRoot, pluginPath)
+  const sourceTargets = partialPersona ? prepareBootstrapPersonaTargets(projectDir, builtTargets) : builtTargets
+  const state = nextInitState(projectDir, packageRoot, sourceTargets, currentManifest)
   return {
     currentManifest,
-    manifest: nextManifest(projectDir, packageRoot, targets, currentManifest),
+    manifest: state.manifest,
     packageRoot,
     pluginPath,
     projectDir,
-    targets,
+    targets: state.targets,
   }
 }

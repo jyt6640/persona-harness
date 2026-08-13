@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 import { existsSync, lstatSync, readFileSync } from "node:fs"
-import { join, relative, resolve, sep } from "node:path"
+import { join, posix, relative, resolve, sep } from "node:path"
 
 import { isRecord } from "../config/jsonc.js"
 
@@ -138,7 +138,7 @@ function parseManifest(value: unknown): InitManifest {
       throw new InitManifestError("Invalid init ownership manifest: file entries must be objects.")
     }
     const path = requireString(entry.path, "files.path").replace(/\\/g, "/")
-    const normalized = resolve("/", path).slice(1)
+    const normalized = posix.resolve("/", path).slice(1)
     if (normalized !== path || path.startsWith("../") || path === INIT_MANIFEST_RELATIVE_PATH) {
       throw new InitManifestError("Invalid init ownership manifest: file path escapes the init scope.")
     }
@@ -168,6 +168,16 @@ function parseManifest(value: unknown): InitManifest {
     throw new InitManifestError("Invalid init ownership manifest: manifest digest does not match its contents.")
   }
   return manifest
+}
+
+export function parseInitManifestBytes(bytes: Uint8Array): InitManifest {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(Buffer.from(bytes).toString("utf8"))
+  } catch {
+    throw new InitManifestError("Init ownership manifest is malformed; read-only recovery is required.")
+  }
+  return parseManifest(parsed)
 }
 
 function assertSafePath(projectDir: string, relativePath: string): void {
@@ -200,11 +210,5 @@ export function readInitManifest(projectDir: string): InitManifest | null {
   if (!stat.isFile() || stat.isSymbolicLink()) {
     throw new InitManifestError("Init ownership manifest is not a regular file.")
   }
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(readFileSync(path, "utf8"))
-  } catch {
-    throw new InitManifestError("Init ownership manifest is malformed; read-only recovery is required.")
-  }
-  return parseManifest(parsed)
+  return parseInitManifestBytes(readFileSync(path))
 }

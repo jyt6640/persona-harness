@@ -15,6 +15,7 @@ const PROJECT_NOISE_IGNORE_ENTRIES = [
   ".persona/rules/",
   ".persona/evidence/",
   ".persona/.init-backups/",
+  ".persona/.ph-init-manifest.json",
   ".gradle/",
   "build/",
 ] as const

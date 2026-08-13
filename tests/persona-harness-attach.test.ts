@@ -150,6 +150,7 @@ describe("ph attach", () => {
     expect(readFileSync(join(projectDir, "AGENTS.md"), "utf8")).toContain(
       "<!-- persona-harness:agents:start schema=persona-harness.agents.v1 -->",
     )
+    expect(cli(projectDir, ["init"]).status).toBe(0)
     expect(cli(projectDir, ["doctor"]).stdout).toContain("Session reachability: PASS")
   })
 
@@ -166,7 +167,8 @@ describe("ph attach", () => {
     expect(ordinary.stderr).toContain("Next command: npx ph attach --repair --yes")
     expect(existsSync(join(projectDir, "AGENTS.md"))).toBe(false)
 
-    expect(cli(projectDir, ["attach", "--repair", "--yes"]).status).toBe(0)
+    const repair = cli(projectDir, ["attach", "--repair", "--yes"])
+    expect({ status: repair.status, stderr: repair.stderr }).toEqual({ status: 0, stderr: "" })
     expect(cli(projectDir, ["doctor"]).stdout).toContain("Session reachability: PASS")
     expect(cli(projectDir, ["go", "Add a task endpoint."]).status).toBe(0)
   })
@@ -180,7 +182,8 @@ describe("ph attach", () => {
     const harnessPath = join(projectDir, ".persona", "harness.jsonc")
     writeFileSync(harnessPath, readFileSync(harnessPath, "utf8").replace('"executeVerification": true', '"executeVerification": false'))
 
-    expect(cli(projectDir, ["attach", "--repair", "--yes"]).status).toBe(0)
+    const repair = cli(projectDir, ["attach", "--repair", "--yes"])
+    expect({ status: repair.status, stderr: repair.stderr }).toEqual({ status: 0, stderr: "" })
     const repaired = readFileSync(agentsPath, "utf8")
     expect(repaired).toContain("# Team rules")
     expect(repaired).toContain("Footer rule.")
