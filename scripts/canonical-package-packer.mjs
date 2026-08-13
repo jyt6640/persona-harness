@@ -13,7 +13,7 @@ import {
   writeFileSync,
   writeSync,
 } from "node:fs"
-import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
+import { basename, delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import process from "node:process"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
@@ -225,7 +225,7 @@ function reserveOutputDirectory(value) {
     fail("canonical-package-packer-output")
   }
   const canonicalParent = realpathSync(parent)
-  const candidate = resolve(value)
+  const candidate = join(canonicalParent, basename(value))
   if (!isContained(canonicalParent, candidate)) fail("canonical-package-packer-output")
   mkdirSync(candidate, { mode: 0o700 })
   const output = realpathSync(candidate)

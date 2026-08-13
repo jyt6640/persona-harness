@@ -1,5 +1,5 @@
 import { gzipSync } from "node:zlib"
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { delimiter, dirname, join } from "node:path"
 
@@ -10,6 +10,7 @@ import {
   CanonicalPackagePackerError,
   assertCanonicalPackagePackerProfile,
   canonicalNpmInvocation,
+  createCanonicalPackageTarball,
   canonicalPackageFacts,
   classifyCanonicalPackagePackerError,
   createCanonicalNpmEnvironment,
@@ -110,6 +111,70 @@ describe("canonical package packer", () => {
     expect(classifyCanonicalPackagePackerError(error)).toBe(expected)
     expect(classifyCanonicalPackagePackerError(error)).not.toContain("raw")
     expect(classifyCanonicalPackagePackerError(error)).not.toContain("path")
+  })
+
+  it("accepts an absent output child under a lexical alias of its canonical parent", () => {
+    const root = mkdtempSync(join(tmpdir(), "persona-canonical-output-alias-"))
+    const physicalParent = join(root, "physical-parent")
+    const aliasParent = join(root, "alias-parent")
+    const requestedParent = join(aliasParent, "nested")
+    const outputDirectory = join(requestedParent, "output")
+    const nodeExecutable = writeFakeNodeDistribution(join(root, "node-runtime"))
+    const packageName = "persona-harness"
+    const packageVersion = "0.8.7"
+    const tarballName = `${packageName}-${packageVersion}.tgz`
+    const tarball = createTarball([
+      ["package/package.json", JSON.stringify({ name: packageName, version: packageVersion }) + "\n", 0o600],
+    ])
+    const run = (args: readonly string[]) => {
+      if (args[0] === "prefix") return { status: 0, stdout: `${process.cwd()}\n` }
+      if (args[0] === "config") return { status: 0, stdout: "false\n" }
+      if (args[0] === "pack") {
+        const destination = args[args.indexOf("--pack-destination") + 1]
+        if (destination === undefined) return { status: 1, stdout: "" }
+        writeFileSync(join(destination, tarballName), tarball)
+        return { status: 0, stdout: JSON.stringify([{ filename: tarballName, name: packageName, version: packageVersion }]) }
+      }
+      return { status: 1, stdout: "" }
+    }
+
+    mkdirSync(physicalParent)
+    symlinkSync(physicalParent, aliasParent, "dir")
+    mkdirSync(requestedParent)
+
+    try {
+      const runtime = {
+        nodeExecutable,
+        profile: CANONICAL_PACKAGE_PACKER_PROFILE,
+        run,
+      }
+      const result = createCanonicalPackageTarball(process.cwd(), outputDirectory, runtime)
+
+      expect(realpathSync(outputDirectory)).toBe(join(realpathSync(requestedParent), "output"))
+      expect(result.tarballPath).toBe(join(realpathSync(outputDirectory), tarballName))
+    } finally {
+      rmSync(root, { force: true, recursive: true })
+    }
+  })
+
+  it("rejects a symlinked immediate output parent", () => {
+    const root = mkdtempSync(join(tmpdir(), "persona-canonical-output-parent-"))
+    const physicalParent = join(root, "physical-parent")
+    const symlinkedParent = join(root, "symlinked-parent")
+    const nodeExecutable = writeFakeNodeDistribution(join(root, "node-runtime"))
+
+    mkdirSync(physicalParent)
+    symlinkSync(physicalParent, symlinkedParent, "dir")
+
+    try {
+      expect(() => createCanonicalPackageTarball(
+        process.cwd(),
+        join(symlinkedParent, "output"),
+        { nodeExecutable, profile: CANONICAL_PACKAGE_PACKER_PROFILE },
+      )).toThrow("canonical-package-packer-output")
+    } finally {
+      rmSync(root, { force: true, recursive: true })
+    }
   })
 
   it.each([
