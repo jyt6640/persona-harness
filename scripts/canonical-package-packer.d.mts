@@ -12,6 +12,7 @@ export const CANONICAL_PACKAGE_PACKER_PROFILE: {
 export class CanonicalPackagePackerError extends Error {
   readonly code: string
 }
+export function classifyCanonicalPackagePackerError(error: unknown): string
 
 export function resolveCanonicalNpmCli(
   nodeExecutable?: string,

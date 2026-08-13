@@ -11,9 +11,11 @@ import {
   assertCanonicalPackagePackerProfile,
   canonicalNpmInvocation,
   canonicalPackageFacts,
+  classifyCanonicalPackagePackerError,
   createCanonicalNpmEnvironment,
   resolveCanonicalNpmCli,
 } from "../scripts/canonical-package-packer.mjs"
+import { PackageContentIdentityError } from "../scripts/package-content-identity.mjs"
 
 describe("canonical package packer", () => {
   it("pins package metadata and lock metadata to the canonical npm runtime", () => {
@@ -98,6 +100,16 @@ describe("canonical package packer", () => {
     } finally {
       rmSync(root, { force: true, recursive: true })
     }
+  })
+
+  it.each([
+    [new CanonicalPackagePackerError("canonical-package-packer-pack"), "canonical-package-packer-pack"],
+    [new PackageContentIdentityError("package-content-identity-archive"), "canonical-package-packer-content"],
+    [new Error("unexpected raw path or package content"), "canonical-package-packer-internal"],
+  ])("classifies terminal failures without reflecting error details", (error, expected) => {
+    expect(classifyCanonicalPackagePackerError(error)).toBe(expected)
+    expect(classifyCanonicalPackagePackerError(error)).not.toContain("raw")
+    expect(classifyCanonicalPackagePackerError(error)).not.toContain("path")
   })
 
   it.each([

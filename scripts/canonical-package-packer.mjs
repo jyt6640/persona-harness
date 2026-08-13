@@ -18,7 +18,7 @@ import process from "node:process"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
 import { assertPackRecordBinding, assertSourcePackageIdentity } from "./clean-package-boundary-core.mjs"
-import { canonicalizePackageTarball } from "./package-content-identity.mjs"
+import { PackageContentIdentityError, canonicalizePackageTarball } from "./package-content-identity.mjs"
 
 export const CANONICAL_PACKAGE_PACKER_SCHEMA_VERSION = "canonical-package-packer.1"
 export const CANONICAL_PACKAGE_PACKER_PROFILE = Object.freeze({
@@ -38,6 +38,12 @@ export class CanonicalPackagePackerError extends Error {
     super(code)
     this.code = code
   }
+}
+
+export function classifyCanonicalPackagePackerError(error) {
+  if (error instanceof CanonicalPackagePackerError) return error.code
+  if (error instanceof PackageContentIdentityError) return "canonical-package-packer-content"
+  return "canonical-package-packer-internal"
 }
 
 export function assertCanonicalPackagePackerProfile(value) {
@@ -333,7 +339,7 @@ if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.a
     const result = createCanonicalPackageTarball(packageRoot, process.argv[3])
     process.stdout.write(`${JSON.stringify(result.facts)}\n`)
   } catch (error) {
-    process.stderr.write(`${error instanceof CanonicalPackagePackerError ? error.code : "canonical-package-packer-failed"}\n`)
+    process.stderr.write(`${classifyCanonicalPackagePackerError(error)}\n`)
     process.exitCode = 1
   }
 }
