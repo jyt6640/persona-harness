@@ -192,7 +192,10 @@ async function runInstalledPackageContract(options) {
     join(consumerDirectory, "node_modules", ".bin", "ph"),
     "installed package",
   ))
-  await runPhase("installed-package-test", () => assertInstalledPackageTestPasses(installedPackage))
+  await runPhase("installed-package-test", () => {
+    assertInstalledInitBootstrapRerun(installedPackage, consumerDirectory)
+    assertInstalledPackageTestPasses(installedPackage)
+  })
   process.stdout.write(`installed-package-artifact: ${JSON.stringify(packed.facts)}\n`)
   process.stdout.write(packageExercise
     ? "installed-package-exercise-contract: PASS\n"
@@ -950,6 +953,108 @@ function assertInstalledPackageTestPasses(installedPackage) {
   if (!result.stdout.includes("Persona Harness")) {
     throw new Error("installed package test did not reach the packaged CLI help surface")
   }
+}
+
+function assertInstalledInitBootstrapRerun(installedPackage, consumerDirectory) {
+  const fixtureRoot = join(consumerDirectory, "installed-init-bootstrap-fixture")
+  const phPath = join(consumerDirectory, "node_modules", ".bin", "ph")
+  createLifecycleStateIntakeFixture(fixtureRoot)
+  requireSuccess("installed init", runNode(fixtureRoot, [phPath, "init"]))
+  requireSuccess(
+    "installed strict bootstrap",
+    runNode(fixtureRoot, [phPath, "bootstrap", "backend", "--strict", "--no-developer-mcp"]),
+  )
+  const evidencePath = join(fixtureRoot, ".persona", "evidence", "loop5-package-sentinel.json")
+  mkdirSync(dirname(evidencePath), { recursive: true })
+  writeFileSync(evidencePath, "{\"loop\":5}\n")
+  assertInstalledInitManifest(installedPackage, fixtureRoot)
+
+  const beforeRerun = snapshotInstalledInitState(fixtureRoot)
+  requireSuccess("installed init rerun", runNode(fixtureRoot, [phPath, "init"]))
+  if (snapshotInstalledInitState(fixtureRoot) !== beforeRerun) {
+    throw new Error("installed init rerun changed bootstrap project state")
+  }
+  assertInstalledInitManifest(installedPackage, fixtureRoot)
+
+  for (const relativePath of [
+    ".persona/harness.jsonc",
+    ".persona/project-profile.jsonc",
+    ".opencode/opencode.json",
+  ]) {
+    const path = join(fixtureRoot, relativePath)
+    const original = readFileSync(path)
+    writeFileSync(path, Buffer.concat([original, Buffer.from("\n// installed drift\n")]))
+    const beforeBlockedBootstrap = snapshotInstalledInitState(fixtureRoot)
+    const blocked = runNode(fixtureRoot, [
+      phPath,
+      "bootstrap",
+      "backend",
+      "--strict",
+      "--no-developer-mcp",
+    ])
+    if (blocked.status === 0 || snapshotInstalledInitState(fixtureRoot) !== beforeBlockedBootstrap) {
+      throw new Error(`installed bootstrap did not fail closed for ${relativePath}`)
+    }
+    writeFileSync(path, original)
+    assertInstalledInitManifest(installedPackage, fixtureRoot)
+  }
+}
+
+function assertInstalledInitManifest(installedPackage, fixtureRoot) {
+  const modulePath = join(installedPackage, "dist", "cli", "init-manifest.js")
+  const probe = runNode(fixtureRoot, [
+    "--input-type=module",
+    "--eval",
+    [
+      `import { readInitManifest } from ${JSON.stringify(pathToFileURL(modulePath).href)};`,
+      "const manifest = readInitManifest(process.cwd());",
+      "if (manifest === null) process.exit(1);",
+      "process.stdout.write(JSON.stringify(manifest));",
+    ].join("\n"),
+  ])
+  requireSuccess("installed init manifest parser", probe)
+  if (probe.stderr !== "") throw new Error("installed init manifest parser wrote stderr")
+  const manifest = JSON.parse(probe.stdout)
+  const packageIdentity = JSON.parse(readFileSync(join(installedPackage, "package.json"), "utf8"))
+  if (
+    manifest?.package?.name !== packageIdentity.name
+    || manifest?.package?.version !== packageIdentity.version
+    || manifest?.project?.realPath !== realpathSync(fixtureRoot)
+  ) {
+    throw new Error("installed init manifest binding is invalid")
+  }
+  const profileBytes = readFileSync(join(fixtureRoot, ".persona", "project-profile.jsonc"))
+  if (manifest.project.profileDigest !== sha256(profileBytes)) {
+    throw new Error("installed init manifest profile digest is stale")
+  }
+  for (const entry of manifest.files) {
+    const path = join(fixtureRoot, entry.path)
+    if (!existsSync(path) || sha256(readFileSync(path)) !== entry.digest) {
+      throw new Error(`installed init manifest file digest is stale for ${entry.path}`)
+    }
+  }
+  const harness = JSON.parse(readFileSync(join(fixtureRoot, ".persona", "harness.jsonc"), "utf8"))
+  if (harness?.enforce?.executeVerification !== true) {
+    throw new Error("installed init rerun lost strict verification")
+  }
+}
+
+function snapshotInstalledInitState(fixtureRoot) {
+  const entries = []
+  const visit = (relativePath) => {
+    const path = join(fixtureRoot, relativePath)
+    const stat = lstatSync(path)
+    if (stat.isSymbolicLink()) throw new Error(`installed init state contains a symlink at ${relativePath}`)
+    if (stat.isDirectory()) {
+      entries.push([relativePath, "directory"])
+      for (const name of readdirSync(path).sort()) visit(join(relativePath, name))
+      return
+    }
+    if (!stat.isFile()) throw new Error(`installed init state contains an unsupported entry at ${relativePath}`)
+    entries.push([relativePath, readFileSync(path).toString("base64")])
+  }
+  for (const relativePath of [".persona", ".opencode", ".gitignore", "AGENTS.md"]) visit(relativePath)
+  return JSON.stringify(entries)
 }
 
 function assertPackagedVerifierFailsClosedWithoutSourceCheckout(installedPackage, consumerDirectory) {

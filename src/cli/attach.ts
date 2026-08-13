@@ -4,6 +4,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  realpathSync,
   writeFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
@@ -18,7 +19,7 @@ import {
 } from "./agents-contract.js"
 import { inferAttachProfile } from "./attach-profile.js"
 import { existingAttachmentState } from "./attach-installation-state.js"
-import { copyAttachContext, enableAttachEnforcement } from "./attach-staging.js"
+import { copyAttachContext } from "./attach-staging.js"
 import { commitAttachTree } from "./attach-transaction.js"
 import {
   attachBlocked,
@@ -85,7 +86,11 @@ function runFreshAttach(projectDir: string, options: AttachOptions): CliRunResul
     copyAttachContext(projectDir, stagingDir)
     const bootstrap = runBootstrapCommand(
       ["backend"],
-      { projectDir: stagingDir, packageRoot },
+      {
+        attachStagingOwnership: { kind: "fresh", projectRealPath: realpathSync(projectDir) },
+        projectDir: stagingDir,
+        packageRoot,
+      },
       "ph",
     )
     if (bootstrap.status !== 0) {
@@ -103,7 +108,6 @@ function runFreshAttach(projectDir: string, options: AttachOptions): CliRunResul
         "npx ph attach --yes",
       )
     }
-    enableAttachEnforcement(stagingDir)
     writeManagedAgents(stagingDir)
     commitAttachTree(
       projectDir,
@@ -157,7 +161,11 @@ function runRepair(projectDir: string, options: AttachOptions): CliRunResult {
     cpSync(join(projectDir, ".persona"), join(stagingDir, ".persona"), { recursive: true })
     const bootstrap = runBootstrapCommand(
       ["backend"],
-      { projectDir: stagingDir, packageRoot: options.packageRoot },
+      {
+        attachStagingOwnership: { kind: "repair", projectRealPath: realpathSync(projectDir) },
+        projectDir: stagingDir,
+        packageRoot: options.packageRoot,
+      },
       "ph",
     )
     if (bootstrap.status !== 0) {
@@ -175,7 +183,6 @@ function runRepair(projectDir: string, options: AttachOptions): CliRunResult {
         "npx ph attach --repair --yes",
       )
     }
-    enableAttachEnforcement(stagingDir)
     const agentsPath = join(projectDir, "AGENTS.md")
     writeFileSync(join(stagingDir, "AGENTS.md"), existsSync(agentsPath)
       ? repairManagedBackendAgentInstructions(readFileSync(agentsPath, "utf8"))

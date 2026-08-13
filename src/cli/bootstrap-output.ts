@@ -1,0 +1,68 @@
+import type { CliRunResult } from "./bearshell.js"
+import {
+  codeNavPreviewSummaryLines,
+  CONVENTIONS_DIR_PATH,
+  developerMcpSummaryLines,
+  GITIGNORE_PATH,
+  HARNESS_CONFIG_PATH,
+  lspPreviewSummaryLines,
+  multiAgentPreviewSummaryLines,
+  OPENCODE_CONFIG_PATH,
+  POLICY_OVERLAY_PATH,
+  ROOT_AGENT_INSTRUCTIONS_PATH,
+  RULES_DIR_PATH,
+  runtimeInjectionPreviewSummaryLines,
+  strictModeSummaryLines,
+  type BackendBootstrapFlags,
+} from "./bootstrap-contract.js"
+import { PROFILE_PATH } from "./intake-profile.js"
+import { IMPLEMENTATION_REPORT_PATH, PLAN_PATH, REVIEW_REPORT_PATH } from "./plan.js"
+
+export function backendBootstrapSuccess(
+  flags: BackendBootstrapFlags,
+  actions: readonly string[],
+  skipped: readonly string[],
+): CliRunResult {
+  return {
+    status: 0,
+    stdout: [
+      "Persona Harness backend bootstrap complete.",
+      "",
+      "Actions:",
+      ...(actions.length > 0 ? actions.map((action) => `- ${action}`) : ["- no changes needed"]),
+      "",
+      "Skipped:",
+      ...(skipped.length > 0 ? skipped.map((item) => `- ${item}`) : ["- none"]),
+      "",
+      ...(flags.strict ? [...strictModeSummaryLines(), ""] : []),
+      ...(flags.runtimeInjectionPreview ? [...runtimeInjectionPreviewSummaryLines(), ""] : []),
+      ...(flags.multiAgentPreview ? [...multiAgentPreviewSummaryLines(), ""] : []),
+      ...(flags.codeNavPreview ? [...codeNavPreviewSummaryLines(), ""] : []),
+      ...(flags.lspPreview ? [...lspPreviewSummaryLines(), ""] : []),
+      ...(flags.developerMcpEnabled ? [...developerMcpSummaryLines(flags), ""] : []),
+      "Ready backend bootstrap files:",
+      `- ${HARNESS_CONFIG_PATH}`,
+      `- ${CONVENTIONS_DIR_PATH}`,
+      `- ${RULES_DIR_PATH}`,
+      `- ${OPENCODE_CONFIG_PATH}`,
+      `- ${GITIGNORE_PATH}`,
+      `- ${ROOT_AGENT_INSTRUCTIONS_PATH}`,
+      `- ${PROFILE_PATH}`,
+      `- ${POLICY_OVERLAY_PATH}`,
+      `- ${PLAN_PATH}`,
+      `- ${IMPLEMENTATION_REPORT_PATH}`,
+      `- ${REVIEW_REPORT_PATH}`,
+      "- .persona/workflow/workflow-loop-state.json",
+      "- .persona/workflow/ralph-loop-state.json",
+      "",
+      "Next:",
+      "- Ask the AI agent to run `npx ph workflow implement` before implementation.",
+      "- Short TUI requests like `README.md 보고 구현해줘` should use the workflow rail, not ad hoc commands.",
+      "",
+      "Scope:",
+      "- workflow convenience only",
+      "- no generated app product-quality certification",
+    ].join("\n") + "\n",
+    stderr: "",
+  }
+}
