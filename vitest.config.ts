@@ -17,7 +17,7 @@ const RESOURCE_SENSITIVE_TEST_FILES = [
   "tests/consumer-authority-v083-acceptance-schema.test.ts",
   "tests/consumer-authority-v084-acceptance-schema.test.ts",
   "tests/consumer-authority-v085-acceptance-schema.test.ts",
-  "tests/consumer-authority-v086-acceptance-schema.test.ts",
+  "tests/consumer-authority-v087-acceptance-schema.test.ts",
 ]
 
 export default defineConfig({
