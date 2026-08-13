@@ -1,7 +1,7 @@
 import { gzipSync } from "node:zlib"
-import { mkdtempSync, readFileSync, rmSync } from "node:fs"
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { delimiter, dirname, join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
@@ -9,9 +9,14 @@ import {
   CANONICAL_PACKAGE_PACKER_PROFILE,
   CanonicalPackagePackerError,
   assertCanonicalPackagePackerProfile,
+  canonicalNpmInvocation,
+  createCanonicalPackageTarball,
   canonicalPackageFacts,
+  classifyCanonicalPackagePackerError,
   createCanonicalNpmEnvironment,
+  resolveCanonicalNpmCli,
 } from "../scripts/canonical-package-packer.mjs"
+import { PackageContentIdentityError } from "../scripts/package-content-identity.mjs"
 
 describe("canonical package packer", () => {
   it("pins package metadata and lock metadata to the canonical npm runtime", () => {
@@ -33,9 +38,10 @@ describe("canonical package packer", () => {
   it("isolates npm and Git configuration from the ambient host", () => {
     const parent = mkdtempSync(join(tmpdir(), "persona-canonical-packer-"))
     const workspace = join(parent, "environment")
+    const nodeExecutable = writeFakeNodeDistribution(join(parent, "node-runtime"))
 
     try {
-      const environment = createCanonicalNpmEnvironment(process.cwd(), workspace)
+      const environment = createCanonicalNpmEnvironment(process.cwd(), workspace, nodeExecutable)
 
       expect(environment).toMatchObject({
         GIT_CONFIG_NOSYSTEM: "1",
@@ -51,6 +57,147 @@ describe("canonical package packer", () => {
       expect(environment.NPM_CONFIG_CACHE).toBe(join(workspace, "npm-cache"))
     } finally {
       rmSync(parent, { force: true, recursive: true })
+    }
+  })
+
+  it("binds npm execution to the selected Node distribution instead of PATH", () => {
+    const root = mkdtempSync(join(tmpdir(), "persona-canonical-npm-runtime-"))
+    const nodeExecutable = join(root, "bin", "node")
+    const npmCliPath = join(root, "lib", "node_modules", "npm", "bin", "npm-cli.js")
+    const conflictingBin = join(root, "conflicting-bin")
+    const previousPath = process.env.PATH
+
+    try {
+      mkdirSync(join(root, "bin"), { recursive: true })
+      mkdirSync(join(root, "lib", "node_modules", "npm", "bin"), { recursive: true })
+      mkdirSync(conflictingBin)
+      writeFileSync(nodeExecutable, "selected-node\n", { mode: 0o755 })
+      writeFileSync(npmCliPath, "selected-npm\n", { mode: 0o755 })
+      writeFileSync(join(root, "lib", "node_modules", "npm", "package.json"), JSON.stringify({ version: "10.8.2" }))
+      writeFileSync(join(conflictingBin, "npm"), "conflicting-npm\n", { mode: 0o755 })
+      chmodSync(nodeExecutable, 0o755)
+      chmodSync(npmCliPath, 0o755)
+      process.env.PATH = conflictingBin
+
+      expect(resolveCanonicalNpmCli(nodeExecutable)).toEqual({ nodeExecutable: realpathSync(nodeExecutable), npmCliPath: realpathSync(npmCliPath) })
+      expect(canonicalNpmInvocation(["pack"], nodeExecutable)).toEqual([realpathSync(nodeExecutable), realpathSync(npmCliPath), "pack"])
+      const environment = createCanonicalNpmEnvironment(process.cwd(), join(root, "environment"), nodeExecutable)
+      expect(environment.PATH).toBe(`${dirname(realpathSync(nodeExecutable))}${delimiter}${conflictingBin}`)
+    } finally {
+      process.env.PATH = previousPath
+      rmSync(root, { force: true, recursive: true })
+    }
+  })
+
+  it("fails closed when the selected Node executable is missing", () => {
+    const root = mkdtempSync(join(tmpdir(), "persona-canonical-npm-runtime-missing-"))
+
+    try {
+      expect(() => createCanonicalNpmEnvironment(
+        process.cwd(),
+        join(root, "environment"),
+        join(root, "missing", "node"),
+      )).toThrow("canonical-package-packer-runtime")
+    } finally {
+      rmSync(root, { force: true, recursive: true })
+    }
+  })
+
+  it.each([
+    [new CanonicalPackagePackerError("canonical-package-packer-pack"), "canonical-package-packer-pack"],
+    [new PackageContentIdentityError("package-content-identity-archive"), "canonical-package-packer-content"],
+    [new Error("unexpected raw path or package content"), "canonical-package-packer-internal"],
+  ])("classifies terminal failures without reflecting error details", (error, expected) => {
+    expect(classifyCanonicalPackagePackerError(error)).toBe(expected)
+    expect(classifyCanonicalPackagePackerError(error)).not.toContain("raw")
+    expect(classifyCanonicalPackagePackerError(error)).not.toContain("path")
+  })
+
+  it("accepts an absent output child under a lexical alias of its canonical parent", () => {
+    const root = mkdtempSync(join(tmpdir(), "persona-canonical-output-alias-"))
+    const physicalParent = join(root, "physical-parent")
+    const aliasParent = join(root, "alias-parent")
+    const requestedParent = join(aliasParent, "nested")
+    const outputDirectory = join(requestedParent, "output")
+    const nodeExecutable = writeFakeNodeDistribution(join(root, "node-runtime"))
+    const packageName = "persona-harness"
+    const packageVersion = "0.8.7"
+    const tarballName = `${packageName}-${packageVersion}.tgz`
+    const tarball = createTarball([
+      ["package/package.json", JSON.stringify({ name: packageName, version: packageVersion }) + "\n", 0o600],
+    ])
+    const run = (args: readonly string[]) => {
+      if (args[0] === "prefix") return { status: 0, stdout: `${process.cwd()}\n` }
+      if (args[0] === "config") return { status: 0, stdout: "false\n" }
+      if (args[0] === "pack") {
+        const destination = args[args.indexOf("--pack-destination") + 1]
+        if (destination === undefined) return { status: 1, stdout: "" }
+        writeFileSync(join(destination, tarballName), tarball)
+        return { status: 0, stdout: JSON.stringify([{ filename: tarballName, name: packageName, version: packageVersion }]) }
+      }
+      return { status: 1, stdout: "" }
+    }
+
+    mkdirSync(physicalParent)
+    symlinkSync(physicalParent, aliasParent, "dir")
+    mkdirSync(requestedParent)
+
+    try {
+      const runtime = {
+        nodeExecutable,
+        profile: CANONICAL_PACKAGE_PACKER_PROFILE,
+        run,
+      }
+      const result = createCanonicalPackageTarball(process.cwd(), outputDirectory, runtime)
+
+      expect(realpathSync(outputDirectory)).toBe(join(realpathSync(requestedParent), "output"))
+      expect(result.tarballPath).toBe(join(realpathSync(outputDirectory), tarballName))
+    } finally {
+      rmSync(root, { force: true, recursive: true })
+    }
+  })
+
+  it("rejects a symlinked immediate output parent", () => {
+    const root = mkdtempSync(join(tmpdir(), "persona-canonical-output-parent-"))
+    const physicalParent = join(root, "physical-parent")
+    const symlinkedParent = join(root, "symlinked-parent")
+    const nodeExecutable = writeFakeNodeDistribution(join(root, "node-runtime"))
+
+    mkdirSync(physicalParent)
+    symlinkSync(physicalParent, symlinkedParent, "dir")
+
+    try {
+      expect(() => createCanonicalPackageTarball(
+        process.cwd(),
+        join(symlinkedParent, "output"),
+        { nodeExecutable, profile: CANONICAL_PACKAGE_PACKER_PROFILE },
+      )).toThrow("canonical-package-packer-output")
+    } finally {
+      rmSync(root, { force: true, recursive: true })
+    }
+  })
+
+  it.each([
+    ["missing bundled npm", (npmCliPath: string) => rmSync(npmCliPath, { force: true })],
+    ["mismatched bundled npm", (npmCliPath: string) => writeFileSync(join(dirname(dirname(npmCliPath)), "package.json"), JSON.stringify({ version: "10.9.8" }))],
+  ])("fails closed for a %s", (_label, invalidate) => {
+    const root = mkdtempSync(join(tmpdir(), "persona-canonical-npm-runtime-invalid-"))
+    const nodeExecutable = join(root, "bin", "node")
+    const npmCliPath = join(root, "lib", "node_modules", "npm", "bin", "npm-cli.js")
+
+    try {
+      mkdirSync(join(root, "bin"), { recursive: true })
+      mkdirSync(join(root, "lib", "node_modules", "npm", "bin"), { recursive: true })
+      writeFileSync(nodeExecutable, "selected-node\n", { mode: 0o755 })
+      writeFileSync(npmCliPath, "selected-npm\n", { mode: 0o755 })
+      writeFileSync(join(root, "lib", "node_modules", "npm", "package.json"), JSON.stringify({ version: "10.8.2" }))
+      chmodSync(nodeExecutable, 0o755)
+      chmodSync(npmCliPath, 0o755)
+      invalidate(npmCliPath)
+
+      expect(() => resolveCanonicalNpmCli(nodeExecutable)).toThrow("canonical-package-packer-runtime")
+    } finally {
+      rmSync(root, { force: true, recursive: true })
     }
   })
 
@@ -107,6 +254,19 @@ function createTarball(entries: ReadonlyArray<readonly [string, string, number]>
     blocks.push(header, body, Buffer.alloc((512 - (body.byteLength % 512)) % 512))
   }
   return gzipSync(Buffer.concat([...blocks, Buffer.alloc(1024)]))
+}
+
+function writeFakeNodeDistribution(root: string, npmVersion = "10.8.2"): string {
+  const nodeExecutable = join(root, "bin", "node")
+  const npmCliPath = join(root, "lib", "node_modules", "npm", "bin", "npm-cli.js")
+  mkdirSync(join(root, "bin"), { recursive: true })
+  mkdirSync(join(root, "lib", "node_modules", "npm", "bin"), { recursive: true })
+  writeFileSync(nodeExecutable, "selected-node\n", { mode: 0o755 })
+  writeFileSync(npmCliPath, "selected-npm\n", { mode: 0o755 })
+  writeFileSync(join(root, "lib", "node_modules", "npm", "package.json"), JSON.stringify({ version: npmVersion }))
+  chmodSync(nodeExecutable, 0o755)
+  chmodSync(npmCliPath, 0o755)
+  return nodeExecutable
 }
 
 function writeChecksum(header: Buffer): void {

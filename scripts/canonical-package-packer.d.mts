@@ -12,6 +12,17 @@ export const CANONICAL_PACKAGE_PACKER_PROFILE: {
 export class CanonicalPackagePackerError extends Error {
   readonly code: string
 }
+export function classifyCanonicalPackagePackerError(error: unknown): string
+
+export function resolveCanonicalNpmCli(
+  nodeExecutable?: string,
+  npmCliPath?: string,
+): { readonly nodeExecutable: string; readonly npmCliPath: string }
+export function canonicalNpmInvocation(
+  args: readonly string[],
+  nodeExecutable?: string,
+  npmCliPath?: string,
+): readonly string[]
 
 export function assertCanonicalPackagePackerProfile(value: unknown): typeof CANONICAL_PACKAGE_PACKER_PROFILE
 export function canonicalPackageFacts(
@@ -28,11 +39,15 @@ export function canonicalPackageFacts(
   }
   readonly toolchain: typeof CANONICAL_PACKAGE_PACKER_PROFILE
 }
-export function createCanonicalNpmEnvironment(root: string, workspace: string): Record<string, string>
+export function createCanonicalNpmEnvironment(root: string, workspace: string, nodeExecutable: string): Record<string, string>
 export function createCanonicalPackageTarball(
   root: string,
   outputDirectory: string,
-  runtime?: { readonly profile?: typeof CANONICAL_PACKAGE_PACKER_PROFILE },
+  runtime?: {
+    readonly nodeExecutable?: string
+    readonly npmCliPath?: string
+    readonly profile?: typeof CANONICAL_PACKAGE_PACKER_PROFILE
+  },
 ): {
   readonly facts: ReturnType<typeof canonicalPackageFacts>
   readonly factsPath: string
