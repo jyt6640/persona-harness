@@ -118,15 +118,16 @@ export function createCanonicalNpmEnvironment(root, workspace) {
 export function createCanonicalPackageTarball(root, outputDirectory, runtime = {}) {
   const sourceRoot = realpathSync(root)
   if (sourceRoot !== packageRoot || realpathSync(process.cwd()) !== sourceRoot) fail("canonical-package-packer-root")
-  const profile = runtime.profile ?? readRuntimeProfile(runtime)
+  const npmRuntime = resolveCanonicalNpmCli(runtime.nodeExecutable, runtime.npmCliPath)
+  const profile = runtime.profile ?? readRuntimeProfile(runtime, npmRuntime)
   assertCanonicalPackagePackerProfile(profile)
   const identity = readPackageIdentity(sourceRoot)
   const output = reserveOutputDirectory(outputDirectory)
   const rawDirectory = join(output, "raw")
   mkdirSync(rawDirectory, { mode: 0o700 })
   const environment = createCanonicalNpmEnvironment(sourceRoot, join(output, "environment"))
-  assertNpmRootPolicy(sourceRoot, environment, runtime.run)
-  const result = runNpm(["pack", "--json", "--pack-destination", rawDirectory], sourceRoot, environment, runtime.run)
+  assertNpmRootPolicy(sourceRoot, environment, runtime.run, npmRuntime)
+  const result = runNpm(["pack", "--json", "--pack-destination", rawDirectory], sourceRoot, environment, runtime.run, npmRuntime)
   if (result.status !== 0) fail("canonical-package-packer-pack")
   const rawPath = parsePackPath(result.stdout, rawDirectory, identity)
   const canonical = canonicalizePackageTarball(readFileSync(rawPath))
@@ -138,14 +139,46 @@ export function createCanonicalPackageTarball(root, outputDirectory, runtime = {
   return { facts, factsPath, tarballPath }
 }
 
-function readRuntimeProfile(runtime) {
+export function resolveCanonicalNpmCli(nodeExecutable = process.execPath, npmCliPath = undefined) {
+  if (typeof nodeExecutable !== "string" || !isAbsolute(nodeExecutable)) fail("canonical-package-packer-runtime")
+  let canonicalNode
+  let canonicalNpmCli
+  try {
+    const nodeStat = lstatSync(nodeExecutable)
+    if (!nodeStat.isFile() || nodeStat.isSymbolicLink()) fail("canonical-package-packer-runtime")
+    canonicalNode = realpathSync(nodeExecutable)
+    const distributionRoot = resolve(dirname(canonicalNode), "..")
+    canonicalNpmCli = join(distributionRoot, "lib", "node_modules", "npm", "bin", "npm-cli.js")
+    const expectedNpmCli = resolve(canonicalNpmCli)
+    if (npmCliPath !== undefined && (typeof npmCliPath !== "string" || resolve(npmCliPath) !== expectedNpmCli)) {
+      fail("canonical-package-packer-runtime")
+    }
+    const npmStat = lstatSync(expectedNpmCli)
+    if (!npmStat.isFile() || npmStat.isSymbolicLink()) fail("canonical-package-packer-runtime")
+    const npmPackage = JSON.parse(readFileSync(join(distributionRoot, "lib", "node_modules", "npm", "package.json"), "utf8"))
+    if (npmPackage?.version !== CANONICAL_PACKAGE_PACKER_PROFILE.npm) fail("canonical-package-packer-runtime")
+    canonicalNpmCli = expectedNpmCli
+  } catch (error) {
+    if (error instanceof CanonicalPackagePackerError) throw error
+    fail("canonical-package-packer-runtime")
+  }
+  return { nodeExecutable: canonicalNode, npmCliPath: canonicalNpmCli }
+}
+
+export function canonicalNpmInvocation(args, nodeExecutable = process.execPath, npmCliPath = undefined) {
+  if (!Array.isArray(args) || args.some((argument) => typeof argument !== "string")) fail("canonical-package-packer-runtime")
+  const runtime = resolveCanonicalNpmCli(nodeExecutable, npmCliPath)
+  return [runtime.nodeExecutable, runtime.npmCliPath, ...args]
+}
+
+function readRuntimeProfile(runtime, npmRuntime) {
   const node = process.versions.node
   const npmResult = runNpm(["--version"], packageRoot, {
     LANG: "C",
     LC_ALL: "C",
     PATH: process.env.PATH ?? "",
     TZ: "UTC",
-  }, runtime.run)
+  }, runtime.run, npmRuntime)
   return {
     locale: "C",
     node,
@@ -205,8 +238,8 @@ function parsePackPath(output, directory, identity) {
   return candidate
 }
 
-function assertNpmRootPolicy(root, environment, runner) {
-  const prefix = runNpm(["prefix"], root, environment, runner)
+function assertNpmRootPolicy(root, environment, runner, npmRuntime) {
+  const prefix = runNpm(["prefix"], root, environment, runner, npmRuntime)
   let canonicalPrefix
   try {
     canonicalPrefix = prefix.status === 0 ? realpathSync(prefix.stdout.trim()) : undefined
@@ -220,7 +253,7 @@ function assertNpmRootPolicy(root, environment, runner) {
     ["workspaces", "false"],
   ])
   for (const [name, value] of expected) {
-    const result = runNpm(["config", "get", name], root, environment, runner)
+    const result = runNpm(["config", "get", name], root, environment, runner, npmRuntime)
     if (result.status !== 0 || result.stdout.trim() !== value) fail("canonical-package-packer-policy")
   }
 }
@@ -244,9 +277,12 @@ function writePrivateFile(path, bytes) {
   if (!stat.isFile() || stat.isSymbolicLink() || stat.size !== bytes.byteLength) fail("canonical-package-packer-output")
 }
 
-function runNpm(args, cwd, env, runner = undefined) {
+function runNpm(args, cwd, env, runner = undefined, npmRuntime = undefined) {
+  const invocation = npmRuntime === undefined
+    ? canonicalNpmInvocation(args)
+    : [npmRuntime.nodeExecutable, npmRuntime.npmCliPath, ...args]
   const result = runner === undefined
-    ? spawnSync("npm", args, { cwd, encoding: "utf8", env, maxBuffer: MAX_NPM_OUTPUT_BYTES })
+    ? spawnSync(invocation[0], invocation.slice(1), { cwd, encoding: "utf8", env, maxBuffer: MAX_NPM_OUTPUT_BYTES })
     : runner(args, cwd, env)
   if (!isRecord(result)) fail("canonical-package-packer-runtime")
   return {

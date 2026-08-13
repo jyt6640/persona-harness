@@ -1,7 +1,7 @@
 import { gzipSync } from "node:zlib"
-import { mkdtempSync, readFileSync, rmSync } from "node:fs"
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
@@ -9,8 +9,10 @@ import {
   CANONICAL_PACKAGE_PACKER_PROFILE,
   CanonicalPackagePackerError,
   assertCanonicalPackagePackerProfile,
+  canonicalNpmInvocation,
   canonicalPackageFacts,
   createCanonicalNpmEnvironment,
+  resolveCanonicalNpmCli,
 } from "../scripts/canonical-package-packer.mjs"
 
 describe("canonical package packer", () => {
@@ -51,6 +53,57 @@ describe("canonical package packer", () => {
       expect(environment.NPM_CONFIG_CACHE).toBe(join(workspace, "npm-cache"))
     } finally {
       rmSync(parent, { force: true, recursive: true })
+    }
+  })
+
+  it("binds npm execution to the selected Node distribution instead of PATH", () => {
+    const root = mkdtempSync(join(tmpdir(), "persona-canonical-npm-runtime-"))
+    const nodeExecutable = join(root, "bin", "node")
+    const npmCliPath = join(root, "lib", "node_modules", "npm", "bin", "npm-cli.js")
+    const conflictingBin = join(root, "conflicting-bin")
+    const previousPath = process.env.PATH
+
+    try {
+      mkdirSync(join(root, "bin"), { recursive: true })
+      mkdirSync(join(root, "lib", "node_modules", "npm", "bin"), { recursive: true })
+      mkdirSync(conflictingBin)
+      writeFileSync(nodeExecutable, "selected-node\n", { mode: 0o755 })
+      writeFileSync(npmCliPath, "selected-npm\n", { mode: 0o755 })
+      writeFileSync(join(root, "lib", "node_modules", "npm", "package.json"), JSON.stringify({ version: "10.8.2" }))
+      writeFileSync(join(conflictingBin, "npm"), "conflicting-npm\n", { mode: 0o755 })
+      chmodSync(nodeExecutable, 0o755)
+      chmodSync(npmCliPath, 0o755)
+      process.env.PATH = conflictingBin
+
+      expect(resolveCanonicalNpmCli(nodeExecutable)).toEqual({ nodeExecutable: realpathSync(nodeExecutable), npmCliPath: realpathSync(npmCliPath) })
+      expect(canonicalNpmInvocation(["pack"], nodeExecutable)).toEqual([realpathSync(nodeExecutable), realpathSync(npmCliPath), "pack"])
+    } finally {
+      process.env.PATH = previousPath
+      rmSync(root, { force: true, recursive: true })
+    }
+  })
+
+  it.each([
+    ["missing bundled npm", (npmCliPath: string) => rmSync(npmCliPath, { force: true })],
+    ["mismatched bundled npm", (npmCliPath: string) => writeFileSync(join(dirname(dirname(npmCliPath)), "package.json"), JSON.stringify({ version: "10.9.8" }))],
+  ])("fails closed for a %s", (_label, invalidate) => {
+    const root = mkdtempSync(join(tmpdir(), "persona-canonical-npm-runtime-invalid-"))
+    const nodeExecutable = join(root, "bin", "node")
+    const npmCliPath = join(root, "lib", "node_modules", "npm", "bin", "npm-cli.js")
+
+    try {
+      mkdirSync(join(root, "bin"), { recursive: true })
+      mkdirSync(join(root, "lib", "node_modules", "npm", "bin"), { recursive: true })
+      writeFileSync(nodeExecutable, "selected-node\n", { mode: 0o755 })
+      writeFileSync(npmCliPath, "selected-npm\n", { mode: 0o755 })
+      writeFileSync(join(root, "lib", "node_modules", "npm", "package.json"), JSON.stringify({ version: "10.8.2" }))
+      chmodSync(nodeExecutable, 0o755)
+      chmodSync(npmCliPath, 0o755)
+      invalidate(npmCliPath)
+
+      expect(() => resolveCanonicalNpmCli(nodeExecutable)).toThrow("canonical-package-packer-runtime")
+    } finally {
+      rmSync(root, { force: true, recursive: true })
     }
   })
 

@@ -13,6 +13,16 @@ export class CanonicalPackagePackerError extends Error {
   readonly code: string
 }
 
+export function resolveCanonicalNpmCli(
+  nodeExecutable?: string,
+  npmCliPath?: string,
+): { readonly nodeExecutable: string; readonly npmCliPath: string }
+export function canonicalNpmInvocation(
+  args: readonly string[],
+  nodeExecutable?: string,
+  npmCliPath?: string,
+): readonly string[]
+
 export function assertCanonicalPackagePackerProfile(value: unknown): typeof CANONICAL_PACKAGE_PACKER_PROFILE
 export function canonicalPackageFacts(
   bytes: Buffer,
@@ -32,7 +42,11 @@ export function createCanonicalNpmEnvironment(root: string, workspace: string): 
 export function createCanonicalPackageTarball(
   root: string,
   outputDirectory: string,
-  runtime?: { readonly profile?: typeof CANONICAL_PACKAGE_PACKER_PROFILE },
+  runtime?: {
+    readonly nodeExecutable?: string
+    readonly npmCliPath?: string
+    readonly profile?: typeof CANONICAL_PACKAGE_PACKER_PROFILE
+  },
 ): {
   readonly facts: ReturnType<typeof canonicalPackageFacts>
   readonly factsPath: string
