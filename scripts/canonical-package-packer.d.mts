@@ -38,7 +38,7 @@ export function canonicalPackageFacts(
   }
   readonly toolchain: typeof CANONICAL_PACKAGE_PACKER_PROFILE
 }
-export function createCanonicalNpmEnvironment(root: string, workspace: string): Record<string, string>
+export function createCanonicalNpmEnvironment(root: string, workspace: string, nodeExecutable: string): Record<string, string>
 export function createCanonicalPackageTarball(
   root: string,
   outputDirectory: string,

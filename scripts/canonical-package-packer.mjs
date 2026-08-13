@@ -13,7 +13,7 @@ import {
   writeFileSync,
   writeSync,
 } from "node:fs"
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
+import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import process from "node:process"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
@@ -72,8 +72,18 @@ export function canonicalPackageFacts(bytes, identity, profile = CANONICAL_PACKA
   }
 }
 
-export function createCanonicalNpmEnvironment(root, workspace) {
+export function createCanonicalNpmEnvironment(root, workspace, nodeExecutable) {
   if (typeof root !== "string" || realpathSync(root) !== packageRoot) fail("canonical-package-packer-root")
+  if (typeof nodeExecutable !== "string") fail("canonical-package-packer-runtime")
+  const npmRuntime = resolveCanonicalNpmCli(nodeExecutable)
+  const nodeBinDirectory = dirname(npmRuntime.nodeExecutable)
+  try {
+    const nodeBinStat = lstatSync(nodeBinDirectory)
+    if (!nodeBinStat.isDirectory() || nodeBinStat.isSymbolicLink()) fail("canonical-package-packer-runtime")
+  } catch (error) {
+    if (error instanceof CanonicalPackagePackerError) throw error
+    fail("canonical-package-packer-runtime")
+  }
   if (typeof workspace !== "string" || !isAbsolute(workspace) || existsSync(workspace)) fail("canonical-package-packer-output")
   const parent = dirname(workspace)
   if (!existsSync(parent) || !lstatSync(parent).isDirectory() || lstatSync(parent).isSymbolicLink()) {
@@ -107,7 +117,7 @@ export function createCanonicalNpmEnvironment(root, workspace) {
     NPM_CONFIG_UMASK: CANONICAL_PACKAGE_PACKER_PROFILE.umask,
     NPM_CONFIG_USERCONFIG: userConfig,
     NPM_CONFIG_WORKSPACES: "false",
-    PATH: process.env.PATH ?? "",
+    PATH: prependPath(nodeBinDirectory, process.env.PATH ?? ""),
     SOURCE_DATE_EPOCH: "0",
     TMPDIR: workspace,
     TZ: CANONICAL_PACKAGE_PACKER_PROFILE.timezone,
@@ -125,7 +135,7 @@ export function createCanonicalPackageTarball(root, outputDirectory, runtime = {
   const output = reserveOutputDirectory(outputDirectory)
   const rawDirectory = join(output, "raw")
   mkdirSync(rawDirectory, { mode: 0o700 })
-  const environment = createCanonicalNpmEnvironment(sourceRoot, join(output, "environment"))
+  const environment = createCanonicalNpmEnvironment(sourceRoot, join(output, "environment"), npmRuntime.nodeExecutable)
   assertNpmRootPolicy(sourceRoot, environment, runtime.run, npmRuntime)
   const result = runNpm(["pack", "--json", "--pack-destination", rawDirectory], sourceRoot, environment, runtime.run, npmRuntime)
   if (result.status !== 0) fail("canonical-package-packer-pack")
@@ -293,6 +303,10 @@ function runNpm(args, cwd, env, runner = undefined, npmRuntime = undefined) {
 
 function formatUmask(value) {
   return value.toString(8).padStart(4, "0")
+}
+
+function prependPath(directory, rest) {
+  return rest === "" ? directory : `${directory}${delimiter}${rest}`
 }
 
 function sha256(bytes) {

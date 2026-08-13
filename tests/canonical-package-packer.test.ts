@@ -1,7 +1,7 @@
 import { gzipSync } from "node:zlib"
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { dirname, join } from "node:path"
+import { delimiter, dirname, join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
@@ -35,9 +35,10 @@ describe("canonical package packer", () => {
   it("isolates npm and Git configuration from the ambient host", () => {
     const parent = mkdtempSync(join(tmpdir(), "persona-canonical-packer-"))
     const workspace = join(parent, "environment")
+    const nodeExecutable = writeFakeNodeDistribution(join(parent, "node-runtime"))
 
     try {
-      const environment = createCanonicalNpmEnvironment(process.cwd(), workspace)
+      const environment = createCanonicalNpmEnvironment(process.cwd(), workspace, nodeExecutable)
 
       expect(environment).toMatchObject({
         GIT_CONFIG_NOSYSTEM: "1",
@@ -77,8 +78,24 @@ describe("canonical package packer", () => {
 
       expect(resolveCanonicalNpmCli(nodeExecutable)).toEqual({ nodeExecutable: realpathSync(nodeExecutable), npmCliPath: realpathSync(npmCliPath) })
       expect(canonicalNpmInvocation(["pack"], nodeExecutable)).toEqual([realpathSync(nodeExecutable), realpathSync(npmCliPath), "pack"])
+      const environment = createCanonicalNpmEnvironment(process.cwd(), join(root, "environment"), nodeExecutable)
+      expect(environment.PATH).toBe(`${dirname(realpathSync(nodeExecutable))}${delimiter}${conflictingBin}`)
     } finally {
       process.env.PATH = previousPath
+      rmSync(root, { force: true, recursive: true })
+    }
+  })
+
+  it("fails closed when the selected Node executable is missing", () => {
+    const root = mkdtempSync(join(tmpdir(), "persona-canonical-npm-runtime-missing-"))
+
+    try {
+      expect(() => createCanonicalNpmEnvironment(
+        process.cwd(),
+        join(root, "environment"),
+        join(root, "missing", "node"),
+      )).toThrow("canonical-package-packer-runtime")
+    } finally {
       rmSync(root, { force: true, recursive: true })
     }
   })
@@ -160,6 +177,19 @@ function createTarball(entries: ReadonlyArray<readonly [string, string, number]>
     blocks.push(header, body, Buffer.alloc((512 - (body.byteLength % 512)) % 512))
   }
   return gzipSync(Buffer.concat([...blocks, Buffer.alloc(1024)]))
+}
+
+function writeFakeNodeDistribution(root: string, npmVersion = "10.8.2"): string {
+  const nodeExecutable = join(root, "bin", "node")
+  const npmCliPath = join(root, "lib", "node_modules", "npm", "bin", "npm-cli.js")
+  mkdirSync(join(root, "bin"), { recursive: true })
+  mkdirSync(join(root, "lib", "node_modules", "npm", "bin"), { recursive: true })
+  writeFileSync(nodeExecutable, "selected-node\n", { mode: 0o755 })
+  writeFileSync(npmCliPath, "selected-npm\n", { mode: 0o755 })
+  writeFileSync(join(root, "lib", "node_modules", "npm", "package.json"), JSON.stringify({ version: npmVersion }))
+  chmodSync(nodeExecutable, 0o755)
+  chmodSync(npmCliPath, 0o755)
+  return nodeExecutable
 }
 
 function writeChecksum(header: Buffer): void {
