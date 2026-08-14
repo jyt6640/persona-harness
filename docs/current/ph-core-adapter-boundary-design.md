@@ -1,12 +1,13 @@
 # PH-Core And Adapter Boundary Design
 
-Status: Item 25 design only. This page defines ownership and dependency
-direction; it does not move code, create a new API or schema, add a package,
-change defaults, or implement an adapter.
+Status: Phase 1 partially implemented. This page defines ownership and
+dependency direction. The host-neutral completion-decision core is now an
+internal boundary; package/workspace extraction, public APIs, schemas,
+defaults, and adapters remain deferred.
 
-**Source snapshot:** `16c741026c3b0c6abc6e3022c976c4f6909e9a2d`
-(`docs: record quick demo gate flow acceptance`). All source references below
-are snapshots at that commit.
+**Source snapshot:** `175c08b15c450bae9477c8698f016846ea8443e9`
+(`fix: canonicalize packer output parent (#280)`). Source references below
+describe the baseline before the completion-decision core extraction.
 
 ## Decision
 
@@ -40,6 +41,26 @@ language pack declarations -> PH-core <- CI adapter
 Adapters may call public PH entry and diagnostic surfaces. They may not
 reinterpret a successful methodology step, host event, or CI wrapper action as
 a passed PH finish result.
+
+## Implemented Completion-Decision Core
+
+`src/core/completion-decision.ts` owns the final decision shape used by the
+workflow finish authority:
+
+- a trusted cooperative authority can satisfy only cooperative assurance;
+- a trusted external authority can satisfy only external assurance;
+- a blocked or unavailable authority preserves a blocker and cannot pass;
+- a policy mismatch remains blocked rather than falling back to another
+  assurance level.
+
+The core has no imports. It does not read project files, run commands, call a
+host, inspect a provider artifact, or know about Java/Spring. Existing CLI
+code maps its live authority capabilities into the core and retains ownership
+of verification and artifact consumption. `workflow-finish-authority` derives
+its `trusted` or `blocked` status from the core decision's `passed` field.
+
+This is intentionally an internal seam, not a new user-facing command or a
+claim that every planned PH-core interface already exists.
 
 ## PH-Core Boundary
 
@@ -128,7 +149,8 @@ cannot auto-finish work, verify reports, alter gates, or create a host default.
 | PH-core ticket contract | `src/cli/workflow-ticket-model.ts:BacklogTicket, formatTaskCard, parseBacklog @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Defines current backlog/task-card state material and schema-versioned text contracts. |
 | PH-core workflow mutation | `src/cli/workflow-tickets.ts:writeWorkflowStateSnapshot, archiveBlockingBlockers @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Applies conflict-aware state writes and consults closure before archive. |
 | PH-core closure state | `src/cli/workflow-closure.ts:readWorkflowClosurePayload, closureBlockers @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Derives the structured closure state and deterministic blockers. |
-| PH-core finish | `src/cli/workflow-finish-runner.ts:runWorkflowFinishResult @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Uses closure reasons to render the existing plaintext pass/block result. |
+| PH-core completion decision | `src/core/completion-decision.ts:resolveCompletionDecision` | Maps trusted or blocked authority evidence and the requested assurance into final state, blockers, and `passed`; it has no adapter/provider/runtime imports. |
+| PH-core finish | `src/cli/workflow-finish-runner.ts:runWorkflowFinishResult @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d`; `src/cli/workflow-finish-authority.ts:workflowFinishAuthorityResult` | Uses closure reasons and the core decision to render the existing plaintext pass/block result. |
 | PH-core verification authority | `src/cli/workflow-closure-verification.ts:readClosureVerification @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d`; `src/cli/closure-verification-runner.ts:runDirectClosureVerification @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Selects direct PH verification when configured and otherwise classifies report/execution evidence without silently treating prose as proof. |
 | Language-pack profile | `src/config/project-profile.ts:readBackendProjectProfileState @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Reads the current supported Java/Spring backend profile state. |
 | Language-pack conventions | `src/cli/convention-pack.ts:collectConventionFiles @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d`; `src/cli/ast-grep-convention-runner.ts:loadAstGrepConventionDefinitions @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Loads convention declarations and maps their pack metadata into current convention definitions. |
@@ -138,15 +160,15 @@ cannot auto-finish work, verify reports, alter gates, or create a host default.
 | Host adapter | `src/runtime/hooks.ts:createPhase0Hooks @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Current host hook/injection translation point, guarded by the existing runtime-injection configuration. |
 | Methodology driver | `packages/shared-skills/skills/advanced/superpowers-driver/SKILL.md:Superpowers Driver @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Manual source-only driver that explicitly defers authority to PH CLI exit and closure/finish surfaces. |
 
-These references describe current placement only. They are not a mandate to
-rename, extract, or relocate any listed file in this design tranche.
+All references other than the implemented completion-decision core describe
+current placement only. They are not a mandate to rename, extract, or relocate
+the listed files in this tranche.
 
 ## Future Implementation Tickets
 
-1. **I25-1 Core-contract extraction assessment:** identify which current
-   closure, ticket, evidence, and profile-verification operations can share an
-   internal boundary without changing existing CLI, workflow, or evidence
-   schemas.
+1. **I25-1 Completion-decision core:** implemented as an internal authority
+   seam. It does not yet extract ticket, evidence, profile-verification, or
+   command-execution responsibilities.
 2. **I25-2 Java/Spring pack inventory:** define the accepted Java/Spring
    profile/catalog, convention, fixture, delivery-reference, and precision
    inventory before any new language-pack mechanism or enforcement promotion.
@@ -172,8 +194,8 @@ rename, extract, or relocate any listed file in this design tranche.
 - Item 19's proposed fresh CI verification artifact remains its own design and
   implementation decision.
 
-None of these forks permits a current module move, a new public API, a schema
-change, a default change, or a runtime hook.
+None of these deferred forks permits a new public API, a schema change, a
+default change, or a runtime hook.
 
 ## Non-Goals And Preserved State
 
@@ -183,6 +205,5 @@ quality, efficacy, or broad reliability, provide a hostile-workspace security
 guarantee, or implement multiple languages.
 
 `runtimeInjection=false`, existing commands and public help, workflow/evidence
-schemas, package version, release state, and current package contents remain
-unchanged except for packaging this current design record under the established
-docs policy.
+schemas, package version, and release state remain unchanged. The only code
+extraction in this tranche is the internal completion-decision core.

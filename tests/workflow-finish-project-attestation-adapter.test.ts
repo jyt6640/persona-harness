@@ -52,6 +52,7 @@ describe("workflow Finish enrolled project attestation adapter", () => {
     const result = readWorkflowFinishAuthority(project(), { consumeExternalAttestation: false, now })
 
     expect(result).toMatchObject({
+      completion: { blockers: [], passed: true, state: "externally-attested" },
       decision: { authorityProvider: "external-attested", consumptionState: "unconsumed" },
       status: "trusted",
     })
@@ -66,6 +67,7 @@ describe("workflow Finish enrolled project attestation adapter", () => {
     const result = readWorkflowFinishAuthority(projectDir, { consumeExternalAttestation: false, now })
 
     expect(result).toMatchObject({
+      completion: { blockers: [], passed: true, state: "externally-attested" },
       decision: { authorityProvider: "external-attested", consumptionState: "unconsumed" },
       projectAttestation: { authorityEligible: true, consumptionState: "unconsumed" },
       status: "trusted",

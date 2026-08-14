@@ -1,5 +1,11 @@
 import { isLiveCooperativeDecision } from "./cooperative-finish-authority.js"
 import type { CooperativeCurrentProcessVerificationDecision } from "./cooperative-finish-authority.js"
+import {
+  resolveCompletionDecision,
+  type CompletionAuthorityEvidence,
+  type CompletionDecision,
+} from "../core/completion-decision.js"
+import type { CompletionAssuranceRequirement } from "../core/completion-decision.js"
 
 export type VerificationAssurance =
   | "diagnostic-only"
@@ -17,7 +23,7 @@ export type VerificationConsumptionState =
   | "unconsumed"
   | "consumed"
 
-export type FinishAssuranceRequirement = "cooperative" | "external"
+export type FinishAssuranceRequirement = CompletionAssuranceRequirement
 
 export const DEFAULT_FINISH_ASSURANCE_REQUIREMENT = "external" as const
 
@@ -145,14 +151,18 @@ export function completionEligibleForAssurance(
   value: unknown,
   requirement: FinishAssuranceRequirement = DEFAULT_FINISH_ASSURANCE_REQUIREMENT,
 ): boolean {
-  switch (requirement) {
-    case "cooperative":
-      return isLiveCooperativeDecision(value)
-    case "external":
-      return isExternalAttestedVerificationDecision(value)
-    default:
-      return assertNever(requirement)
-  }
+  return completionDecisionForVerification(value, requirement).passed
+}
+
+export function completionDecisionForVerification(
+  value: unknown,
+  requirement: FinishAssuranceRequirement = DEFAULT_FINISH_ASSURANCE_REQUIREMENT,
+): CompletionDecision {
+  return resolveCompletionDecision({
+    authority: authorityEvidenceForVerification(value),
+    policyBlocker: policyBlockerForRequirement(requirement),
+    requirement,
+  })
 }
 
 export function verificationDecisionSummary(decision: VerificationDecision): string {
@@ -171,4 +181,53 @@ export function verificationDecisionSummary(decision: VerificationDecision): str
 
 function assertNever(value: never): never {
   throw new TypeError(`Unknown verification decision status: ${String(value)}`)
+}
+
+function authorityEvidenceForVerification(value: unknown): CompletionAuthorityEvidence {
+  if (isExternalAttestedVerificationDecision(value)) {
+    return { assurance: "external", kind: "trusted" }
+  }
+  if (isLiveCooperativeDecision(value)) {
+    return { assurance: "cooperative", kind: "trusted" }
+  }
+  if (isDescriptiveNonEligibleVerificationDecision(value)) {
+    return { code: value.code, kind: "blocked", summary: value.summary }
+  }
+  return {
+    code: "verification-authority-unavailable",
+    kind: "blocked",
+    summary: "No live verification authority is available for completion.",
+  }
+}
+
+function isDescriptiveNonEligibleVerificationDecision(
+  value: unknown,
+): value is BlockedVerificationDecision | DiagnosticVerificationDecision {
+  if (!isRecord(value)) {
+    return false
+  }
+  return (value["kind"] === "blocked" || value["kind"] === "diagnostic-only")
+    && typeof value["code"] === "string"
+    && typeof value["summary"] === "string"
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function policyBlockerForRequirement(requirement: FinishAssuranceRequirement): CompletionDecision["blockers"][number] {
+  switch (requirement) {
+    case "cooperative":
+      return {
+        code: "cooperative-authority-required",
+        summary: "A live cooperative verification result is required before completion can pass.",
+      }
+    case "external":
+      return {
+        code: "trusted-authority-required",
+        summary: "A trusted external authority is required before completion can pass.",
+      }
+    default:
+      return assertNever(requirement)
+  }
 }

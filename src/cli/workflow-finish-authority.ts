@@ -11,11 +11,12 @@ import {
 } from "./workflow-semantic-tdd.js"
 import {
   blockedVerificationDecision,
-  completionEligibleForAssurance,
+  completionDecisionForVerification,
   diagnosticVerificationDecision,
   externalAttestedVerificationDecision,
   type VerificationDecision,
 } from "./workflow-verification-decision.js"
+import type { CompletionDecision } from "../core/completion-decision.js"
 import {
   verifyExternalFinishAttestation,
   verifyExternalFinishAttestationForClosure,
@@ -32,6 +33,7 @@ export const TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID = "trusted-authority-required
 export type WorkflowFinishAuthority = {
   readonly assessment: VerificationAuthorityAssessment
   readonly blocker: ClosureBlocker
+  readonly completion: CompletionDecision
   readonly decision: VerificationDecision
   readonly externalAttestation: FinishAttestationAssessment
   readonly projectAttestation?: ProjectFinishAttestationVerifierAssessment
@@ -72,8 +74,9 @@ export function readWorkflowFinishAuthority(
         sourceSnapshotDigest: externalAttestation.receipt.source.identity.contentDigest,
         verifiedAt: now.toISOString(),
       })
-      if (completionEligibleForAssurance(decision)) {
-        return {
+      const completion = completionDecisionForVerification(decision)
+      if (completion.passed) {
+        return workflowFinishAuthorityResult({
           assessment,
           blocker: {
             id: TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID,
@@ -83,8 +86,7 @@ export function readWorkflowFinishAuthority(
           decision,
           externalAttestation,
           semanticTdd,
-          status: "trusted",
-        }
+        }, completion)
       }
     }
     const decision = blockedVerificationDecision(
@@ -99,7 +101,7 @@ export function readWorkflowFinishAuthority(
         "Only a product-verified original external attestation matching its enrolled policy can provide trusted authority before finish can pass.",
       ].join(" "),
     )
-    return {
+    return workflowFinishAuthorityResult({
       assessment,
       decision,
       blocker: {
@@ -109,8 +111,7 @@ export function readWorkflowFinishAuthority(
       },
       externalAttestation,
       semanticTdd,
-      status: "blocked",
-    }
+    })
   }
   const projectRead = readEnrolledProjectFinishAttestations(projectDir, { storeRoot: options.authorityStoreRoot }, now)
   const trustedProjects = projectRead.values.filter((candidate) => candidate.assessment.authorityEligible)
@@ -128,8 +129,9 @@ export function readWorkflowFinishAuthority(
           sourceSnapshotDigest: projectAttestation.receipt.source.identity.contentDigest,
           verifiedAt: now.toISOString(),
         })
-        if (completionEligibleForAssurance(decision)) {
-          return {
+        const completion = completionDecisionForVerification(decision)
+        if (completion.passed) {
+          return workflowFinishAuthorityResult({
             assessment,
             blocker: {
               id: TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID,
@@ -140,8 +142,7 @@ export function readWorkflowFinishAuthority(
             externalAttestation: externalInspection,
             projectAttestation,
             semanticTdd,
-            status: "trusted",
-          }
+          }, completion)
         }
       }
     }
@@ -162,7 +163,7 @@ export function readWorkflowFinishAuthority(
       "Only a product-verified original external attestation matching its enrolled policy can provide trusted authority before finish can pass.",
     ].join(" "),
   )
-  return {
+  return workflowFinishAuthorityResult({
     assessment,
     decision,
     blocker: {
@@ -173,8 +174,7 @@ export function readWorkflowFinishAuthority(
     projectAttestation: projectRead.values[0]?.assessment,
     semanticTdd,
     externalAttestation,
-    status: "blocked",
-  }
+  })
 }
 
 function readCapabilityBoundWorkflowFinishAuthority(
@@ -245,8 +245,9 @@ function readCapabilityBoundWorkflowFinishAuthority(
           sourceSnapshotDigest: projectAttestation.receipt.source.identity.contentDigest,
           verifiedAt: now.toISOString(),
         })
-        if (completionEligibleForAssurance(decision)) {
-          return {
+        const completion = completionDecisionForVerification(decision)
+        if (completion.passed) {
+          return workflowFinishAuthorityResult({
             assessment,
             blocker: {
               id: TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID,
@@ -257,8 +258,7 @@ function readCapabilityBoundWorkflowFinishAuthority(
             externalAttestation,
             projectAttestation,
             semanticTdd,
-            status: "trusted",
-          }
+          }, completion)
         }
       }
     }
@@ -274,7 +274,7 @@ function readCapabilityBoundWorkflowFinishAuthority(
       "Only a product-verified original external attestation matching its enrolled policy can provide trusted authority before finish can pass.",
     ].join(" "),
   )
-  return {
+  return workflowFinishAuthorityResult({
     assessment,
     blocker: {
       id: TRUSTED_AUTHORITY_REQUIRED_BLOCKER_ID,
@@ -285,6 +285,16 @@ function readCapabilityBoundWorkflowFinishAuthority(
     externalAttestation,
     projectAttestation: projectRead.values[0]?.assessment,
     semanticTdd,
-    status: "blocked",
+  })
+}
+
+function workflowFinishAuthorityResult(
+  input: Omit<WorkflowFinishAuthority, "completion" | "status">,
+  completion: CompletionDecision = completionDecisionForVerification(input.decision),
+): WorkflowFinishAuthority {
+  return {
+    ...input,
+    completion,
+    status: completion.passed ? "trusted" : "blocked",
   }
 }

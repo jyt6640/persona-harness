@@ -113,7 +113,7 @@ Total indexed files: 337
 | `docs/current/p0-go-acceptance-record.md` | current active pointer/status | - | P0-1 exact-main acceptance, provenance, package evidence, and claim boundary record. |
 | `docs/current/p0-public-discovery-acceptance-record.md` | current active pointer/status | - | P0-3 exact-main public discovery, writer safety, package evidence, and claim boundary record. |
 | `docs/current/ph-bearshell-mvp.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
-| `docs/current/ph-core-adapter-boundary-design.md` | current active pointer/status | - | Item 25 design-only PH-core/language-pack/adapter ownership and dependency boundary. |
+| `docs/current/ph-core-adapter-boundary-design.md` | current active pointer/status | - | PH-core/language-pack/adapter ownership boundary, including the implemented internal completion-decision seam and deferred extraction work. |
 | `docs/current/p3-integrity-roadmap.md` | current active pointer/status | - | Accepted P3-first integrity roadmap, release hold, assurance model, and P2 hold; docs-only pending implementation. |
 | `docs/current/p3-2-closure-authority-acceptance-record.md` | current active pointer/status | - | Candidate finish boundary: unsigned project-local evidence is diagnostic-only and no trusted authority path exists yet. |
 | `docs/current/p3-3-verification-receipt-acceptance-record.md` | current active pointer/status | - | Strict receipt/attempt parser and read-only lifecycle diagnostics; no receipt issuance or finish-authority acceptance. |
