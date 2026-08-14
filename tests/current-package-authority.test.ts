@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest"
 const repositoryRoot = process.cwd()
 
 describe("current package authority", () => {
-  it("binds the root, lockfile, and private shared package to 0.8.7", () => {
+  it("binds the root, lockfile, and private shared package to 0.8.8", () => {
     const packageJson = JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8")) as {
       readonly version: string
     }
@@ -18,19 +18,19 @@ describe("current package authority", () => {
       readonly version: string
     }
 
-    expect(packageJson.version).toBe("0.8.7")
-    expect(packageLock.version).toBe("0.8.7")
-    expect(packageLock.packages[""]?.version).toBe("0.8.7")
-    expect(sharedPackage.version).toBe("0.8.7")
+    expect(packageJson.version).toBe("0.8.8")
+    expect(packageLock.version).toBe("0.8.8")
+    expect(packageLock.packages[""]?.version).toBe("0.8.8")
+    expect(sharedPackage.version).toBe("0.8.8")
   })
 
   it("ships a distinct current acceptance record while retaining historical records", () => {
     const packageJson = JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8")) as {
       readonly files: readonly string[]
     }
-    const currentSchema = "scripts/consumer-authority-v087-acceptance-schema.mjs"
-    const currentTypes = "scripts/consumer-authority-v087-acceptance-schema.d.mts"
-    const currentRecord = "docs/current/release/consumer-authority-v087-acceptance.json"
+    const currentSchema = "scripts/consumer-authority-v088-acceptance-schema.mjs"
+    const currentTypes = "scripts/consumer-authority-v088-acceptance-schema.d.mts"
+    const currentRecord = "docs/current/release/consumer-authority-v088-acceptance.json"
 
     expect(existsSync(join(repositoryRoot, currentSchema))).toBe(true)
     expect(existsSync(join(repositoryRoot, currentTypes))).toBe(true)
@@ -39,5 +39,6 @@ describe("current package authority", () => {
     expect(existsSync(join(repositoryRoot, "docs/current/release/consumer-authority-v084-acceptance.json"))).toBe(true)
     expect(existsSync(join(repositoryRoot, "docs/current/release/consumer-authority-v085-acceptance.json"))).toBe(true)
     expect(existsSync(join(repositoryRoot, "docs/current/release/consumer-authority-v086-acceptance.json"))).toBe(true)
+    expect(existsSync(join(repositoryRoot, "docs/current/release/consumer-authority-v087-acceptance.json"))).toBe(true)
   })
 })

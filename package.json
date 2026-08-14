@@ -1,6 +1,6 @@
 {
   "name": "persona-harness",
-  "version": "0.8.7",
+  "version": "0.8.8",
   "private": false,
   "type": "module",
   "packageManager": "npm@10.8.2",
@@ -216,6 +216,8 @@
     "scripts/consumer-authority-v086-acceptance-schema.mjs",
     "scripts/consumer-authority-v087-acceptance-schema.d.mts",
     "scripts/consumer-authority-v087-acceptance-schema.mjs",
+    "scripts/consumer-authority-v088-acceptance-schema.d.mts",
+    "scripts/consumer-authority-v088-acceptance-schema.mjs",
     "scripts/consumer-authority-v081-acceptance-schema.d.mts",
     "scripts/consumer-authority-v081-acceptance-schema.mjs",
     "scripts/consumer-authority-rc1-acceptance-schema.mjs",
