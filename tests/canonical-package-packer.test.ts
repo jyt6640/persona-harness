@@ -120,8 +120,9 @@ describe("canonical package packer", () => {
     const requestedParent = join(aliasParent, "nested")
     const outputDirectory = join(requestedParent, "output")
     const nodeExecutable = writeFakeNodeDistribution(join(root, "node-runtime"))
-    const packageName = "persona-harness"
-    const packageVersion = "0.8.7"
+    const packageIdentity = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"))
+    const packageName = packageIdentity.name
+    const packageVersion = packageIdentity.version
     const tarballName = `${packageName}-${packageVersion}.tgz`
     const tarball = createTarball([
       ["package/package.json", JSON.stringify({ name: packageName, version: packageVersion }) + "\n", 0o600],
