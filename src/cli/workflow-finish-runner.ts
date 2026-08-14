@@ -30,7 +30,7 @@ export function runWorkflowFinishResult(
     const authority = readWorkflowFinishAuthority(projectDir, {
       projectReadBoundary: projectRead?.boundary,
     })
-    if (authority.status === "blocked") {
+    if (!authority.completion.passed) {
       const blocker = authority.blocker
       const followUp = workflowFinishFollowUpForStep({
         blockerId: blocker.id,

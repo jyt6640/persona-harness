@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import {
   blockedVerificationDecision,
+  completionDecisionForVerification,
   completionEligibleForAssurance,
   diagnosticVerificationDecision,
   externalAttestedVerificationDecision,
@@ -93,6 +94,10 @@ describe("verification decision model", () => {
 
     expect(isExternalAttestedVerificationDecision(diskValue)).toBe(false)
     expect(completionEligibleForAssurance(diskValue)).toBe(false)
+    expect(completionDecisionForVerification(diskValue)).toMatchObject({
+      passed: false,
+      state: "blocked",
+    })
   })
 
   it("keeps the default finish requirement external even when another eligible assurance kind exists", () => {
@@ -131,6 +136,12 @@ describe("verification decision model", () => {
       code: "trusted-authority-required",
       status: "blocked",
     })
+    expect(finish.completion).toMatchObject({
+      blockers: [{ code: "trusted-authority-required" }],
+      passed: false,
+      state: "blocked",
+    })
+    expect(finish.status).toBe(finish.completion.passed ? "trusted" : "blocked")
     if (finish.decision.status !== "blocked") {
       throw new Error("expected the finish decision to remain blocked")
     }
