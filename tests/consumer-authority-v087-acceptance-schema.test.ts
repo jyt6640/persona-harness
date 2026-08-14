@@ -11,7 +11,6 @@ import {
   V087AcceptanceManifestError,
   canonicalV087AcceptanceManifest,
   parseV087AcceptanceManifest,
-  readV087AcceptanceManifest,
 } from "../scripts/consumer-authority-v087-acceptance-schema.mjs"
 import {
   parseV082AcceptanceManifest,
@@ -24,9 +23,11 @@ import { parseV086AcceptanceManifest } from "../scripts/consumer-authority-v086-
 const repositoryRoot = process.cwd()
 
 describe("consumer authority 0.8.7 acceptance schema", () => {
-  it("binds the current package and lock to a new strict 0.8.7 record while preserving history", () => {
-    const manifest = readV087AcceptanceManifest(repositoryRoot)
-    const packageLock = JSON.parse(readFileSync(join(repositoryRoot, "package-lock.json"), "utf8"))
+  it("keeps the strict 0.8.7 record as published history", () => {
+    const manifest = parseV087AcceptanceManifest(
+      JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v087-acceptance.json"), "utf8")),
+      "0.8.7",
+    )
     const v082 = parseV082AcceptanceManifest(
       JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v082-acceptance.json"), "utf8")),
       "0.8.2",
@@ -47,8 +48,6 @@ describe("consumer authority 0.8.7 acceptance schema", () => {
     const historicalPrefetch = record(record(v086.prearmedExternalHandoff).finalObserverProcedure).prefetchSteps
 
     expect(manifest.package).toMatchObject({ scope: "source-candidate", version: "0.8.7" })
-    expect(packageLock).toMatchObject({ version: manifest.package.version })
-    expect(packageLock.packages[""]).toMatchObject({ version: manifest.package.version })
     expect(manifest.v082HistoricalRelease).toMatchObject({ reusableForV087: false, version: "0.8.2" })
     expect(manifest.v083HistoricalRelease).toMatchObject({ reusableForV087: false, version: "0.8.3" })
     expect(manifest.v085HistoricalRelease).toMatchObject({ reusableForV087: false, version: "0.8.5" })
@@ -106,7 +105,10 @@ describe("consumer authority 0.8.7 acceptance schema", () => {
       const bootstrap = runPersonaCli(["bootstrap", "backend", "--strict", "--no-developer-mcp"], cliOptions)
       const beforeAcceptance = runPersonaCli(["plan", "--status"], cliOptions)
       const beforeClosure = runPersonaCli(["workflow", "closure", "next", "--json"], cliOptions)
-      const manifest = readV087AcceptanceManifest(repositoryRoot)
+      const manifest = parseV087AcceptanceManifest(
+        JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v087-acceptance.json"), "utf8")),
+        "0.8.7",
+      )
       const readiness = record(manifest.preAuthorityReadiness)
 
       expect(bootstrap.status).toBe(0)
@@ -141,7 +143,7 @@ describe("consumer authority 0.8.7 acceptance schema", () => {
     }
   })
 
-  it("routes both direct current preflights through v087 without changing their bounded behavior", () => {
+  it("keeps both direct current preflights on the newer v088 record", () => {
     const root = mkdtempSync(join(tmpdir(), "persona-v087-preflight-"))
     const ghPath = join(root, "gh")
     try {
@@ -177,8 +179,8 @@ describe("consumer authority 0.8.7 acceptance schema", () => {
         "preflight-consumer-authority-external-artifact-transport.mjs",
       ]) {
         const source = readFileSync(join(repositoryRoot, "scripts", script), "utf8")
-        expect(source).toContain('from "./consumer-authority-v087-acceptance-schema.mjs"')
-        expect(source).toContain("readV087AcceptanceManifest(packageRoot)")
+        expect(source).toContain('from "./consumer-authority-v088-acceptance-schema.mjs"')
+        expect(source).toContain("readV088AcceptanceManifest(packageRoot)")
         expect(source).not.toContain("readV082AcceptanceManifest(packageRoot)")
       }
     } finally {
