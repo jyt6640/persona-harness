@@ -13,6 +13,11 @@ closure authority. It is separate from `features.runtimeInjection`,
 `enforce.systemConstitution`, `enforce.idleContinuation`, and
 `enforce.ralphLoop`; enabling one does not enable another.
 
+The auth/security design hold is on the separate `runtimeInjection` path.
+Setting `entrySteering` alone never enables that hold; users who need it must
+explicitly set `features.runtimeInjection` to `true`. Both features remain
+default-off.
+
 If the host output has no user-message session identity, this surface returns
 without an advisory or status record. It does not evaluate or annotate another
 session's messages in an interleaved history. This is a bounded host-output

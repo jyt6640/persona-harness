@@ -25,6 +25,12 @@ describe("auth design decision hold", () => {
       nextSlot: "provider",
     })
     expect(result?.kind === "design-required" ? result.decision.missingSlots : []).toEqual(AUTH_DESIGN_DECISION_SLOTS)
+    expect(result?.kind === "design-required" ? result.block : "").toContain(
+      "Respond with exactly one question ending in `?` about the named decision slot.",
+    )
+    expect(result?.kind === "design-required" ? result.block : "").toContain(
+      "Do not provide a solution, implementation, plan, command, or file change.",
+    )
   })
 
   it("keeps a bare approval blocked while any architecture slot is missing", () => {

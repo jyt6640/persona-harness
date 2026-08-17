@@ -143,7 +143,7 @@ describe("consumer authority 0.8.7 acceptance schema", () => {
     }
   })
 
-  it("keeps both direct current preflights on the newer v088 record", () => {
+  it("keeps both direct current preflights on the newer v089 record", () => {
     const root = mkdtempSync(join(tmpdir(), "persona-v087-preflight-"))
     const ghPath = join(root, "gh")
     try {
@@ -179,8 +179,8 @@ describe("consumer authority 0.8.7 acceptance schema", () => {
         "preflight-consumer-authority-external-artifact-transport.mjs",
       ]) {
         const source = readFileSync(join(repositoryRoot, "scripts", script), "utf8")
-        expect(source).toContain('from "./consumer-authority-v088-acceptance-schema.mjs"')
-        expect(source).toContain("readV088AcceptanceManifest(packageRoot)")
+        expect(source).toContain('from "./consumer-authority-v089-acceptance-schema.mjs"')
+        expect(source).toContain("readV089AcceptanceManifest(packageRoot)")
         expect(source).not.toContain("readV082AcceptanceManifest(packageRoot)")
       }
     } finally {
