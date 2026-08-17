@@ -193,6 +193,8 @@ function renderDesignRequired(decision: AuthDesignDecisionSummary, nextSlot: Aut
     `State: ${decision.state}`,
     `Next decision slot: ${SLOT_PROMPTS[nextSlot]}`,
     "Resolve the named architecture decisions one at a time before implementation or workflow progression.",
+    "Respond with exactly one question ending in `?` about the named decision slot.",
+    "Do not provide a solution, implementation, plan, command, or file change.",
     "No provider, domain, callback, state, layer, type/exception, or global-scope convention is inferred.",
     "Reply with the decision, or use `defer`, `stop`, or `approve` only after every slot is explicit.",
     "No plan, ticket, workflow, branch, file, issue, or agent action has been created.",

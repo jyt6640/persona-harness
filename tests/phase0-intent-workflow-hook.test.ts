@@ -141,6 +141,20 @@ describe("intent workflow hook boundary", () => {
     expect(existsSync(join(fixtureWorkspace, ".persona", "evidence"))).toBe(false)
   })
 
+  it("does not enable the auth design hold from entry steering alone", async () => {
+    writeFileSync(
+      join(fixtureWorkspace, ".persona", "harness.jsonc"),
+      `${JSON.stringify({ features: { entrySteering: true, runtimeInjection: false }, enabledDomains: ["workflow", "product"] }, null, 2)}\n`,
+    )
+
+    const text = await transformPrompt("session-auth-design-entry-steering-only", "Implement OAuth login for the service")
+
+    expect(text).not.toContain("[Persona Harness Auth Design Hold]")
+    expect(text).toContain("[Persona Harness Entry Steering]")
+    expect(existsSync(join(fixtureWorkspace, ".persona", "workflow"))).toBe(false)
+    expect(existsSync(join(fixtureWorkspace, ".persona", "evidence", "phase0"))).toBe(false)
+  })
+
   it("selects code-first brownfield discovery when the project already has source", async () => {
     mkdirSync(join(fixtureWorkspace, "src"), { recursive: true })
     writeFileSync(join(fixtureWorkspace, "src", "existing.ts"), "export const existing = true\n", { encoding: "utf8", flag: "w" })
