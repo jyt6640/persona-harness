@@ -6,3 +6,6 @@ contact_links:
   - name: What is measured / not proven
     url: https://github.com/jyt6640/persona-harness/blob/main/docs/current/injection-value-status.json
     about: Start evidence-related proposals from the current measured-claims record.
+  - name: Share your first workflow
+    url: https://github.com/jyt6640/persona-harness/discussions/categories/show-and-tell
+    about: Tell us where installation or your first workflow helped or stopped.
