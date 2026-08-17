@@ -35,7 +35,7 @@ const MUTATION_EVENT_TYPES = new Set([
 const COMMAND_PATTERN = /`[^`]*`|(?:^|\s)(?:bash|command|curl|git|npm|npx|run|shell|execute)\b/iu
 const FILE_CHANGE_PATTERN = /(?:\b(?:add|change|create|delete|edit|modify|remove|update|write)\b.*\b(?:file|source|screen|component)\b|(?:src|app|components|pages|routes)\/|\.(?:c|cc|cpp|go|java|js|jsx|mjs|py|rs|ts|tsx|vue)\b)/iu
 const PLAN_PATTERN = /\b(?:next step|plan|roadmap|step \d|steps)\b/iu
-const SOLUTION_PATTERN = /\b(?:build|implement|implementation|recommend|solution|use|here(?:'s| is))\b/iu
+const SOLUTION_PATTERN = /\b(?:(?:i|we)\s+(?:will\s+)?(?:build|implement|recommend|suggest)|you\s+should\s+(?:use|build|implement)|the\s+solution\s+(?:is|would be)|here(?:'s| is))\b/iu
 
 export const OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION = SCHEMA_VERSION
 

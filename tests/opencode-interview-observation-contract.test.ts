@@ -87,6 +87,36 @@ describe("OpenCode interview observation contract", () => {
     })
   })
 
+  it("accepts a design clarification that uses the ordinary word use", () => {
+    const result = evaluateOpenCodeInterviewObservation(observation([
+      assistantMessage(),
+      assistantText("Which OAuth provider should this service use?"),
+    ]))
+
+    expect(result).toMatchObject({
+      status: "passed",
+      code: "ready",
+      ambiguousInterviewFirst: true,
+      responsePredicatePostModel: true,
+      preApprovalNoMutation: true,
+    })
+  })
+
+  it("accepts a design clarification that mentions implementation context", () => {
+    const result = evaluateOpenCodeInterviewObservation(observation([
+      assistantMessage(),
+      assistantText("Which OAuth provider should this implementation use?"),
+    ]))
+
+    expect(result).toMatchObject({
+      status: "passed",
+      code: "ready",
+      ambiguousInterviewFirst: true,
+      responsePredicatePostModel: true,
+      preApprovalNoMutation: true,
+    })
+  })
+
   it("rejects a message identity that drifts from user to assistant", () => {
     const result = evaluateOpenCodeInterviewObservation(observation([
       {
