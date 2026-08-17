@@ -33,14 +33,14 @@ describe("consumer authority 0.8.8 acceptance schema", () => {
     expect(() => parseV087AcceptanceManifest(canonicalV088AcceptanceManifest(), "0.8.8")).toThrow()
   })
 
-  it("routes current preflights through v089 rather than the historical v088 record", () => {
+  it("routes current preflights through v0810 rather than the historical v088 record", () => {
     for (const script of [
       "preflight-consumer-authority-external-attestation.mjs",
       "preflight-consumer-authority-external-artifact-transport.mjs",
     ]) {
       const source = readFileSync(join(repositoryRoot, "scripts", script), "utf8")
-      expect(source).toContain('from "./consumer-authority-v089-acceptance-schema.mjs"')
-      expect(source).toContain("readV089AcceptanceManifest(packageRoot)")
+      expect(source).toContain('from "./consumer-authority-v0810-acceptance-schema.mjs"')
+      expect(source).toContain("readV0810AcceptanceManifest(packageRoot)")
       expect(source).not.toContain("readV087AcceptanceManifest(packageRoot)")
     }
   })

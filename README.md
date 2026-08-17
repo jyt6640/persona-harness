@@ -6,7 +6,7 @@
 
 # Persona Harness
 
-**A gate-first workflow CLI for AI coding agents building Java/Spring backends.**
+**Evidence-first completion gates for AI coding agents building Java/Spring backends.**
 
 [![npm version](https://img.shields.io/npm/v/persona-harness?color=369eff&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
 [![npm downloads](https://img.shields.io/npm/dt/persona-harness?color=ff6b35&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
@@ -21,7 +21,36 @@
 
 <!-- </CENTERED SECTION FOR GITHUB DISPLAY> -->
 
-> AI agents love to say "Done!" — Persona Harness makes them show their work. It is a local workflow gate that records and checks reports, evidence, and verification results for explicitly defined gates.
+## See it in 30 seconds
+
+**The problem:** an AI coding agent says "Done!" after a Java/Spring change,
+but the test, build, and review evidence behind that claim is missing or stale.
+
+**Install from a project directory:**
+
+```bash
+npm install -D persona-harness && npx ph init && npx ph bootstrap backend
+```
+
+**Give the agent one concrete backend goal, then ask the gate to verify it:**
+
+```bash
+npx ph go "Add a task creation endpoint."
+npx ph workflow finish implement
+```
+
+**What has actually been observed:** a simple forged-evidence fixture is
+ignored and `finish` exits `1`; the opt-in TDD rail blocked green-only
+completion in 5/5 measured runs. Runtime injection did not improve the paired
+OpenCode measurements and added cost, so it remains default-off.
+
+**Built for:** Java/Spring/Gradle projects using OpenCode, with explicit
+workflow gates and evidence checks.
+
+**Not a promise of:** automatic implementation, generated-app quality,
+production readiness, token savings, or broad security guarantees.
+
+**Start with:** [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md) · [Install guide](docs/START-HERE.md)
 
 > [!IMPORTANT]
 > **Alpha, gate-first, measured.** Live registry channels, tags, GitHub releases, and audit lifecycle facts are maintained in governed registry and audit records; source documentation records only its own preparation boundary. Runtime injection remains **default-off / opt-in**. See [`docs/current/p3-integrity-roadmap.md`](docs/current/p3-integrity-roadmap.md), [`docs/MEASURED-CLAIMS.md`](docs/MEASURED-CLAIMS.md), and [`injection-value-status.json`](docs/current/injection-value-status.json).

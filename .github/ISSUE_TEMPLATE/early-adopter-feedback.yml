@@ -1,0 +1,51 @@
+name: Early adopter feedback
+description: Share what happened when you tried Persona Harness for the first time.
+title: "Feedback: "
+labels:
+  - marketing
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying Persona Harness. Do not include access tokens, project code, or private repository details.
+  - type: dropdown
+    id: install_result
+    attributes:
+      label: Installation result
+      options:
+        - Installed successfully
+        - Installation stopped
+        - I did not reach installation
+    validations:
+      required: true
+  - type: dropdown
+    id: first_workflow_result
+    attributes:
+      label: First workflow result
+      options:
+        - Completed a first workflow
+        - Started but did not complete a workflow
+        - I did not reach a workflow
+    validations:
+      required: true
+  - type: dropdown
+    id: blocker
+    attributes:
+      label: Where did you stop?
+      options:
+        - npm install
+        - ph init or bootstrap
+        - OpenCode setup
+        - plan or approval
+        - verification or finish
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Short context
+      description: Share the smallest safe detail that would help us improve the first run.
+    validations:
+      required: false

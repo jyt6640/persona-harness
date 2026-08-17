@@ -1,10 +1,10 @@
 {
   "name": "persona-harness",
-  "version": "0.8.9",
+  "version": "0.8.10",
   "private": false,
   "type": "module",
   "packageManager": "npm@10.8.2",
-  "description": "Gate-first CLI for Java/Spring workflow evidence, completion checks, and optional Persona-owned advisory skill routing.",
+  "description": "Evidence-first Java/Spring AI coding workflow for OpenCode: require real verification before agents claim done.",
   "main": "dist/index.js",
   "bin": {
     "persona-harness": "dist/cli/index.js",
@@ -220,6 +220,8 @@
     "scripts/consumer-authority-v088-acceptance-schema.mjs",
     "scripts/consumer-authority-v089-acceptance-schema.d.mts",
     "scripts/consumer-authority-v089-acceptance-schema.mjs",
+    "scripts/consumer-authority-v0810-acceptance-schema.d.mts",
+    "scripts/consumer-authority-v0810-acceptance-schema.mjs",
     "scripts/consumer-authority-v081-acceptance-schema.d.mts",
     "scripts/consumer-authority-v081-acceptance-schema.mjs",
     "scripts/consumer-authority-rc1-acceptance-schema.mjs",
@@ -320,14 +322,21 @@
     "vitest": "^4.0.0"
   },
   "keywords": [
-    "opencode",
-    "plugin",
-    "persona-harness",
-    "java",
-    "spring",
+    "ai-agent",
+    "ai-coding",
+    "agent-review",
+    "agentic-workflows",
+    "ai-workflow",
+    "cli",
+    "coding-agents",
+    "developer-tools",
+    "evidence",
     "gradle",
-    "clean-code",
-    "ai-agent"
+    "java",
+    "opencode",
+    "persona-harness",
+    "spring",
+    "spring-boot"
   ],
   "license": "Apache-2.0",
   "repository": {
