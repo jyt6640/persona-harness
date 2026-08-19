@@ -15,6 +15,18 @@
       "handoff": "technical-intake"
     },
     {
+      "id": "philosophy-refinement",
+      "title": "Socratic Philosophy Refinement",
+      "category": "core",
+      "optional": false,
+      "entry": "skills/philosophy-refinement/SKILL.md",
+      "startPredicate": "The user explicitly critiques a design or implementation or explicitly requests philosophy refinement.",
+      "mutability": "explicit-user-action",
+      "inputBrief": ["current rationale", "preferred alternative", "intended scope", "counterexample or side effect", "trade-offs"],
+      "outputBrief": ["classified refinement result", "complete structured candidate or unresolved decision"],
+      "handoff": null
+    },
+    {
       "id": "technical-intake",
       "title": "Technical Intake",
       "category": "core",

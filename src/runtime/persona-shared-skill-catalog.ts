@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url"
 
 export const PERSONA_CORE_SKILL_IDS = [
   "deep-interview",
+  "philosophy-refinement",
   "technical-intake",
   "plan",
   "ralplan",

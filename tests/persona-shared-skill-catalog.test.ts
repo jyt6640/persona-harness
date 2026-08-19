@@ -22,6 +22,7 @@ describe("Persona-owned shared-skill catalog", () => {
   it("ships one portable core with explicit handoffs and optional extensions", () => {
     expect(PERSONA_CORE_SKILL_IDS).toEqual([
       "deep-interview",
+      "philosophy-refinement",
       "technical-intake",
       "plan",
       "ralplan",
@@ -40,6 +41,10 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(resolvePersonaSharedSkill("deep-interview")).toMatchObject({
       mutability: "conversation-only",
       handoff: "technical-intake",
+    })
+    expect(resolvePersonaSharedSkill("philosophy-refinement")).toMatchObject({
+      mutability: "explicit-user-action",
+      startPredicate: "The user explicitly critiques a design or implementation or explicitly requests philosophy refinement.",
     })
     expect(resolvePersonaSharedSkill("plan")).toMatchObject({ handoff: "ralplan" })
     expect(resolvePersonaSharedSkill("ralplan")).toMatchObject({ optional: true, handoff: "tdd" })

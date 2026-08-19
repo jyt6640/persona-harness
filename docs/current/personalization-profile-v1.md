@@ -39,6 +39,16 @@ rule. `resolve` supports `retain`, a project/task `exception`, `supersede`, and
 `pending`. `rollback` appends a compensating decision; it never edits or
 deletes history.
 
+`ph philosophy refine --stdin` is the explicit Socratic refinement surface. It
+accepts `personalization-refinement.v1` only after an explicit design or
+implementation critique or an explicit refinement request. The host-neutral
+sequence asks for the current rationale, preferred alternative, intended scope,
+counterexample or side effect, and trade-offs one at a time. Incomplete,
+ambiguous, unsafe, or conflicting material stays blocked or pending; it cannot
+silently alter an active rule. An implementation-mistake classification reports
+no profile change, while complete project/task and personal outcomes reuse the
+same append-only candidate lifecycle.
+
 Only active rules are operative. Starter recommendations are provisional, and
 pending candidates do not participate in runtime injection. Project/task
 exceptions are scoped records; they do not rewrite the personal rule.
@@ -74,6 +84,7 @@ The public surface is intentionally small:
 ph philosophy status
 ph philosophy init
 printf '<structured candidate JSON>' | ph philosophy propose --stdin
+printf '<personalization-refinement.v1 JSON>' | ph philosophy refine --stdin
 ph philosophy resolve <candidate-id> <retain|exception|supersede|pending>
 ph philosophy history
 ph philosophy rollback <rule-id>

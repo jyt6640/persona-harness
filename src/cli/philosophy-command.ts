@@ -7,6 +7,7 @@ import {
   type PersonalizationScope,
   type PersonalizationStoreOptions,
 } from "./personalization-profile-store.js"
+import { refinePersonalization } from "./philosophy-refinement.js"
 import type { CliRunResult } from "./bearshell.js"
 
 export type PhilosophyCommandOptions = PersonalizationStoreOptions & {
@@ -15,12 +16,13 @@ export type PhilosophyCommandOptions = PersonalizationStoreOptions & {
 
 export function philosophyUsage(invocationName = "ph"): string {
   return [
-    `Usage: ${invocationName} philosophy <status|init|propose|resolve|history|rollback>`,
+    `Usage: ${invocationName} philosophy <status|init|propose|refine|resolve|history|rollback>`,
     "",
     "Commands:",
     "  status                         Inspect starter/profile state without creating files.",
     "  init                           Inspect the same starter/profile state.",
     "  propose --stdin [--pending]   Validate one structured candidate from stdin.",
+    "  refine --stdin                Record only an explicit, complete Socratic refinement.",
     "  resolve <id> <action>          Resolve pending candidate: retain, exception, supersede, or pending.",
     "  history                        Print bounded append-only decision history.",
     "  rollback <rule-id>             Append a rollback decision for one active rule.",
@@ -39,6 +41,7 @@ export function runPhilosophyCommand(
   try {
     if (command === "status" || command === "init") return runStatus(args.slice(1), options, command)
     if (command === "propose") return runPropose(args.slice(1), options)
+    if (command === "refine") return runRefine(args.slice(1), options)
     if (command === "resolve") return runResolve(args.slice(1), options)
     if (command === "history") return runHistory(args.slice(1), options)
     if (command === "rollback") return runRollback(args.slice(1), options)
@@ -47,6 +50,28 @@ export function runPhilosophyCommand(
     if (error instanceof PersonalizationStoreError) return failure(error.code)
     return failure("personalization-store-internal")
   }
+}
+
+function runRefine(args: readonly string[], options: PhilosophyCommandOptions): CliRunResult {
+  if (args.length !== 1 || args[0] !== "--stdin" || options.stdin === undefined || options.stdin.trim() === "") {
+    return failure("personalization-refinement-invalid")
+  }
+  let input: unknown
+  try {
+    input = JSON.parse(options.stdin) as unknown
+  } catch {
+    return failure("personalization-refinement-invalid")
+  }
+  const result = refinePersonalization(input, options)
+  if (result.status === "blocked") return failure(result.reason)
+  if (result.status === "conflict") {
+    return {
+      status: 1,
+      stdout: `${JSON.stringify(result)}\n`,
+      stderr: "personalization-candidate-conflict\n",
+    }
+  }
+  return success(`${JSON.stringify(result)}\n`)
 }
 
 function runStatus(args: readonly string[], options: PhilosophyCommandOptions, command: "status" | "init"): CliRunResult {

@@ -312,7 +312,9 @@ async function cliStdin(args: readonly string[]): Promise<string | undefined> {
     args[0] === "workflow"
     && (args[1] === "capture" || args[1] === "draft")
     && args[2] === "--stdin"
-  const philosophyStdin = args[0] === "philosophy" && args[1] === "propose" && args.includes("--stdin")
+  const philosophyStdin = args[0] === "philosophy"
+    && (args[1] === "propose" || args[1] === "refine")
+    && args.includes("--stdin")
   if (!goStdin && !planStdin && !workflowStdin && !philosophyStdin) {
     return undefined
   }
