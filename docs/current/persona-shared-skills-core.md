@@ -78,6 +78,21 @@ automatically create or advance workflow state. Existing `ph` workflow commands
 remain separate user-selected product operations; the shared-skill adapter does
 not grant them authority.
 
+## Portable Host Contract
+
+The root package exposes the versioned `persona-portable-skill-contract.1`
+through `./portable-skill`. The contract derives a metadata-only capsule from
+the existing catalog selection. A capsule carries the skill metadata, bounded
+input/output schemas, required capabilities, handoff, and a fixed reason code;
+it never carries raw prompts, model output, credentials, source content, or
+absolute paths.
+
+Codex, OpenCode, Claude Code, and Antigravity consume the same capsule through
+thin adapters. A missing required capability returns the fixed
+`unsupported-capability` result and does not fall back to another host's
+semantics. This contract does not change selection, workflow authority, or the
+`runtimeInjection` default of `false`.
+
 ## Package Boundary
 
 The root tarball includes the catalog, each cataloged `SKILL.md`, and the

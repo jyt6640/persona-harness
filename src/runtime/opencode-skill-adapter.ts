@@ -1,22 +1,16 @@
 import {
   personaSharedSkillPath,
   resolvePersonaSharedSkill,
-  type PersonaSharedSkillId,
 } from "./persona-shared-skill-catalog.js"
-import type { PersonaSharedSkillActivation } from "./persona-shared-skill-activation.js"
+import { createOpenCodeSkillAdapter } from "./portable-skill-adapters.js"
+import {
+  createPortableSkillCapsule,
+  type PortableSkillActivationInput,
+} from "./portable-skill-contract.js"
 
-export type OpenCodeSkillRouteDecision = "activate" | "explicit"
+export type OpenCodeSkillRouteDecision = PortableSkillActivationInput["decision"]
 
-export type OpenCodeSkillRouteInput = {
-  readonly decision: OpenCodeSkillRouteDecision
-  readonly firstAction: PersonaSharedSkillActivation["firstAction"]
-  readonly skillId: PersonaSharedSkillId
-  readonly reason: string
-}
-
-function boundedReason(reason: string): string {
-  return reason.replace(/[\r\n]+/gu, " ").trim().slice(0, 180) || "The current request matches this Persona procedure."
-}
+export type OpenCodeSkillRouteInput = PortableSkillActivationInput
 
 function renderHandoff(skill: ReturnType<typeof resolvePersonaSharedSkill>): string {
   if (skill.id === "plan") {
@@ -26,6 +20,11 @@ function renderHandoff(skill: ReturnType<typeof resolvePersonaSharedSkill>): str
 }
 
 export function createOpenCodeSkillRoute(input: OpenCodeSkillRouteInput): string {
+  const capsule = createPortableSkillCapsule(input)
+  const result = createOpenCodeSkillAdapter().consume({ capsule })
+  if (result.status === "unsupported") {
+    return createOpenCodeUnavailableSkillRoute("unavailable-explicit-skill")
+  }
   const skill = resolvePersonaSharedSkill(input.skillId)
   const handoff = renderHandoff(skill)
 
@@ -34,7 +33,7 @@ export function createOpenCodeSkillRoute(input: OpenCodeSkillRouteInput): string
     `Decision: ${input.decision}`,
     `Skill: ${skill.id}`,
     `Reference: ${personaSharedSkillPath(skill.id)}`,
-    `Reason: ${boundedReason(input.reason)}`,
+    `Reason code: ${capsule.reasonCode}`,
     `First safe action: ${input.firstAction}`,
     `Handoff: ${handoff}`,
     "OpenCode activates this catalog reference for the current turn only. OpenCode advises and routes only: it does not load a full skill body. It does not create plans, tickets, branches, files, agents, or workflow state, or advance a workflow automatically.",
