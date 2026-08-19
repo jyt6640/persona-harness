@@ -479,6 +479,73 @@ async function assertOpenCodeInterviewObservationContract(packageRoot, label) {
   ) {
     throw new Error(`${label} OpenCode interview observation contract accepted unknown removal or leaked lifecycle identity`)
   }
+
+  if (typeof contract.evaluateOpenCodeAdvisoryObservation !== "function") {
+    throw new Error(`${label} OpenCode advisory observation contract is missing`)
+  }
+  const advisoryBinding = {
+    base: "a".repeat(40),
+    candidate: "b".repeat(40),
+    configuredModel: contract.OPENCODE_ADVISORY_MODEL,
+    package: {
+      contentIdentity: "c".repeat(64),
+      name: "persona-harness",
+      tarSha256: "d".repeat(64),
+      version: JSON.parse(readFileSync(join(installedPackage, "package.json"), "utf8")).version,
+    },
+  }
+  const advisoryInput = {
+    schemaVersion: contract.OPENCODE_ADVISORY_OBSERVATION_SCHEMA_VERSION,
+    binding: advisoryBinding,
+    execution: {
+      budgetDigest: "e".repeat(64),
+      count: 1,
+      sourceDigest: "f".repeat(64),
+      taskDigest: "0".repeat(64),
+      terminal: "complete",
+    },
+    cases: [
+      {
+        caseId: "baseline",
+        classification: "static-policy-overlay",
+        correctionVerified: false,
+        terminal: "complete",
+        metrics: {
+          architectureGuessCount: 2,
+          capsuleSize: 100,
+          conflictOverwrites: 0,
+          relevantRulePrecision: 0.5,
+          repeatedCorrectionCount: 3,
+          rollbackOutcome: "not-applicable",
+        },
+      },
+      {
+        caseId: "profile",
+        classification: "profile-captured-correction",
+        correctionVerified: true,
+        terminal: "complete",
+        metrics: {
+          architectureGuessCount: 1,
+          capsuleSize: 150,
+          conflictOverwrites: 0,
+          relevantRulePrecision: 0.75,
+          repeatedCorrectionCount: 1,
+          rollbackOutcome: "passed",
+        },
+      },
+    ],
+  }
+  const advisory = contract.evaluateOpenCodeAdvisoryObservation(advisoryInput, advisoryBinding)
+  if (advisory.status !== "PASS" || advisory.code !== "threshold-accepted" || advisory.advisoryOnly !== true) {
+    throw new Error(`${label} OpenCode advisory observation contract rejected the normalized installed path`)
+  }
+  const unsupportedModel = contract.evaluateOpenCodeAdvisoryObservation(
+    { ...advisoryInput, binding: { ...advisoryBinding, configuredModel: "other/provider-model" } },
+    advisoryBinding,
+  )
+  if (unsupportedModel.status !== "UNKNOWN" || unsupportedModel.code !== "model-not-exact-spark") {
+    throw new Error(`${label} OpenCode advisory observation contract accepted a non-Spark model`)
+  }
 }
 
 async function assertPackagedConsumerAuthorityBoundary(
