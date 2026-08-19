@@ -12,6 +12,7 @@ function englishUsage(invocationName: string): string {
     "  doctor                       Diagnose local OpenCode and Persona Harness installation state.",
     "  observe <path>               Report Java/Spring observer findings for a file or directory.",
     "  authority                    Inspect or enroll bounded external consumer authority.",
+    "  philosophy                   Inspect and resolve the local personalization profile.",
     "",
     "Examples:",
     `  ${invocationName} version`,
@@ -23,6 +24,7 @@ function englishUsage(invocationName: string): string {
     `  ${invocationName} doctor`,
     `  ${invocationName} observe src/main/java`,
     `  ${invocationName} authority status`,
+    `  ${invocationName} philosophy status`,
   ].join("\n")
 }
 
@@ -38,6 +40,7 @@ function koreanUsage(invocationName: string): string {
     "  doctor                       로컬 OpenCode 및 Persona Harness 설치 상태를 진단합니다.",
     "  observe <path>               파일 또는 디렉터리의 Java/Spring observer 관측 결과를 보고합니다.",
     "  authority                    제한된 외부 consumer authority 상태를 확인하거나 등록합니다.",
+    "  philosophy                   개인화 profile을 확인하고 결정을 append-only로 관리합니다.",
     "",
     "도움말 언어 선택: --lang en 또는 --lang ko",
     "",
@@ -51,6 +54,7 @@ function koreanUsage(invocationName: string): string {
     `  ${invocationName} doctor`,
     `  ${invocationName} observe src/main/java`,
     `  ${invocationName} authority status`,
+    `  ${invocationName} philosophy status`,
   ].join("\n")
 }
 

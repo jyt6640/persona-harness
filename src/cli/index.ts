@@ -24,6 +24,7 @@ import { runAuthorityCommand } from "./authority-command.js"
 import { selectAuthorityGithubToken } from "./authority-github-token.js"
 import { runFeedbackCommand } from "./feedback.js"
 import { runGoCommand, type GoStep } from "./go-command.js"
+import { runPhilosophyCommand } from "./philosophy-command.js"
 import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
 import { decodeCliStdinText, readBoundedCliStdinText } from "./stdin-text.js"
@@ -31,6 +32,8 @@ import { MAX_SUBMITTED_REPORT_BYTES, workflowReportStdinLimitMessage } from "./r
 import { personaHarnessVersion } from "./version.js"
 import { runWorkflowCommand } from "./workflow-command.js"
 import { SIGSTORE_NODE_ENGINE_RANGE, assessSigstoreNodeRuntime } from "../../scripts/node-runtime-floor.mjs"
+
+const MAX_PERSONALIZATION_CANDIDATE_BYTES = 16_384
 
 type PersonaCliOptions = {
   readonly cwd?: string
@@ -46,6 +49,11 @@ type PersonaCliOptions = {
   readonly onBeforeGoRecoveryClear?: () => void
   readonly onBeforeGoTransactionStart?: () => void
   readonly packageRoot?: string
+  readonly personalizationHomeDir?: string
+  readonly personalizationIdFactory?: () => string
+  readonly personalizationNow?: () => Date
+  readonly personalizationPlatform?: NodeJS.Platform
+  readonly personalizationStoreRoot?: string
   readonly stdin?: string
 }
 
@@ -187,6 +195,18 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
     return runFeedbackCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
   }
 
+  if (command === "philosophy") {
+    return runPhilosophyCommand(args.slice(1), {
+      env: options.env,
+      homeDir: options.personalizationHomeDir,
+      idFactory: options.personalizationIdFactory,
+      now: options.personalizationNow,
+      platform: options.personalizationPlatform,
+      stdin: options.stdin,
+      storeRoot: options.personalizationStoreRoot,
+    }, invocationName)
+  }
+
   if (command === "review") {
     return runReviewCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
   }
@@ -292,7 +312,8 @@ async function cliStdin(args: readonly string[]): Promise<string | undefined> {
     args[0] === "workflow"
     && (args[1] === "capture" || args[1] === "draft")
     && args[2] === "--stdin"
-  if (!goStdin && !planStdin && !workflowStdin) {
+  const philosophyStdin = args[0] === "philosophy" && args[1] === "propose" && args.includes("--stdin")
+  if (!goStdin && !planStdin && !workflowStdin && !philosophyStdin) {
     return undefined
   }
   if (process.stdin.isTTY === true) {
@@ -304,6 +325,10 @@ async function cliStdin(args: readonly string[]): Promise<string | undefined> {
       throw new Error(workflowReportStdinLimitMessage())
     }
     return stdin.text
+  }
+  if (philosophyStdin) {
+    const stdin = await readBoundedCliStdinText(process.stdin, MAX_PERSONALIZATION_CANDIDATE_BYTES)
+    return stdin.kind === "limit-exceeded" ? "" : stdin.text
   }
   return decodeCliStdinText(readFileSync(0))
 }

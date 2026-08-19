@@ -21,6 +21,7 @@ history but do not become a current product or release claim.
 | --- | --- |
 | Install or understand the product | [Detailed usage](persona-harness-detailed-usage.md) and [workflow lifecycle](workflow-closure-state-machine-design.md) |
 | Use the portable shared-skill or product-discovery guidance | [Persona Shared Skills Core](persona-shared-skills-core.md) |
+| Maintain a local personalization profile | [Personalization Profile V1](personalization-profile-v1.md) |
 | Understand claims and measurement limits | [Measurement scorecard](measurement-scorecard.md) |
 | Review Finish or external authority boundaries | [Consumer Authority V1 decision](consumer-authority-v1-decision.md); the repository-only external-attested walkthrough supplies the full procedure |
 | Ship or audit a release | [Release operations](release/README.md) and [versioned release docs](../releases/README.md) |
