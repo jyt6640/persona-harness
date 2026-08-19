@@ -7,6 +7,7 @@ import {
 import {
   PORTABLE_HOSTS,
   createPortableSkillCapsule,
+  defaultPortableHostCapabilities,
 } from "../src/runtime/portable-skill-contract.js"
 import {
   createAntigravitySkillAdapter,
@@ -50,7 +51,10 @@ describe("portable shared-skill contract", () => {
       createAntigravitySkillAdapter(),
     ] as const
 
-    const routes = adapters.map((adapter) => adapter.consume({ capsule }))
+    const routes = adapters.map((adapter) => adapter.consume({
+      capsule,
+      capabilities: defaultPortableHostCapabilities(),
+    }))
 
     expect(routes.map((route) => route.host)).toEqual([...PORTABLE_HOSTS])
     expect(routes.every((route) => route.status === "ready")).toBe(true)
@@ -60,6 +64,28 @@ describe("portable shared-skill contract", () => {
       }
       expect(route.capsule.skillId).toBe("frontend")
       expect(route.capsule.requiredCapabilities).toContain("optional-overlay")
+    }
+  })
+
+  it("fails closed for absent, malformed, and unknown capability input", () => {
+    const capsule = createPortableSkillCapsule(
+      activateAutomaticPersonaSkill("product-interview", "ambiguous request"),
+    )
+    const invalidInputs: readonly unknown[] = [
+      undefined,
+      null,
+      { capabilities: ["compact-reference"] },
+      ["compact-reference", "unknown-capability"],
+    ]
+
+    for (const capabilities of invalidInputs) {
+      const result = createOpenCodeSkillAdapter().consume({ capsule, capabilities })
+      expect(result).toMatchObject({
+        status: "unsupported",
+        code: "unsupported-capability",
+        host: "opencode",
+      })
+      expect("capsule" in result).toBe(false)
     }
   })
 

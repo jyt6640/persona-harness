@@ -90,7 +90,9 @@ absolute paths.
 Codex, OpenCode, Claude Code, and Antigravity consume the same capsule through
 thin adapters. A missing required capability returns the fixed
 `unsupported-capability` result and does not fall back to another host's
-semantics. This contract does not change selection, workflow authority, or the
+semantics. Capability negotiation must be an explicit valid array; absent,
+malformed, or unknown entries also return `unsupported-capability`. This
+contract does not change selection, workflow authority, or the
 `runtimeInjection` default of `false`.
 
 ## Package Boundary

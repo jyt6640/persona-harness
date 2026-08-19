@@ -1,15 +1,13 @@
 import {
-  defaultPortableHostCapabilities,
   negotiatePortableSkill,
   type PortableHost,
   type PortableSkillCapsule,
-  type PortableSkillCapability,
   type PortableSkillHostResult,
 } from "./portable-skill-contract.js"
 
 export type PortableSkillAdapterInput = {
   readonly capsule: PortableSkillCapsule
-  readonly capabilities?: readonly PortableSkillCapability[]
+  readonly capabilities?: unknown
 }
 
 export type PortableSkillHostAdapter = {
@@ -23,7 +21,7 @@ function createAdapter(host: PortableHost): PortableSkillHostAdapter {
     consume: (input) => negotiatePortableSkill({
       host,
       capsule: input.capsule,
-      capabilities: input.capabilities ?? defaultPortableHostCapabilities(),
+      capabilities: input.capabilities,
     }),
   }
 }

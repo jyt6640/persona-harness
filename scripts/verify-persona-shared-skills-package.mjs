@@ -213,7 +213,10 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
     portableModule.createOpenCodeSkillAdapter(),
     portableModule.createClaudeCodeSkillAdapter(),
     portableModule.createAntigravitySkillAdapter(),
-  ].map((adapter) => adapter.consume({ capsule: portableCapsule }))
+  ].map((adapter) => adapter.consume({
+    capsule: portableCapsule,
+    capabilities: portableModule.defaultPortableHostCapabilities(),
+  }))
   if (
     portableRoutes.length !== 4
     || portableRoutes.some((route) => route.status !== "ready" || route.capsule.skillId !== "deep-interview")

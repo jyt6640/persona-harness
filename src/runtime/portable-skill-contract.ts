@@ -18,6 +18,7 @@ export const PORTABLE_SKILL_CAPABILITIES = [
   "optional-overlay",
 ] as const
 export type PortableSkillCapability = (typeof PORTABLE_SKILL_CAPABILITIES)[number]
+const PORTABLE_SKILL_CAPABILITY_SET: ReadonlySet<string> = new Set(PORTABLE_SKILL_CAPABILITIES)
 
 export type PortableSkillReasonCode =
   | "explicit-request"
@@ -71,7 +72,7 @@ export type PortableSkillHostResult =
 export type PortableSkillNegotiationInput = {
   readonly host: PortableHost
   readonly capsule: PortableSkillCapsule
-  readonly capabilities: readonly PortableSkillCapability[]
+  readonly capabilities: unknown
 }
 
 const PORTABLE_HOST_TRANSPORTS: Readonly<Record<PortableHost, PortableHostTransport>> = {
@@ -144,13 +145,25 @@ export function defaultPortableHostCapabilities(): readonly PortableSkillCapabil
   return [...DEFAULT_HOST_CAPABILITIES]
 }
 
+function isPortableSkillCapability(value: unknown): value is PortableSkillCapability {
+  return typeof value === "string" && PORTABLE_SKILL_CAPABILITY_SET.has(value)
+}
+
+function isPortableSkillCapabilityList(value: unknown): value is readonly PortableSkillCapability[] {
+  return Array.isArray(value) && value.every(isPortableSkillCapability)
+}
+
 export function negotiatePortableSkill(input: PortableSkillNegotiationInput): PortableSkillHostResult {
-  const supported = input.capsule.requiredCapabilities.every((capability) => input.capabilities.includes(capability))
+  const capabilities = input.capabilities
   const base = {
     host: input.host,
     transport: portableHostTransport(input.host),
     contractVersion: PORTABLE_SKILL_CONTRACT_VERSION,
   }
+  if (!isPortableSkillCapabilityList(capabilities)) {
+    return { ...base, status: "unsupported", code: "unsupported-capability" }
+  }
+  const supported = input.capsule.requiredCapabilities.every((capability) => capabilities.includes(capability))
   return supported
     ? { ...base, status: "ready", capsule: input.capsule }
     : { ...base, status: "unsupported", code: "unsupported-capability" }

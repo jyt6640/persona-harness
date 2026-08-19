@@ -5,6 +5,7 @@ import {
 import { createOpenCodeSkillAdapter } from "./portable-skill-adapters.js"
 import {
   createPortableSkillCapsule,
+  defaultPortableHostCapabilities,
   type PortableSkillActivationInput,
 } from "./portable-skill-contract.js"
 
@@ -21,7 +22,10 @@ function renderHandoff(skill: ReturnType<typeof resolvePersonaSharedSkill>): str
 
 export function createOpenCodeSkillRoute(input: OpenCodeSkillRouteInput): string {
   const capsule = createPortableSkillCapsule(input)
-  const result = createOpenCodeSkillAdapter().consume({ capsule })
+  const result = createOpenCodeSkillAdapter().consume({
+    capsule,
+    capabilities: defaultPortableHostCapabilities(),
+  })
   if (result.status === "unsupported") {
     return createOpenCodeUnavailableSkillRoute("unavailable-explicit-skill")
   }
