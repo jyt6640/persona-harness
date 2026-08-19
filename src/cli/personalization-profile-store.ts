@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
-import { lstatSync, readFileSync } from "node:fs"
+import { lstatSync, readFileSync, realpathSync } from "node:fs"
 import { homedir } from "node:os"
-import { dirname, isAbsolute, join, posix, win32 } from "node:path"
+import { dirname, join, posix, win32 } from "node:path"
 
 import { ensurePrivateDirectory, writePrivateFileAtomic } from "../io/atomic-file.js"
 import {
@@ -273,19 +273,29 @@ function withMutation(
 
 function assertSafeStoreRoot(root: string, path: typeof posix | typeof win32): string {
   if (!path.isAbsolute(root) || root.includes("\0") || root.trim() === "") throw new PersonalizationStoreError("personalization-store-unsafe")
-  let current = root
-  while (true) {
-    try {
-      const stat = lstatSync(current)
-      if (stat.isSymbolicLink() || !stat.isDirectory()) throw new PersonalizationStoreError("personalization-store-unsafe")
-      return root
-    } catch (error) {
-      if (error instanceof PersonalizationStoreError) throw error
-      if (!isMissingPathError(error)) throw new PersonalizationStoreError("personalization-store-unsafe")
-    }
-    const parent = path.dirname(current)
-    if (parent === current) throw new PersonalizationStoreError("personalization-store-unsafe")
-    current = parent
+  const parsed = path.parse(root)
+  let current = parsed.root
+  if (validateExistingDirectory(current) === "missing") throw new PersonalizationStoreError("personalization-store-unsafe")
+  const relativeRoot = path.relative(parsed.root, root)
+  for (const segment of relativeRoot.split(path.sep).filter((value) => value.length > 0)) {
+    current = path.join(current, segment)
+    if (validateExistingDirectory(current) === "missing") return root
+  }
+  return root
+}
+
+function validateExistingDirectory(candidate: string): "present" | "missing" {
+  try {
+    const stat = lstatSync(candidate)
+    if (stat.isSymbolicLink() || !stat.isDirectory()) throw new PersonalizationStoreError("personalization-store-unsafe")
+    const canonical = realpathSync.native(candidate)
+    const canonicalStat = lstatSync(canonical)
+    if (canonicalStat.isSymbolicLink() || !canonicalStat.isDirectory()) throw new PersonalizationStoreError("personalization-store-unsafe")
+    return "present"
+  } catch (error) {
+    if (error instanceof PersonalizationStoreError) throw error
+    if (isMissingPathError(error)) return "missing"
+    throw new PersonalizationStoreError("personalization-store-unsafe")
   }
 }
 

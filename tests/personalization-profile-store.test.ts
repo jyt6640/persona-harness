@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { homedir, tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -151,10 +151,29 @@ describe("personalization profile store", () => {
     expect(() => readPersonalizationStore({ storeRoot: symlinkRoot })).toThrow("personalization-store-unsafe")
     expect(lstatSync(symlinkRoot).isSymbolicLink()).toBe(true)
   })
+
+  it("rejects an existing symlink ancestor before writing external profile state", () => {
+    const physicalParent = tempRoot()
+    const physicalTarget = tempRoot()
+    mkdirSync(physicalParent, { recursive: true })
+    mkdirSync(physicalTarget, { recursive: true })
+    const linkedParent = join(physicalParent, "linked")
+    symlinkSync(physicalTarget, linkedParent, "dir")
+    const configuredRoot = join(linkedParent, "profile")
+    mkdirSync(configuredRoot, { recursive: true })
+    const before = readdirSync(physicalTarget).sort()
+
+    const result = propose(configuredRoot, completeCandidate("symlink-ancestor"))
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("personalization-store-unsafe")
+    expect(readdirSync(physicalTarget).sort()).toEqual(before)
+    expect(existsSync(join(configuredRoot, "profile.json"))).toBe(false)
+  })
 })
 
 function tempRoot(): string {
-  const root = join(mkdtempSync(join(tmpdir(), "persona-philosophy-test-")), "store")
+  const root = join(realpathSync(mkdtempSync(join(tmpdir(), "persona-philosophy-test-"))), "store")
   roots.push(root)
   return root
 }
