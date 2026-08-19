@@ -7,6 +7,8 @@ Core sequence: `deep-interview` -> `technical-intake` -> `plan` -> optional
 `ralplan` -> `tdd` -> `implementation` -> `review`. `programming`, `debug`,
 `refactor`, and `git` provide bounded supporting guidance. `frontend`,
 `visual-qa`, `ast-grep`, and `lsp-setup` are explicit optional overlays.
+`philosophy-refinement` is a separate explicit-only core procedure; it never
+starts from ordinary chat or code inspection.
 
 An explicit `/persona <skill-id>` command wins routing. Otherwise clear direct
 work uses its matching supporting skill, while ambiguous product requests start

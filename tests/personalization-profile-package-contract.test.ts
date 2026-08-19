@@ -12,8 +12,10 @@ describe("personalization profile package contract", () => {
     }
     expect(packageJson.files).toContain("dist")
     expect(packageJson.files).toContain("docs/current/personalization-profile-v1.md")
+    expect(packageJson.files).toContain("packages/shared-skills/skills/philosophy-refinement/SKILL.md")
     expect(existsSync(join(repositoryRoot, "src/cli/personalization-profile-model.ts"))).toBe(true)
     expect(existsSync(join(repositoryRoot, "src/cli/personalization-profile-store.ts"))).toBe(true)
     expect(existsSync(join(repositoryRoot, "src/cli/philosophy-command.ts"))).toBe(true)
+    expect(existsSync(join(repositoryRoot, "src/cli/philosophy-refinement.ts"))).toBe(true)
   })
 })
