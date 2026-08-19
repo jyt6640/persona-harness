@@ -1,5 +1,6 @@
 import type { Hooks } from "@opencode-ai/plugin"
 import type { RuntimeContextSection } from "./runtime-context.js"
+import type { EffectiveProfileLayer } from "./effective-profile.js"
 
 export type FileRole =
   | "controller"
@@ -45,6 +46,9 @@ export type PendingInjection = {
   readonly block: string
   readonly semanticSections: readonly RuntimeContextSection[]
   readonly contextDigest: string
+  readonly selectedProfileRuleIds?: readonly string[]
+  readonly selectedProfileSources?: readonly EffectiveProfileLayer[]
+  readonly profileSelectionReasons?: readonly string[]
 }
 
 export type SelectedHarnessConfigDiagnostic = {

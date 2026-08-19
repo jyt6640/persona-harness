@@ -7,6 +7,13 @@ import { resolveSharedSkillFileRole, selectSharedSkillsForTarget } from "./share
 import { createRuntimeContextSections, runtimeContextDigest } from "./runtime-context.js"
 import type { PendingInjection } from "./types.js"
 import { isJavaTargetFile } from "./file-role.js"
+import {
+  createProductSafetyInvariants,
+  createStarterProfileDefaults,
+  resolveEffectiveProfile,
+  type EffectiveProfileRelevance,
+  type EffectiveProfileRuleInput,
+} from "./effective-profile.js"
 
 const inactivePolicyOverlay: PendingInjection["selectedPolicyOverlay"] = {
   enabled: false,
@@ -14,12 +21,28 @@ const inactivePolicyOverlay: PendingInjection["selectedPolicyOverlay"] = {
   diagnostics: [],
 }
 
-type InjectionBlockOptions = {
+export type EffectiveProfileInjectionOptions = {
+  readonly available?: boolean
+  readonly context?: EffectiveProfileRelevance
+  readonly maxCapsules?: number
+  readonly personalRules?: readonly EffectiveProfileRuleInput[]
+  readonly productInvariants?: readonly EffectiveProfileRuleInput[]
+  readonly projectContracts?: readonly EffectiveProfileRuleInput[]
+  readonly starterDefaults?: readonly EffectiveProfileRuleInput[]
+  readonly taskDecisions?: readonly EffectiveProfileRuleInput[]
+}
+
+export type InjectionBlockOptions = {
   readonly configResult?: HarnessConfigLoadResult
+  readonly effectiveProfile?: EffectiveProfileInjectionOptions
 }
 
 function dedupePolicies(policies: string[]): string[] {
   return Array.from(new Set(policies))
+}
+
+function dedupeStrings(values: readonly string[]): string[] {
+  return Array.from(new Set(values))
 }
 
 function tier0GuidanceLines(): readonly string[] {
@@ -86,6 +109,38 @@ export function createInjectionBlock(
     severity: rule.metadata.severity,
   }))
   const policies = dedupePolicies(loadedRules.flatMap((rule) => rule.policies)).slice(0, config.maxRulesPerInjection)
+  const profileOptions = options.effectiveProfile
+  const profileContext = profileOptions?.context ?? {
+    fileRole,
+    skillIds: selectedSharedSkills.map((skill) => skill.name),
+    topics: dedupeStrings([
+      "safety-no-inference",
+      "safety-no-sensitive-persistence",
+      fileRole,
+      ...selectedSharedSkills.map((skill) => skill.name),
+      ...selectedRuleMetadata.flatMap((rule) => rule.topic === undefined ? [] : [rule.topic]),
+    ]),
+  }
+  const profileResolution = resolveEffectiveProfile({
+    maxCapsules: profileOptions?.maxCapsules ?? Math.min(config.maxRulesPerInjection, 8),
+    personalProfileAvailable: profileOptions?.available ?? true,
+    personalRules: profileOptions?.personalRules ?? [],
+    productInvariants: profileOptions?.productInvariants ?? createProductSafetyInvariants(),
+    projectContracts: profileOptions?.projectContracts ?? [],
+    relevance: profileContext,
+    starterDefaults: profileOptions?.starterDefaults ?? createStarterProfileDefaults(),
+    taskDecisions: profileOptions?.taskDecisions ?? [],
+  })
+  const profileCapsules = profileResolution.status === "resolved" ? profileResolution.capsules : []
+  const selectedProfileRuleIds = profileResolution.status === "resolved"
+    ? profileResolution.selections.map((selection) => selection.id)
+    : []
+  const selectedProfileSources = profileResolution.status === "resolved"
+    ? profileResolution.selections.map((selection) => selection.source)
+    : []
+  const profileSelectionReasons = profileResolution.status === "resolved"
+    ? profileResolution.selections.map((selection) => selection.reason)
+    : []
   const guidanceLines = [
     ...(projectProfileState !== undefined && projectProfileState.status !== "ready"
       ? [
@@ -126,6 +181,13 @@ export function createInjectionBlock(
         ]
       : []),
     ...(policyOverlay.summaryLines.length > 0 ? [...policyOverlay.summaryLines, ""] : []),
+    ...(profileCapsules.length > 0
+      ? [
+          "Selected profile capsules:",
+          ...profileCapsules.map((capsule) => `- ${capsule.id} (${capsule.source}/${capsule.topic})`),
+          "",
+        ]
+      : []),
     "Selected rules:",
     ...selectedRules.map((rule) => `- ${rule}`),
     "",
@@ -162,6 +224,7 @@ export function createInjectionBlock(
       selectedRules,
     },
     skills: selectedSharedSkills,
+    capsules: profileCapsules,
     guidance: guidanceLines,
   })
 
@@ -177,5 +240,8 @@ export function createInjectionBlock(
     block,
     semanticSections,
     contextDigest: runtimeContextDigest(semanticSections),
+    selectedProfileRuleIds,
+    selectedProfileSources,
+    profileSelectionReasons,
   }
 }

@@ -43,6 +43,22 @@ Only active rules are operative. Starter recommendations are provisional, and
 pending candidates do not participate in runtime injection. Project/task
 exceptions are scoped records; they do not rewrite the personal rule.
 
+## Effective resolution and selective capsules
+
+When runtime injection is explicitly enabled, the effective profile resolver
+uses the fixed precedence `product safety invariants > task decision > project
+contract > personal profile > starter defaults`. It resolves one winning rule
+per relevant topic; an equal-priority conflict, unknown state, unavailable
+profile, malformed input, or bounded-capsule overflow blocks profile capsules
+instead of guessing.
+
+Relevance is declared by topic, scope, file role, selected skill, and available
+project/task keys. Only active matching rules become compact semantic capsule
+sections. The full profile and rule bodies are never injected as a profile
+dump; metadata-safe evidence records only selected IDs, source layers, reasons,
+and digests. `runtimeInjection` remains off by default, and this resolver does
+not start or advance workflow, approval, authority, or file-role behavior.
+
 ## Privacy and failure behavior
 
 Candidates contain bounded rule metadata and non-sensitive provenance, not raw

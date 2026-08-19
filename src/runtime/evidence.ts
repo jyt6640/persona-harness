@@ -128,6 +128,9 @@ export function writePhase0Evidence(projectDir: string, event: EvidenceEvent, op
     selectedRuleMetadata: event.injection.selectedRuleMetadata,
     selectedSharedSkills: event.injection.selectedSharedSkills,
     selectedPolicyOverlay: event.injection.selectedPolicyOverlay,
+    selectedProfileRuleIds: event.injection.selectedProfileRuleIds ?? [],
+    selectedProfileSources: event.injection.selectedProfileSources ?? [],
+    profileSelectionReasons: event.injection.profileSelectionReasons ?? [],
     profileSummaryInjected: event.injection.block.includes("Project profile summary:"),
     injectedPolicyCount: event.injection.policies.length,
   }
@@ -169,6 +172,9 @@ export function writeRuntimeContextEvidence(
     fileRole: event.injection.fileRole,
     selectedRuleCount: event.injection.selectedRules.length,
     selectedSkillCount: event.injection.selectedSharedSkills.length,
+    selectedProfileRuleIds: event.injection.selectedProfileRuleIds ?? [],
+    selectedProfileSources: event.injection.selectedProfileSources ?? [],
+    profileSelectionReasons: event.injection.profileSelectionReasons ?? [],
     injectedPolicyCount: event.injection.policies.length,
   }
 

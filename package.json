@@ -13,7 +13,8 @@
     "ph-lsp-mcp": "packages/lsp-mcp/bin/lsp-mcp.mjs"
   },
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./effective-profile": "./dist/effective-profile.js"
   },
   "files": [
     "dist",
