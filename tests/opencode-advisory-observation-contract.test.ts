@@ -53,7 +53,7 @@ const binding = () => ({
     contentIdentity: "c".repeat(64),
     name: "persona-harness",
     tarSha256: "d".repeat(64),
-    version: "0.8.10",
+    version: "0.8.11",
   },
 })
 
