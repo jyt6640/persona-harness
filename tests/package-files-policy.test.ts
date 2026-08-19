@@ -663,6 +663,7 @@ describe("package files policy", () => {
       "docs/current/persona-harness-detailed-usage.md",
       "docs/current/workflow-closure-state-machine-design.md",
       "docs/current/persona-shared-skills-core.md",
+      "docs/current/personalization-profile-v1.md",
       "docs/current/measurement-scorecard.md",
       "docs/current/consumer-authority-v1-decision.md",
       "docs/current/release/README.md",
