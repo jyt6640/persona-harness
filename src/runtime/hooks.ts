@@ -12,6 +12,8 @@ import {
   resolveSafeEvidenceRootResult,
 } from "../config/harness-config.js"
 import { createInjectionBlock } from "./injection.js"
+import type { EffectiveProfileInjectionOptions } from "./injection.js"
+import { readPersonalizationStore } from "../cli/personalization-profile-store.js"
 import { IdleContinuationTracker } from "./idle-continuation.js"
 import type { IdleContinuationClient } from "./idle-continuation.js"
 import { AuthDesignDecisionTracker } from "./auth-design-decision.js"
@@ -144,6 +146,24 @@ async function runHostHookAsync(hookName: string, operation: () => Promise<void>
   }
 }
 
+function loadPersonalizationInjectionProfile(): EffectiveProfileInjectionOptions {
+  try {
+    const store = readPersonalizationStore()
+    return {
+      available: true,
+      personalRules: store.profile.activeRules.map((rule) => ({
+        id: rule.ruleId,
+        rule: rule.rule,
+        scope: rule.scope,
+        status: "active" as const,
+        topic: rule.topic,
+      })),
+    }
+  } catch {
+    return { available: false, personalRules: [] }
+  }
+}
+
 export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const store = options.store ?? new PendingInjectionStore()
   const projectDir = options.projectDir ?? process.cwd()
@@ -178,6 +198,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const continuation = new ContinuationTracker({ evidenceDir })
   const entrySteering = new EntrySteeringTracker(projectDir, config)
   const runtimeInjectionEnabled = isRuntimeInjectionEnabled(config)
+  const effectiveProfile = runtimeInjectionEnabled ? loadPersonalizationInjectionProfile() : undefined
   const observerFindingsEnabled = isObserverFindingsEnabled(config)
   const idleContinuation = new IdleContinuationTracker({ client: options.client, projectDir })
   const ralphLoop = new RalphLoopContinuationTracker({
@@ -243,7 +264,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
       return undefined
     }
 
-    const injection = createInjectionBlock(targetFile, projectDir, { configResult })
+    const injection = createInjectionBlock(targetFile, projectDir, { configResult, effectiveProfile })
     const offer = store.set(sessionID, injection)
     const acceptedInjection = offer.injection ?? injection
     if (offer.kind === "offered") {

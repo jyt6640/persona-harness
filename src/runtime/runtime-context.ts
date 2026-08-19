@@ -5,8 +5,9 @@ import type {
   SelectedRuleMetadata,
   SelectedSharedSkill,
 } from "./types.js"
+import type { EffectiveProfileCapsule } from "./effective-profile.js"
 
-export const RUNTIME_CONTEXT_SECTION_KINDS = ["target", "profile", "overlay", "rules", "skills", "guidance"] as const
+export const RUNTIME_CONTEXT_SECTION_KINDS = ["target", "profile", "overlay", "rules", "skills", "capsules", "guidance"] as const
 
 export type RuntimeContextSectionKind = (typeof RUNTIME_CONTEXT_SECTION_KINDS)[number]
 
@@ -33,6 +34,7 @@ export type RuntimeContextSectionInput = {
     readonly policies: readonly string[]
   }
   readonly skills: readonly SelectedSharedSkill[]
+  readonly capsules?: readonly EffectiveProfileCapsule[]
   readonly guidance?: readonly string[]
 }
 
@@ -118,13 +120,22 @@ export function createRuntimeContextSections(input: RuntimeContextSectionInput):
     { skills: input.skills },
     input.skills.length > 0 ? skillsBody : [],
   )
+  const capsulesBody = [
+    "Selected profile capsules:",
+    ...(input.capsules ?? []).map((capsule) => `- ${capsule.id} (${capsule.source}/${capsule.topic}): ${capsule.rule}`),
+  ]
+  const capsules = section(
+    "capsules",
+    { capsules: input.capsules ?? [] },
+    (input.capsules ?? []).length > 0 ? capsulesBody : [],
+  )
   const guidance = section(
     "guidance",
     { lines: input.guidance ?? [] },
     input.guidance ?? [],
   )
 
-  return [target, profile, overlay, rules, skills, guidance].filter(
+  return [target, profile, overlay, rules, skills, capsules, guidance].filter(
     (value): value is RuntimeContextSection => value !== undefined,
   )
 }
