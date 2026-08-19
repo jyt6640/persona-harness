@@ -13,6 +13,10 @@ export type OpenCodeSkillRouteDecision = PortableSkillActivationInput["decision"
 
 export type OpenCodeSkillRouteInput = PortableSkillActivationInput
 
+function boundedReason(reason: string): string {
+  return reason.replace(/[\r\n]+/gu, " ").trim().slice(0, 180) || "The current request matches this Persona procedure."
+}
+
 function renderHandoff(skill: ReturnType<typeof resolvePersonaSharedSkill>): string {
   if (skill.id === "plan") {
     return "optional ralplan, then tdd"
@@ -37,7 +41,7 @@ export function createOpenCodeSkillRoute(input: OpenCodeSkillRouteInput): string
     `Decision: ${input.decision}`,
     `Skill: ${skill.id}`,
     `Reference: ${personaSharedSkillPath(skill.id)}`,
-    `Reason code: ${capsule.reasonCode}`,
+    `Reason: ${boundedReason(input.reason)}`,
     `First safe action: ${input.firstAction}`,
     `Handoff: ${handoff}`,
     "OpenCode activates this catalog reference for the current turn only. OpenCode advises and routes only: it does not load a full skill body. It does not create plans, tickets, branches, files, agents, or workflow state, or advance a workflow automatically.",
