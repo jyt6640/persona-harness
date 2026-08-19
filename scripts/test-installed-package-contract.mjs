@@ -491,7 +491,7 @@ async function assertOpenCodeInterviewObservationContract(packageRoot, label) {
       contentIdentity: "c".repeat(64),
       name: "persona-harness",
       tarSha256: "d".repeat(64),
-      version: JSON.parse(readFileSync(join(installedPackage, "package.json"), "utf8")).version,
+      version: JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")).version,
     },
   }
   const advisoryInput = {
