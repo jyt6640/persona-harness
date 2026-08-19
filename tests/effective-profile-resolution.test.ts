@@ -8,7 +8,7 @@ import { createInjectionBlock } from "../src/runtime/injection.js"
 import {
   resolveEffectiveProfile,
   type EffectiveProfileRuleInput,
-} from "../src/runtime/effective-profile.js"
+} from "../src/effective-profile.js"
 import { renderRuntimeContextSections } from "../src/runtime/runtime-context.js"
 
 const projects: string[] = []

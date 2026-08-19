@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import type { Plugin } from "@opencode-ai/plugin"
 import { describe, expect, it } from "vitest"
 
@@ -13,5 +15,14 @@ describe("OpenCode plugin entrypoint", () => {
 
     expect(plugin).toBe(PersonaHarnessPlugin)
     expect(callableExportNames).toEqual(["PersonaHarnessPlugin"])
+  })
+
+  it("keeps effective-profile APIs on an explicit package subpath", () => {
+    const packageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"))
+
+    expect(packageJson.exports).toEqual({
+      ".": "./dist/index.js",
+      "./effective-profile": "./dist/effective-profile.js",
+    })
   })
 })
