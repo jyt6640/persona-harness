@@ -23,6 +23,7 @@ describe("OpenCode plugin entrypoint", () => {
     expect(packageJson.exports).toEqual({
       ".": "./dist/index.js",
       "./effective-profile": "./dist/effective-profile.js",
+      "./portable-skill": "./dist/portable-skill.js",
     })
   })
 })

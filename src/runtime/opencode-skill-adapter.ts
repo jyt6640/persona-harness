@@ -1,18 +1,17 @@
 import {
   personaSharedSkillPath,
   resolvePersonaSharedSkill,
-  type PersonaSharedSkillId,
 } from "./persona-shared-skill-catalog.js"
-import type { PersonaSharedSkillActivation } from "./persona-shared-skill-activation.js"
+import { createOpenCodeSkillAdapter } from "./portable-skill-adapters.js"
+import {
+  createPortableSkillCapsule,
+  defaultPortableHostCapabilities,
+  type PortableSkillActivationInput,
+} from "./portable-skill-contract.js"
 
-export type OpenCodeSkillRouteDecision = "activate" | "explicit"
+export type OpenCodeSkillRouteDecision = PortableSkillActivationInput["decision"]
 
-export type OpenCodeSkillRouteInput = {
-  readonly decision: OpenCodeSkillRouteDecision
-  readonly firstAction: PersonaSharedSkillActivation["firstAction"]
-  readonly skillId: PersonaSharedSkillId
-  readonly reason: string
-}
+export type OpenCodeSkillRouteInput = PortableSkillActivationInput
 
 function boundedReason(reason: string): string {
   return reason.replace(/[\r\n]+/gu, " ").trim().slice(0, 180) || "The current request matches this Persona procedure."
@@ -26,6 +25,14 @@ function renderHandoff(skill: ReturnType<typeof resolvePersonaSharedSkill>): str
 }
 
 export function createOpenCodeSkillRoute(input: OpenCodeSkillRouteInput): string {
+  const capsule = createPortableSkillCapsule(input)
+  const result = createOpenCodeSkillAdapter().consume({
+    capsule,
+    capabilities: defaultPortableHostCapabilities(),
+  })
+  if (result.status === "unsupported") {
+    return createOpenCodeUnavailableSkillRoute("unavailable-explicit-skill")
+  }
   const skill = resolvePersonaSharedSkill(input.skillId)
   const handoff = renderHandoff(skill)
 

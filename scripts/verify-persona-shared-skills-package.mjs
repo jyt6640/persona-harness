@@ -164,9 +164,10 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
   const catalogModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "persona-shared-skill-catalog.js")).href)
   const intentModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "top-level-intent-router.js")).href)
   const adapterModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "opencode-skill-adapter.js")).href)
+  const portableModule = await import(pathToFileURL(join(packageRoot, "dist", "portable-skill.js")).href)
   const interviewModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "product-deep-interview.js")).href)
   const provenanceModule = await import(pathToFileURL(join(packageRoot, "scripts", "staged-package-artifact-provenance-network.mjs")).href)
-  if (pluginModule.default?.id !== "persona-harness") {
+  if (typeof pluginModule.PersonaHarnessPlugin !== "function") {
     throw new Error("installed shared-skill plugin module requires an advisory host tool")
   }
   if (typeof provenanceModule.decodeStagedPackageArtifactSnappy !== "function") {
@@ -200,6 +201,34 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
     || compactRoute.includes("npx ph workflow")
   ) {
     throw new Error("installed shared-skill route loaded more than its compact reference")
+  }
+  const portableCapsule = portableModule.createPortableSkillCapsule({
+    decision: "automatic",
+    firstAction: "one-question-product-interview",
+    reason: "bounded package contract",
+    skillId: "deep-interview",
+  })
+  const portableRoutes = [
+    portableModule.createCodexSkillAdapter(),
+    portableModule.createOpenCodeSkillAdapter(),
+    portableModule.createClaudeCodeSkillAdapter(),
+    portableModule.createAntigravitySkillAdapter(),
+  ].map((adapter) => adapter.consume({
+    capsule: portableCapsule,
+    capabilities: portableModule.defaultPortableHostCapabilities(),
+  }))
+  if (
+    portableRoutes.length !== 4
+    || portableRoutes.some((route) => route.status !== "ready" || route.capsule.skillId !== "deep-interview")
+  ) {
+    throw new Error("installed portable shared-skill adapters diverged")
+  }
+  const unsupportedRoute = portableModule.createOpenCodeSkillAdapter().consume({
+    capsule: portableCapsule,
+    capabilities: ["compact-reference"],
+  })
+  if (unsupportedRoute.status !== "unsupported" || unsupportedRoute.code !== "unsupported-capability") {
+    throw new Error("installed portable shared-skill adapter did not fail closed")
   }
   const tracker = new interviewModule.ProductDeepInterviewTracker()
   const result = tracker.route("installed-package-contract", "I want to build a small product")

@@ -17,3 +17,18 @@ reference only; they do not load full bodies or the catalog, or advance
 workflow state automatically. The only bundled language reference is Java.
 Anything outside the catalog is nonoperative source history, not a shipped
 Persona capability.
+
+## Portable Contract
+
+The root package exposes `persona-portable-skill-contract.1` through its
+`./portable-skill` subpath. It turns the existing selected catalog entry into a
+metadata-only capsule with versioned input/output schemas and required host
+capabilities. Capsules contain no prompt, model output, credential, source
+content, or absolute path.
+
+Codex, OpenCode, Claude Code, and Antigravity adapters consume the same capsule.
+If a host lacks a required capability, the adapter returns the bounded
+`unsupported-capability` result and never falls back to another host's
+semantics. The capability list must be an explicit valid array; absent,
+malformed, or unknown entries are unsupported. The existing selector and
+`runtimeInjection` default remain unchanged.

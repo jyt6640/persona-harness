@@ -14,7 +14,8 @@
   },
   "exports": {
     ".": "./dist/index.js",
-    "./effective-profile": "./dist/effective-profile.js"
+    "./effective-profile": "./dist/effective-profile.js",
+    "./portable-skill": "./dist/portable-skill.js"
   },
   "files": [
     "dist",
