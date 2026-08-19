@@ -222,6 +222,13 @@ describe("clean package boundary", () => {
     expect(verifier).not.toContain('return "/usr/bin/gh"')
   })
 
+  it("binds source-built advisory package facts to the source package root", () => {
+    const contract = readFileSync(join(process.cwd(), "scripts", "test-installed-package-contract.mjs"), "utf8")
+
+    expect(contract).toContain('version: JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")).version,')
+    expect(contract).not.toContain('version: JSON.parse(readFileSync(join(installedPackage, "package.json"), "utf8")).version,')
+  })
+
   it("keeps the Git-bound source verifier separate from the fresh installed package runtime", () => {
     const verifier = readFileSync(join(process.cwd(), "scripts", "verify-clean-package-boundary.mjs"), "utf8")
     const contract = readFileSync(join(process.cwd(), "scripts", "test-installed-package-contract.mjs"), "utf8")

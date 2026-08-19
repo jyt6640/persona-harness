@@ -36,8 +36,87 @@ const COMMAND_PATTERN = /`[^`]*`|(?:^|\s)(?:bash|command|curl|git|npm|npx|run|sh
 const FILE_CHANGE_PATTERN = /(?:\b(?:add|change|create|delete|edit|modify|remove|update|write)\b.*\b(?:file|source|screen|component)\b|(?:src|app|components|pages|routes)\/|\.(?:c|cc|cpp|go|java|js|jsx|mjs|py|rs|ts|tsx|vue)\b)/iu
 const PLAN_PATTERN = /\b(?:next step|plan|roadmap|step \d|steps)\b/iu
 const SOLUTION_PATTERN = /\b(?:(?:i|we)\s+(?:will\s+)?(?:build|implement|recommend|suggest)|you\s+should\s+(?:use|build|implement)|the\s+solution\s+(?:is|would be)|here(?:'s| is))\b/iu
+const ADVISORY_SCHEMA_VERSION = "opencode-advisory-observation.1"
+const ADVISORY_MODEL = "openai/gpt-5.3-codex-spark"
+const ADVISORY_THRESHOLD_POLICY = Object.freeze({
+  id: "profile-adherence-v1",
+  maxCapsuleGrowthRatio: 1.5,
+})
+const ADVISORY_CASES = Object.freeze({
+  baseline: "static-policy-overlay",
+  profile: "profile-captured-correction",
+})
+const ADVISORY_METRIC_KEYS = Object.freeze([
+  "architectureGuessCount",
+  "capsuleSize",
+  "conflictOverwrites",
+  "relevantRulePrecision",
+  "repeatedCorrectionCount",
+  "rollbackOutcome",
+])
+const FORBIDDEN_ADVISORY_KEY_FRAGMENTS = Object.freeze([
+  "credential",
+  "host",
+  "log",
+  "output",
+  "path",
+  "prompt",
+  "raw",
+  "secret",
+  "stack",
+  "stderr",
+  "stdout",
+  "token",
+  "transcript",
+  "url",
+])
+const GIT_SHA_PATTERN = /^[a-f0-9]{40}$/u
+const SHA256_PATTERN = /^[a-f0-9]{64}$/u
+const VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u
 
 export const OPENCODE_INTERVIEW_OBSERVATION_SCHEMA_VERSION = SCHEMA_VERSION
+export const OPENCODE_ADVISORY_OBSERVATION_SCHEMA_VERSION = ADVISORY_SCHEMA_VERSION
+export const OPENCODE_ADVISORY_MODEL = ADVISORY_MODEL
+export const OPENCODE_ADVISORY_THRESHOLD = ADVISORY_THRESHOLD_POLICY
+
+export function evaluateOpenCodeAdvisoryObservation(value, expectedBinding) {
+  const expected = parseAdvisoryBinding(expectedBinding)
+  if (expected === undefined) return advisoryUnknown("binding-invalid")
+  if (value === undefined || value === null) return advisoryUnknown("result-missing")
+  if (!isRecord(value)) return advisoryUnknown("result-schema-invalid")
+  if (containsForbiddenAdvisoryKey(value)) return advisoryUnknown("secret-exposure")
+  if (!hasExactKeys(value, ["binding", "cases", "execution", "schemaVersion"])) {
+    return advisoryUnknown("result-schema-invalid")
+  }
+  if (value.schemaVersion !== ADVISORY_SCHEMA_VERSION) return advisoryUnknown("result-schema-invalid")
+
+  const bindingCode = advisoryBindingCode(value.binding)
+  if (bindingCode !== undefined) return advisoryUnknown(bindingCode)
+  const binding = parseAdvisoryBinding(value.binding)
+  if (binding === undefined) return advisoryUnknown("binding-invalid")
+  if (!isDeepStrictEqual(binding, expected)) return advisoryUnknown("binding-mismatch")
+
+  const execution = parseAdvisoryExecution(value.execution)
+  if (typeof execution === "string") return advisoryUnknown(execution)
+  if (!Array.isArray(value.cases) || value.cases.length !== 2) {
+    return advisoryUnknown("result-cardinality-invalid")
+  }
+  const baseline = parseAdvisoryCase(value.cases[0], "baseline")
+  if (typeof baseline === "string") return advisoryUnknown(baseline)
+  const profile = parseAdvisoryCase(value.cases[1], "profile")
+  if (typeof profile === "string") return advisoryUnknown(profile)
+
+  const failedMetrics = advisoryFailedMetrics(baseline.metrics, profile.metrics)
+  const status = failedMetrics.length === 0 ? "PASS" : "FAIL"
+  return advisoryResult({
+    status,
+    code: status === "PASS" ? "threshold-accepted" : "threshold-rejected",
+    binding,
+    execution,
+    cases: [baseline.normalized, profile.normalized],
+    failedMetrics,
+  })
+}
 
 export function evaluateOpenCodeInterviewObservation(value) {
   if (!isObservation(value)) {
@@ -268,6 +347,177 @@ function classifyAssistantResponse(text) {
   if (PLAN_PATTERN.test(text)) return "assistant-response-plan-content"
   if (SOLUTION_PATTERN.test(text)) return "assistant-response-solution-content"
   return "ready"
+}
+
+function advisoryBindingCode(value) {
+  if (!isRecord(value) || !hasExactKeys(value, ["base", "candidate", "configuredModel", "package"])) {
+    return "binding-invalid"
+  }
+  if (value.configuredModel !== ADVISORY_MODEL) return "model-not-exact-spark"
+  if (!isRecord(value.package) || !hasExactKeys(value.package, ["contentIdentity", "name", "tarSha256", "version"])) {
+    return "binding-invalid"
+  }
+  return undefined
+}
+
+function parseAdvisoryBinding(value) {
+  if (advisoryBindingCode(value) !== undefined) return undefined
+  if (!GIT_SHA_PATTERN.test(value.base) || !GIT_SHA_PATTERN.test(value.candidate)) return undefined
+  if (
+    value.package.name !== "persona-harness"
+    || typeof value.package.version !== "string"
+    || !VERSION_PATTERN.test(value.package.version)
+    || !SHA256_PATTERN.test(value.package.tarSha256)
+    || !SHA256_PATTERN.test(value.package.contentIdentity)
+  ) {
+    return undefined
+  }
+  return {
+    base: value.base,
+    candidate: value.candidate,
+    configuredModel: ADVISORY_MODEL,
+    package: {
+      contentIdentity: value.package.contentIdentity,
+      name: "persona-harness",
+      tarSha256: value.package.tarSha256,
+      version: value.package.version,
+    },
+  }
+}
+
+function parseAdvisoryExecution(value) {
+  if (!isRecord(value) || !hasExactKeys(value, ["budgetDigest", "count", "sourceDigest", "taskDigest", "terminal"])) {
+    return "result-schema-invalid"
+  }
+  if (value.count !== 1) return "result-cardinality-invalid"
+  if (value.terminal !== "complete") return "execution-abnormal"
+  if (!SHA256_PATTERN.test(value.sourceDigest) || !SHA256_PATTERN.test(value.taskDigest) || !SHA256_PATTERN.test(value.budgetDigest)) {
+    return "consumer-mismatch"
+  }
+  return {
+    budgetDigest: value.budgetDigest,
+    count: 1,
+    sourceDigest: value.sourceDigest,
+    taskDigest: value.taskDigest,
+    terminal: "complete",
+  }
+}
+
+function parseAdvisoryCase(value, expectedCase) {
+  if (!isRecord(value) || !hasExactKeys(value, ["caseId", "classification", "correctionVerified", "metrics", "terminal"])) {
+    return "result-schema-invalid"
+  }
+  if (value.caseId !== expectedCase || value.classification !== ADVISORY_CASES[expectedCase]) {
+    return "result-cardinality-invalid"
+  }
+  if (value.terminal !== "complete") return "execution-abnormal"
+  if (value.correctionVerified !== (expectedCase === "profile")) {
+    return expectedCase === "profile" ? "profile-correction-unverified" : "case-contract-invalid"
+  }
+  const metrics = parseAdvisoryMetrics(value.metrics, expectedCase)
+  if (typeof metrics === "string") return metrics
+  return {
+    metrics,
+    normalized: {
+      caseId: expectedCase,
+      classification: ADVISORY_CASES[expectedCase],
+      correctionVerified: expectedCase === "profile",
+      metrics,
+    },
+  }
+}
+
+function parseAdvisoryMetrics(value, expectedCase) {
+  if (!isRecord(value) || !hasExactKeys(value, ADVISORY_METRIC_KEYS)) return "result-schema-invalid"
+  if (
+    !isBoundMetric(value.architectureGuessCount)
+    || !isBoundMetric(value.capsuleSize)
+    || !isBoundMetric(value.conflictOverwrites)
+    || !isBoundPrecision(value.relevantRulePrecision)
+    || !isBoundMetric(value.repeatedCorrectionCount)
+  ) {
+    return "metric-invalid"
+  }
+  if (expectedCase === "baseline" && value.rollbackOutcome !== "not-applicable") return "metric-invalid"
+  if (expectedCase === "profile" && value.rollbackOutcome !== "passed" && value.rollbackOutcome !== "failed") {
+    return "rollback-outcome-missing"
+  }
+  return {
+    architectureGuessCount: value.architectureGuessCount,
+    capsuleSize: value.capsuleSize,
+    conflictOverwrites: value.conflictOverwrites,
+    relevantRulePrecision: value.relevantRulePrecision,
+    repeatedCorrectionCount: value.repeatedCorrectionCount,
+    rollbackOutcome: value.rollbackOutcome,
+  }
+}
+
+function advisoryFailedMetrics(baseline, profile) {
+  const capsuleLimit = Math.max(1, Math.floor(baseline.capsuleSize * ADVISORY_THRESHOLD_POLICY.maxCapsuleGrowthRatio))
+  const checks = [
+    ["repeatedCorrectionCount", profile.repeatedCorrectionCount < baseline.repeatedCorrectionCount],
+    ["architectureGuessCount", profile.architectureGuessCount <= baseline.architectureGuessCount],
+    ["relevantRulePrecision", profile.relevantRulePrecision >= baseline.relevantRulePrecision],
+    ["capsuleSize", profile.capsuleSize <= capsuleLimit],
+    ["conflictOverwrites", profile.conflictOverwrites === 0],
+    ["rollbackOutcome", profile.rollbackOutcome === "passed"],
+  ]
+  return checks.filter(([, passes]) => !passes).map(([metric]) => metric)
+}
+
+function advisoryResult({ status, code, binding, execution, cases, failedMetrics }) {
+  return deepFreeze({
+    advisoryOnly: true,
+    binding,
+    cases,
+    code,
+    execution,
+    failedMetrics,
+    schemaVersion: ADVISORY_SCHEMA_VERSION,
+    status,
+    threshold: ADVISORY_THRESHOLD_POLICY,
+  })
+}
+
+function advisoryUnknown(code) {
+  return Object.freeze({
+    advisoryOnly: true,
+    code,
+    schemaVersion: ADVISORY_SCHEMA_VERSION,
+    status: "UNKNOWN",
+  })
+}
+
+function containsForbiddenAdvisoryKey(value, seen = new Set()) {
+  if (Array.isArray(value)) return value.some((item) => containsForbiddenAdvisoryKey(item, seen))
+  if (!isRecord(value)) return false
+  if (seen.has(value)) return true
+  seen.add(value)
+  for (const [key, nested] of Object.entries(value)) {
+    const normalizedKey = key.toLowerCase().replace(/[^a-z]/gu, "")
+    if (FORBIDDEN_ADVISORY_KEY_FRAGMENTS.some((fragment) => normalizedKey.includes(fragment))) return true
+    if (containsForbiddenAdvisoryKey(nested, seen)) return true
+  }
+  return false
+}
+
+function hasExactKeys(value, expected) {
+  return isDeepStrictEqual(Object.keys(value).sort(), [...expected].sort())
+}
+
+function isBoundMetric(value) {
+  return Number.isSafeInteger(value) && value >= 0 && value <= 1_000_000
+}
+
+function isBoundPrecision(value) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1
+}
+
+function deepFreeze(value, seen = new Set()) {
+  if (value === null || typeof value !== "object" || seen.has(value)) return value
+  seen.add(value)
+  for (const nested of Object.values(value)) deepFreeze(nested, seen)
+  return Object.freeze(value)
 }
 
 function result(status, code, state, responsePredicatePostModel = false) {
