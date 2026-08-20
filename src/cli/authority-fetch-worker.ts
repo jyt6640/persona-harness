@@ -2,11 +2,10 @@ import { spawnSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
 
 import { createAuthorityFetchChildEnvironment as createBoundedAuthorityFetchChildEnvironment } from "../../scripts/authority-fetch-child-environment.mjs"
+import type { AuthorityArtifactTuple } from "./authority-artifact-binding.js"
 import type { AuthorityArtifact } from "./authority-artifact-store.js"
 import type { AuthorityEnrollment } from "./authority-enrollment.js"
-import {
-  isAuthorityGithubToken,
-} from "./authority-github-token.js"
+import { isAuthorityGithubToken } from "./authority-github-token.js"
 import { captureGitIdentity, captureWorkspaceIdentity } from "./ci-reverification-identity.js"
 
 const WORKER_PATH = fileURLToPath(new URL("../../scripts/fetch-consumer-authority-artifact.mjs", import.meta.url))
@@ -24,9 +23,29 @@ export type GithubAuthorityFetchResult =
   | { readonly diagnostic?: GithubAuthorityFetchDiagnostic; readonly kind: "blocked" }
   | { readonly artifact: AuthorityArtifact; readonly kind: "ready" }
 
+export function serializeAuthorityFetchChildInput(
+  enrollment: Pick<AuthorityEnrollment, "callerWorkflowPath" | "repositoryId" | "repositorySlug">,
+  sourceHead: string,
+  expected: AuthorityArtifactTuple,
+): string {
+  return JSON.stringify({
+    callerWorkflowPath: enrollment.callerWorkflowPath,
+    expected: {
+      artifactDigest: expected.artifactDigest,
+      artifactId: expected.artifactId,
+      runId: expected.runId,
+      sourceHead: expected.sourceHead,
+    },
+    repositoryId: enrollment.repositoryId,
+    repositorySlug: enrollment.repositorySlug,
+    sourceHead,
+  })
+}
+
 export function fetchGithubAuthorityArtifact(
   projectDir: string,
   enrollment: AuthorityEnrollment,
+  expected: AuthorityArtifactTuple,
   githubToken: string | undefined,
   now = new Date(),
 ): GithubAuthorityFetchResult {
@@ -35,18 +54,14 @@ export function fetchGithubAuthorityArtifact(
   if (workspace.status !== "available") return { kind: "blocked" }
   const git = captureGitIdentity(projectDir, workspace.value)
   if (!git.available || git.head === undefined) return { kind: "blocked" }
+  if (git.head.toLowerCase() !== expected.sourceHead) return { kind: "blocked" }
   const childEnvironment = createAuthorityFetchChildEnvironment(githubToken)
   if (childEnvironment === undefined) return { kind: "blocked" }
   const result = spawnSync(process.execPath, [WORKER_PATH], {
     cwd: workspace.value.realpath,
     encoding: "utf8",
     env: childEnvironment,
-    input: JSON.stringify({
-      callerWorkflowPath: enrollment.callerWorkflowPath,
-      repositoryId: enrollment.repositoryId,
-      repositorySlug: enrollment.repositorySlug,
-      sourceHead: git.head,
-    }),
+    input: serializeAuthorityFetchChildInput(enrollment, git.head, expected),
     maxBuffer: MAX_OUTPUT_BYTES,
     shell: false,
     stdio: ["pipe", "pipe", "ignore"],
@@ -68,7 +83,7 @@ export function fetchGithubAuthorityArtifact(
           fetchedAt: now.toISOString(),
           repositoryId: enrollment.repositoryId,
           runId: fetched.runId,
-          sourceHead: git.head,
+          sourceHead: expected.sourceHead,
         },
         kind: "ready",
       }

@@ -44,12 +44,12 @@ describe("consumer authority fetch child diagnostic", () => {
     }
     worker.fetchGithubAuthorityArtifact.mockReturnValue({ kind: "blocked", diagnostic })
 
-    const json = runAuthorityCommand(["fetch", "github", "--json"], {
+    const json = runAuthorityCommand(selectedFetchArgs(true), {
       githubToken: token,
       projectDir,
       storeRoot,
     })
-    const plain = runAuthorityCommand(["fetch", "github"], {
+    const plain = runAuthorityCommand(selectedFetchArgs(false), {
       githubToken: token,
       projectDir,
       storeRoot,
@@ -85,7 +85,7 @@ describe("consumer authority fetch child diagnostic", () => {
     }
     const marker = "private-path-marker"
 
-    const result = runAuthorityCommand(["fetch", "github", "--json"], {
+    const result = runAuthorityCommand(selectedFetchArgs(true), {
       artifactFetch: () => ({
         archive: Buffer.from("archive-marker"),
         artifactId: 1,
@@ -124,4 +124,21 @@ function root(): string {
   const value = mkdtempSync(join(tmpdir(), "persona-authority-fetch-diagnostic-"))
   roots.push(value)
   return value
+}
+
+function selectedFetchArgs(json: boolean): string[] {
+  const args = [
+    "fetch",
+    "github",
+    "--artifact-id",
+    "1",
+    "--run-id",
+    "1",
+    "--source-head",
+    "a".repeat(40),
+    "--artifact-digest",
+    `sha256:${"a".repeat(64)}`,
+  ]
+  if (json) args.push("--json")
+  return args
 }

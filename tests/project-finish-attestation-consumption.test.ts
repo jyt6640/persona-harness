@@ -188,7 +188,19 @@ describe.sequential("project finish attestation inspection and consumption", () 
       state: "trusted",
     })
 
-    const fetched = withCurrentDirectory(projectDir, () => runAuthorityCommand(["fetch", "github", "--json"], {
+    const fetched = withCurrentDirectory(projectDir, () => runAuthorityCommand([
+      "fetch",
+      "github",
+      "--artifact-id",
+      "710000001",
+      "--run-id",
+      produced.receipt.lifecycle.runId,
+      "--source-head",
+      sourceHead,
+      "--artifact-digest",
+      sha256Digest(archive),
+      "--json",
+    ], {
       artifactFetch: () => ({
         archive,
         artifactId: 710000001,

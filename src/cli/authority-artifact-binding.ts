@@ -8,6 +8,33 @@ import type {
 import type { ProjectFinishAttestationReceipt } from "./project-finish-attestation-types.js"
 import { projectFinishAttestationReusableCertificateSan } from "./project-finish-attestation-workflow-identity.js"
 
+export type AuthorityArtifactTuple = {
+  readonly artifactId: number
+  readonly artifactDigest: string
+  readonly runId: string
+  readonly sourceHead: string
+}
+
+export function matchesAuthorityArtifactTuple(
+  artifact: AuthorityArtifact,
+  expected: AuthorityArtifactTuple,
+): boolean {
+  return artifact.artifactId === expected.artifactId
+    && artifact.artifactDigest === expected.artifactDigest
+    && artifact.runId === expected.runId
+    && artifact.sourceHead === expected.sourceHead
+}
+
+export function classifyAuthorityArtifactTupleReason(
+  artifact: AuthorityArtifact,
+  expected: AuthorityArtifactTuple,
+): AuthorityBindingReason {
+  if (artifact.artifactId !== expected.artifactId || artifact.artifactDigest !== expected.artifactDigest) return "artifact"
+  if (artifact.runId !== expected.runId) return "run"
+  if (artifact.sourceHead !== expected.sourceHead) return "source"
+  return "unknown"
+}
+
 export function matchesAuthorityArtifactBinding(
   artifact: AuthorityArtifact,
   enrollment: AuthorityEnrollment,

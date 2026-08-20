@@ -42,6 +42,7 @@ describe("consumer authority original artifact fetch", () => {
       callerWorkflowPath: "persona-harness.yml",
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",
+      expected: expectedFor(archive),
       sourceHead: SOURCE_HEAD,
     }, {
       archive: async () => archive,
@@ -68,6 +69,7 @@ describe("consumer authority original artifact fetch", () => {
       callerWorkflowPath: "research-attestation.yml",
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",
+      expected: expectedFor(archive),
       sourceHead: SOURCE_HEAD,
     }
     const archiveRead = vi.fn(async () => archive)
@@ -102,6 +104,7 @@ describe("consumer authority original artifact fetch", () => {
       callerWorkflowPath: "research-attestation.yml",
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",
+      expected: expectedFor(archive),
       sourceHead: SOURCE_HEAD,
     }, {
       archive: async () => archive,
@@ -155,6 +158,7 @@ describe("consumer authority original artifact fetch", () => {
       callerWorkflowPath: "persona-harness.yml",
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",
+      expected: expectedFor(archive),
       sourceHead: SOURCE_HEAD,
     }
     const archiveRead = vi.fn(async () => archive)
@@ -188,6 +192,7 @@ describe("consumer authority original artifact fetch", () => {
       callerWorkflowPath: "persona-harness.yml",
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",
+      expected: expectedFor(archive),
       sourceHead: SOURCE_HEAD,
     }
 
@@ -253,6 +258,7 @@ describe("consumer authority original artifact fetch", () => {
       callerWorkflowPath: "persona-harness.yml",
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",
+      expected: expectedFor(archive),
       sourceHead: SOURCE_HEAD,
     }
 
@@ -275,6 +281,7 @@ describe("consumer authority original artifact fetch", () => {
       callerWorkflowPath: "persona-harness.yml",
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",
+      expected: expectedFor(Buffer.from("unexpected", "utf8")),
       sourceHead: SOURCE_HEAD,
     }, {
       archive: archiveRead,
@@ -296,6 +303,7 @@ describe("consumer authority original artifact fetch", () => {
       callerWorkflowPath: "persona-harness.yml",
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",
+      expected: expectedFor(unsafeArchive),
       sourceHead: SOURCE_HEAD,
     }
 
@@ -349,6 +357,15 @@ function responseFor(url: URL, archive: Buffer): unknown {
     }
   }
   return { reusableWorkflowSha: REUSABLE_SHA }
+}
+
+function expectedFor(archive: Buffer) {
+  return {
+    artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+    artifactId: 11,
+    runId: "10",
+    sourceHead: SOURCE_HEAD,
+  }
 }
 
 function archiveFor(

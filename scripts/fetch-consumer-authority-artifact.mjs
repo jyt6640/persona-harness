@@ -65,10 +65,11 @@ export async function fetchConsumerAuthorityArtifact(input, transport = defaultT
 }
 
 function parseSelection(value) {
-  if (!record(value) || !exactKeys(value, ["callerWorkflowPath", "repositoryId", "repositorySlug", "sourceHead"]) || !workflowPath(value.callerWorkflowPath) || !positiveInteger(value.repositoryId) || !repositorySlug(value.repositorySlug) || !commit(value.sourceHead)) {
+  const expected = record(value) ? expectedTuple(value.expected) : undefined
+  if (!record(value) || !exactKeys(value, ["callerWorkflowPath", "expected", "repositoryId", "repositorySlug", "sourceHead"]) || !workflowPath(value.callerWorkflowPath) || !positiveInteger(value.repositoryId) || !repositorySlug(value.repositorySlug) || !commit(value.sourceHead) || expected === undefined || expected.sourceHead !== value.sourceHead.toLowerCase()) {
     return undefined
   }
-  return { ...value, sourceHead: value.sourceHead.toLowerCase() }
+  return { ...value, expected, sourceHead: value.sourceHead.toLowerCase() }
 }
 
 function api(path) {
@@ -92,6 +93,7 @@ function selectRun(value, expected) {
   if (runs === undefined) return undefined
   const matches = runs.filter((run) => record(run)
     && positiveInteger(run.id)
+    && String(run.id) === expected.expected.runId
     && run.event === "push"
     && run.head_branch === "main"
     && run.head_sha === expected.sourceHead
@@ -107,11 +109,13 @@ function selectArtifact(value, expected, runId) {
   if (artifacts === undefined) return undefined
   const matches = artifacts.filter((artifact) => record(artifact)
     && positiveInteger(artifact.id)
+    && artifact.id === expected.expected.artifactId
     && artifact.name === ARTIFACT_NAME
     && artifact.expired === false
     && positiveInteger(artifact.size_in_bytes)
     && artifact.size_in_bytes <= MAX_ARCHIVE_BYTES
     && isDigest(artifact.digest)
+    && artifact.digest.toLowerCase() === expected.expected.artifactDigest
     && record(artifact.workflow_run)
     && artifact.workflow_run.id === runId
     && artifact.workflow_run.repository_id === expected.repositoryId
@@ -119,6 +123,22 @@ function selectArtifact(value, expected, runId) {
     && artifact.workflow_run.head_branch === "main"
     && artifact.workflow_run.head_sha === expected.sourceHead)
   return matches.length === 1 ? matches[0] : undefined
+}
+
+function expectedTuple(value) {
+  return record(value)
+    && exactKeys(value, ["artifactDigest", "artifactId", "runId", "sourceHead"])
+    && positiveInteger(value.artifactId)
+    && isRunId(value.runId)
+    && isDigest(value.artifactDigest)
+    && commit(value.sourceHead)
+    ? {
+        artifactDigest: value.artifactDigest.toLowerCase(),
+        artifactId: value.artifactId,
+        runId: value.runId,
+        sourceHead: value.sourceHead.toLowerCase(),
+      }
+    : undefined
 }
 
 function defaultTransport() {
@@ -235,6 +255,10 @@ function exactKeys(value, keys) {
 
 function positiveInteger(value) {
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0
+}
+
+function isRunId(value) {
+  return typeof value === "string" && /^[1-9][0-9]{0,18}$/u.test(value)
 }
 
 function nonNegativeInteger(value) {

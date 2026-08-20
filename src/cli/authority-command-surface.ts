@@ -1,4 +1,5 @@
 import { authorityEnrollmentFromReadback } from "./authority-enrollment.js"
+import type { AuthorityArtifactTuple } from "./authority-artifact-binding.js"
 import type { AuthorityBindingReason } from "./authority-artifact-binding.js"
 import type { CliRunResult } from "./bearshell.js"
 import type { GithubAuthorityFetchDiagnostic } from "./authority-fetch-worker.js"
@@ -13,6 +14,7 @@ export type AuthorityStatus = {
 }
 
 export type AuthorityFetchArgs = {
+  readonly artifactTuple?: AuthorityArtifactTuple
   readonly json: boolean
   readonly repositorySlug?: string
 }
@@ -26,8 +28,9 @@ export function authorityUsage(invocationName = "ph"): string {
     "  explain [--json]                        Explain the bounded next authority step.",
     "  enroll github <owner/repository> --workflow <path>",
     "                                         Interactively enroll a public GitHub workflow pin.",
-    "  fetch github [owner/repository] [--json]",
-    "                                         Fetch matching original public evidence without consuming it.",
+    "  fetch github [owner/repository] --artifact-id <id> --run-id <id>",
+    "    --source-head <sha> --artifact-digest <sha256> [--json]",
+    "                                         Fetch one explicit original artifact without consuming it.",
   ].join("\n")
 }
 
@@ -36,12 +39,76 @@ export function parseReadOnlyArgs(args: readonly string[]): { readonly json: boo
 }
 
 export function parseFetchArgs(args: readonly string[]): AuthorityFetchArgs | undefined {
-  if (args.length === 1 && args[0] === "github") return { json: false }
-  if (args.length === 2 && args[0] === "github" && args[1] === "--json") return { json: true }
-  const repositorySlug = args[1]
-  if (args[0] !== "github" || !isPublicRepositorySlug(repositorySlug)) return undefined
-  if (args.length === 2) return { json: false, repositorySlug }
-  return args.length === 3 && args[2] === "--json" ? { json: true, repositorySlug } : undefined
+  if (args[0] !== "github") return undefined
+  let cursor = 1
+  const repositorySlug = args[cursor]?.startsWith("--") === false ? args[cursor++] : undefined
+  if (repositorySlug !== undefined && !isPublicRepositorySlug(repositorySlug)) return undefined
+  let json = false
+  let artifactId: string | undefined
+  let artifactDigest: string | undefined
+  let runId: string | undefined
+  let sourceHead: string | undefined
+  while (cursor < args.length) {
+    const flag = args[cursor++]
+    if (flag === "--json" && !json) {
+      json = true
+      continue
+    }
+    const value = args[cursor++]
+    if (value === undefined || value.startsWith("--")) return undefined
+    switch (flag) {
+      case "--artifact-id":
+        if (artifactId !== undefined) return undefined
+        artifactId = value
+        break
+      case "--artifact-digest":
+        if (artifactDigest !== undefined) return undefined
+        artifactDigest = value
+        break
+      case "--run-id":
+        if (runId !== undefined) return undefined
+        runId = value
+        break
+      case "--source-head":
+        if (sourceHead !== undefined) return undefined
+        sourceHead = value
+        break
+      default:
+        return undefined
+    }
+  }
+  const tuple = parseArtifactTuple(artifactId, artifactDigest, runId, sourceHead)
+  return tuple === undefined
+    ? { json, repositorySlug }
+    : { artifactTuple: tuple, json, repositorySlug }
+}
+
+function parseArtifactTuple(
+  artifactId: string | undefined,
+  artifactDigest: string | undefined,
+  runId: string | undefined,
+  sourceHead: string | undefined,
+): AuthorityArtifactTuple | undefined {
+  if (artifactId === undefined && artifactDigest === undefined && runId === undefined && sourceHead === undefined) return undefined
+  if (
+    artifactId === undefined
+    || artifactDigest === undefined
+    || runId === undefined
+    || sourceHead === undefined
+    || !/^[1-9][0-9]{0,18}$/u.test(artifactId)
+    || !/^[1-9][0-9]{0,18}$/u.test(runId)
+    || !/^[a-f0-9]{40}$/iu.test(sourceHead)
+    || !/^sha256:[a-f0-9]{64}$/iu.test(artifactDigest)
+  ) return undefined
+  const parsedArtifactId = Number(artifactId)
+  return Number.isSafeInteger(parsedArtifactId)
+    ? {
+        artifactId: parsedArtifactId,
+        artifactDigest: artifactDigest.toLowerCase(),
+        runId,
+        sourceHead: sourceHead.toLowerCase(),
+      }
+    : undefined
 }
 
 export function parseEnrollmentArgs(args: readonly string[]): {
