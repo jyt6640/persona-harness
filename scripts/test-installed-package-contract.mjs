@@ -3867,7 +3867,7 @@ async function assertBoundAuthorityDiscovery(packageRoot, label, surface) {
       },
       expectedState: "binding-mismatch",
     },
-    { id: "artifact-id", artifact: { ...artifact, artifactId: 0 }, enrollment, expectedState: "binding-mismatch" },
+    { id: "artifact-id", artifact: { ...artifact, artifactId: 0 }, enrollment, expectedState: "selection-required" },
     { id: "digest", artifact: { ...artifact, artifactDigest: `sha256:${"0".repeat(64)}` }, enrollment, expectedState: "binding-mismatch" },
     {
       id: "archive",

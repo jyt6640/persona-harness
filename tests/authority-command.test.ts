@@ -275,6 +275,7 @@ describe("consumer authority command boundary", () => {
 
   it.each([
     ["partial tuple", ["fetch", "github", "--artifact-id", "11", "--json"]],
+    ["zero artifact id", ["fetch", "github", "--artifact-id", "0", "--run-id", "1001", "--source-head", "a".repeat(40), "--artifact-digest", `sha256:${"a".repeat(64)}`, "--json"]],
     ["malformed digest", ["fetch", "github", "--artifact-id", "11", "--run-id", "1001", "--source-head", "a".repeat(40), "--artifact-digest", "sha256:invalid", "--json"]],
     ["malformed source head", ["fetch", "github", "--artifact-id", "11", "--run-id", "1001", "--source-head", "not-a-commit", "--artifact-digest", `sha256:${"a".repeat(64)}`, "--json"]],
   ] as const)("blocks a %s selector before enrollment or fetching", (_label, args) => {
