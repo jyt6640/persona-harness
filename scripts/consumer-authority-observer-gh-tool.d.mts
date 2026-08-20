@@ -1,4 +1,5 @@
 export const OBSERVER_GH_TOOL_SCHEMA_VERSION: "consumer-authority-observer-gh-tool.2"
+export const OBSERVER_GH_VERSION_TIMEOUT_MS: 15000
 
 export class ObserverGhToolError extends Error {
   readonly code: "observer-gh-tool-contract"
@@ -14,7 +15,7 @@ export interface ObserverGhToolContract {
 }
 
 export interface ObserverGhToolAssessment {
-  readonly code: "gh-command-tool-ready" | "gh-command-tool-required" | "gh-command-tool-invalid" | "gh-command-unavailable" | "gh-command-version-unsupported"
+  readonly code: "gh-command-tool-ready" | "gh-command-tool-required" | "gh-command-tool-invalid" | "gh-command-unavailable" | "gh-command-version-timeout" | "gh-command-version-unsupported"
   readonly state: "ready" | "blocked"
 }
 

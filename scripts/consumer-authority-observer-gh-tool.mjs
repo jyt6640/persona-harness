@@ -4,7 +4,7 @@ import { isAbsolute, join } from "node:path"
 import { isDeepStrictEqual } from "node:util"
 
 const TOOL_SCHEMA_VERSION = "consumer-authority-observer-gh-tool.2"
-const VERSION_TIMEOUT_MS = 5_000
+export const OBSERVER_GH_VERSION_TIMEOUT_MS = 15_000
 const VERSION_MAX_OUTPUT_BYTES = 4 * 1024
 const VERSION = /^gh version (\d+)\.(\d+)\.(\d+)(?:\s|$)/mu
 
@@ -60,11 +60,12 @@ export function assessObserverGhTool(ghPath, options = {}) {
       maxBuffer: VERSION_MAX_OUTPUT_BYTES,
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
-      timeout: VERSION_TIMEOUT_MS,
+      timeout: OBSERVER_GH_VERSION_TIMEOUT_MS,
     })
   } catch {
     return blocked("gh-command-unavailable")
   }
+  if (isTimeoutResult(result)) return blocked("gh-command-version-timeout")
   if (result?.error !== undefined || result?.status !== 0) return blocked("gh-command-unavailable")
   if (!isCompatibleVersion(result?.stdout)) return blocked("gh-command-version-unsupported")
   return { code: "gh-command-tool-ready", state: "ready" }
@@ -119,6 +120,14 @@ function isCompatibleVersion(value) {
   const numericPatch = Number(patch)
   if (!Number.isSafeInteger(numericMajor) || !Number.isSafeInteger(numericMinor) || !Number.isSafeInteger(numericPatch)) return false
   return numericMajor === 2 && numericMinor >= 96
+}
+
+function isTimeoutResult(value) {
+  return isRecord(value?.error) && value.error.code === "ETIMEDOUT"
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
 }
 
 function isMissingPathError(error) {
