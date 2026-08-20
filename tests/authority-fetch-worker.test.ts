@@ -10,9 +10,10 @@ import {
 describe("consumer authority fetch worker output", () => {
   it("serializes the child request in the canonical field order", () => {
     const sourceHead = "a".repeat(40)
-    const expected = {
-      artifactDigest: `sha256:${"b".repeat(64)}`,
+    const digest = `sha256:${"b".repeat(64)}`
+    const parsedTuple = {
       artifactId: 710000017,
+      artifactDigest: digest,
       runId: "30470000000",
       sourceHead,
     }
@@ -20,7 +21,7 @@ describe("consumer authority fetch worker output", () => {
       callerWorkflowPath: "persona-harness.yml",
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",
-    }, sourceHead, expected)
+    }, sourceHead, parsedTuple)
 
     expect(Object.keys(input)).toEqual([
       "callerWorkflowPath",
@@ -29,9 +30,20 @@ describe("consumer authority fetch worker output", () => {
       "repositorySlug",
       "sourceHead",
     ])
+    expect(Object.keys(input.expected)).toEqual([
+      "artifactDigest",
+      "artifactId",
+      "runId",
+      "sourceHead",
+    ])
     expect(JSON.stringify(input)).toBe(JSON.stringify({
       callerWorkflowPath: "persona-harness.yml",
-      expected,
+      expected: {
+        artifactDigest: digest,
+        artifactId: 710000017,
+        runId: "30470000000",
+        sourceHead,
+      },
       repositoryId: 987654321,
       repositorySlug: "example/public-gradle-app",
       sourceHead,

@@ -38,7 +38,12 @@ export function createAuthorityFetchChildInput(
 ): AuthorityFetchChildInput {
   return {
     callerWorkflowPath: enrollment.callerWorkflowPath,
-    expected,
+    expected: {
+      artifactDigest: expected.artifactDigest,
+      artifactId: expected.artifactId,
+      runId: expected.runId,
+      sourceHead: expected.sourceHead,
+    },
     repositoryId: enrollment.repositoryId,
     repositorySlug: enrollment.repositorySlug,
     sourceHead,
