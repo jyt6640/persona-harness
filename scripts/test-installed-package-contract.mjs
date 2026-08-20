@@ -813,7 +813,6 @@ function assertConsumerAuthorityBoundary(cwd, phPath, home, label) {
   assertBoundedAuthorityAbsence(
     [
       runNode(cwd, [phPath, "authority", "status", "--json"], unauthenticatedEnvironment),
-      runNode(cwd, [phPath, "authority", "fetch", "github", "--json"], unauthenticatedEnvironment),
       runNode(cwd, [phPath, "authority", "explain", "--json"], unauthenticatedEnvironment),
     ],
     home,
@@ -825,6 +824,12 @@ function assertConsumerAuthorityBoundary(cwd, phPath, home, label) {
       state: "authentication-unavailable",
     },
   )
+  assertBoundedAuthoritySelection(
+    runNode(cwd, [phPath, "authority", "fetch", "github", "--json"], unauthenticatedEnvironment),
+    home,
+    label,
+    credential,
+  )
   const authenticatedEnvironment = {
     ...unauthenticatedEnvironment,
     GH_TOKEN: credential,
@@ -832,7 +837,6 @@ function assertConsumerAuthorityBoundary(cwd, phPath, home, label) {
   assertBoundedAuthorityAbsence(
     [
       runNode(cwd, [phPath, "authority", "status", "--json"], authenticatedEnvironment),
-      runNode(cwd, [phPath, "authority", "fetch", "github", "--json"], authenticatedEnvironment),
       runNode(cwd, [phPath, "authority", "explain", "--json"], authenticatedEnvironment),
     ],
     home,
@@ -843,6 +847,12 @@ function assertConsumerAuthorityBoundary(cwd, phPath, home, label) {
       next: "authority-enroll-github",
       state: "enrollment-unavailable",
     },
+  )
+  assertBoundedAuthoritySelection(
+    runNode(cwd, [phPath, "authority", "fetch", "github", "--json"], authenticatedEnvironment),
+    home,
+    label,
+    credential,
   )
   if (existsSync(join(home, ".persona-harness"))) {
     throw new Error(`${label} authority absence created local evidence`)
@@ -869,6 +879,31 @@ function assertBoundedAuthorityAbsence(results, home, label, credential, expecte
     ) {
       throw new Error(`${label} authority absence did not remain bounded`)
     }
+  }
+}
+
+function assertBoundedAuthoritySelection(result, home, label, credential) {
+  if (result.status === 0) {
+    throw new Error(`${label} authority selection unexpectedly succeeded without a tuple`)
+  }
+  let payload
+  try {
+    payload = JSON.parse(result.stdout)
+  } catch {
+    throw new Error(`${label} authority selection returned invalid bounded JSON`)
+  }
+  if (
+    !isRecord(payload)
+    || payload["authorityEligible"] !== false
+    || payload["consumptionState"] !== "not-applicable"
+    || payload["next"] !== "authority-fetch-github"
+    || payload["state"] !== "selection-required"
+    || payload["enrollment"] !== undefined
+    || payload["githubAuthentication"] !== undefined
+    || JSON.stringify(payload).includes(home)
+    || JSON.stringify(payload).includes(credential)
+  ) {
+    throw new Error(`${label} authority selection did not remain bounded`)
   }
 }
 
