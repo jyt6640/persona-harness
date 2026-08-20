@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest"
 
 import {
   AUTHORITY_BINDING_REASONS,
+  AUTHORITY_SOURCE_REASONS,
   classifyAuthorityBindingReason,
+  classifyAuthoritySourceReason,
   matchesAuthorityArtifactBinding,
 } from "../src/cli/authority-artifact-binding.js"
 import type { AuthorityArtifact } from "../src/cli/authority-artifact-store.js"
@@ -170,6 +172,36 @@ describe("consumer authority artifact binding", () => {
 
     expect(classifyAuthorityBindingReason(artifact, input.enrollment, assessment)).toBe(expected)
     expect(JSON.stringify(classifyAuthorityBindingReason(artifact, input.enrollment, assessment))).not.toContain("c".repeat(40))
+  })
+
+  it("maps receipt source drift to head and unknown source fallbacks", () => {
+    const input = validBinding()
+    expect(AUTHORITY_SOURCE_REASONS).toEqual([
+      "head",
+      "inputs",
+      "identity",
+      "status",
+      "index",
+      "content",
+      "working-tree",
+      "workspace",
+      "unknown",
+    ])
+
+    const mismatchedReceipt = {
+      ...input.receipt,
+      source: { ...input.receipt.source, head: "c".repeat(40) },
+    }
+    expect(classifyAuthoritySourceReason(input.artifact, assessmentFor(input, mismatchedReceipt))).toBe("head")
+    expect(classifyAuthoritySourceReason(input.artifact, {
+      ...input.assessment,
+      authorityEligible: false,
+      consumptionState: "not-applicable",
+      decision: "blocked",
+      diagnostics: [{ code: "binding-mismatch", path: "source" }],
+      receipt: undefined,
+      state: "binding-mismatch",
+    })).toBe("unknown")
   })
 })
 
