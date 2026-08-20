@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readV0811AcceptanceManifest } from "./consumer-authority-v0811-acceptance-schema.mjs"
+import { readV0812AcceptanceManifest } from "./consumer-authority-v0812-acceptance-schema.mjs"
 import {
   observerGhStageCodeForPreflight,
   observerGhStageCodeForPrivateCopy,
@@ -3054,11 +3054,11 @@ function seedModeledAuthorityArtifact(projectDir, packageRoot, home, environment
       'const produced = createProjectFinishAttestationProducerArtifacts({ buildArtifactDigest: `sha256:${"b".repeat(64)}`, callerWorkflowRef: `${enrollment.repositorySlug}/.github/workflows/${enrollment.callerWorkflowPath}@refs/heads/main`, callerWorkflowSha: git.head, issuedAt: now, phVersion: personaHarnessVersion(), repository: { id: enrollment.repositoryId, slug: enrollment.repositorySlug, visibility: "public" }, reusableWorkflowSha: enrollment.reusableWorkflowSha, runAttempt: 1, runId: "30450000000", source: { head: git.head, identity: boundSource, root: "." }, test: { count: 1, junitDigest: `sha256:${"c".repeat(64)}`, passed: 1, skipped: 0 } });',
       'const bundle = Buffer.from(JSON.stringify(produced.statement), "utf8"); const original = archive({ "bundle.json": bundle, "predicate.json": canonicalProjectFinishAttestationBytes(produced.predicate), "receipt.json": produced.receiptBytes });',
       `const childFixturePath = ${JSON.stringify(childFixturePath)};`,
-      'writeFileSync(childFixturePath, `${JSON.stringify({ expectedInput: { callerWorkflowPath: enrollment.callerWorkflowPath, repositoryId: enrollment.repositoryId, repositorySlug: enrollment.repositorySlug, sourceHead: git.head }, output: JSON.stringify({ archive: original.toString("base64"), artifactDigest: digest(original), artifactId: 710000015, ok: true, runId: "30450000000" }), status: 0 })}\n`);',
+      'writeFileSync(childFixturePath, `${JSON.stringify({ expectedInput: { callerWorkflowPath: enrollment.callerWorkflowPath, expected: { artifactDigest: digest(original), artifactId: 710000015, runId: "30450000000", sourceHead: git.head }, repositoryId: enrollment.repositoryId, repositorySlug: enrollment.repositorySlug, sourceHead: git.head }, output: JSON.stringify({ archive: original.toString("base64"), artifactDigest: digest(original), artifactId: 710000015, ok: true, runId: "30450000000" }), status: 0 })}\n`);',
       `const storeRoot = ${JSON.stringify(join(home, ".persona-harness"))};`,
       'if (!writeAuthorityEnrollment(enrollment, { storeRoot })) throw new Error("modeled-authority-store");',
       'const assessment = { authorityEligible: true, consumptionState: "unconsumed", decision: "trusted", diagnostics: [], receipt: produced.receipt, state: "trusted", summary: "modeled-trusted-boundary" };',
-      'const result = runAuthorityCommand(["fetch", "github", "--json"], { artifactInspector: () => assessment, githubToken: "ghp_modeled_authority_fetch", projectDir: ".", storeRoot });',
+      'const result = runAuthorityCommand(["fetch", "github", "--artifact-id", "710000015", "--run-id", "30450000000", "--source-head", git.head, "--artifact-digest", digest(original), "--json"], { artifactInspector: () => assessment, githubToken: "ghp_modeled_authority_fetch", projectDir: ".", storeRoot });',
       'if (result.status !== 0) throw new Error("modeled-authority-fetch");',
       'process.stdout.write(JSON.stringify({ bundleDigest: digest(bundle), statement: produced.statement }));',
     ].join("\n")
@@ -3105,7 +3105,7 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
 }
 
 function readGaPreAuthorityReadiness(packageRoot) {
-  const manifest = readV0811AcceptanceManifest(packageRoot)
+  const manifest = readV0812AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -3114,7 +3114,7 @@ function readGaPreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readV0811AcceptanceManifest(packageRoot)
+    readV0812AcceptanceManifest(packageRoot)
   } catch {
     throw new Error(`${label} current observer handoff contract is invalid`)
   }
@@ -3256,7 +3256,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readV0811AcceptanceManifest(packageRoot)
+  const manifest = readV0812AcceptanceManifest(packageRoot)
   let packageMetadata
   try {
     packageMetadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
@@ -3334,7 +3334,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
     "consumer-authority-v088-acceptance-schema.mjs",
     "consumer-authority-v089-acceptance-schema.mjs",
     "consumer-authority-v0810-acceptance-schema.mjs",
-    "consumer-authority-v0811-acceptance-schema.mjs",
+    "consumer-authority-v0812-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
@@ -3617,7 +3617,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     "consumer-authority-v088-acceptance-schema.mjs",
     "consumer-authority-v089-acceptance-schema.mjs",
     "consumer-authority-v0810-acceptance-schema.mjs",
-    "consumer-authority-v0811-acceptance-schema.mjs",
+    "consumer-authority-v0812-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
@@ -3662,7 +3662,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readV0811AcceptanceManifest(packageRoot)
+  const manifest = readV0812AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),
@@ -3793,6 +3793,12 @@ async function assertBoundAuthorityDiscovery(packageRoot, label, surface) {
   const requestedUrls = []
   const fetched = await fetcher.fetchConsumerAuthorityArtifact({
     callerWorkflowPath: enrollment.callerWorkflowPath,
+    expected: {
+      artifactDigest: `sha256:${sha256(archive)}`,
+      artifactId: MODELED_CURRENT_ARTIFACT_ID,
+      runId: String(MODELED_CURRENT_RUN_ID),
+      sourceHead,
+    },
     repositoryId: enrollment.repositoryId,
     repositorySlug: enrollment.repositorySlug,
     sourceHead,
@@ -3878,7 +3884,7 @@ async function assertBoundAuthorityDiscovery(packageRoot, label, surface) {
   if (!enrollmentStore.writeAuthorityEnrollment(enrollment, { storeRoot: successRoot })) {
     throw new Error(`${label} authority enrollment setup failed`)
   }
-  const success = command.runAuthorityCommand(["fetch", "github", "--json"], {
+  const success = command.runAuthorityCommand(authorityFetchArgs(artifact), {
     artifactFetch: () => artifact,
     artifactInspector: () => assessment,
     projectDir: temporaryRoot,
@@ -3900,7 +3906,7 @@ async function assertBoundAuthorityDiscovery(packageRoot, label, surface) {
     if (!enrollmentStore.writeAuthorityEnrollment(candidate.enrollment, { storeRoot })) {
       throw new Error(`${label} authority ${candidate.id} enrollment setup failed`)
     }
-    const blocked = command.runAuthorityCommand(["fetch", "github", "--json"], {
+    const blocked = command.runAuthorityCommand(authorityFetchArgs(candidate.artifact), {
       artifactFetch: () => candidate.artifact,
       artifactInspector: () => assessment,
       projectDir: temporaryRoot,
@@ -4010,6 +4016,12 @@ async function assertAuthorityFetchChildBoundary(packageRoot, label, surface) {
     }
     const expectedInput = {
       callerWorkflowPath: enrollment.callerWorkflowPath,
+      expected: {
+        artifactDigest: `sha256:${sha256(archive)}`,
+        artifactId: 710000017,
+        runId: "30470000000",
+        sourceHead,
+      },
       repositoryId: enrollment.repositoryId,
       repositorySlug: enrollment.repositorySlug,
       sourceHead,
@@ -4030,7 +4042,16 @@ async function assertAuthorityFetchChildBoundary(packageRoot, label, surface) {
     if (!enrollmentStore.writeAuthorityEnrollment(enrollment, { storeRoot: successStore })) {
       throw new Error(`${label} authority child success enrollment did not persist`)
     }
-    const success = command.runAuthorityCommand(["fetch", "github", "--json"], {
+    const childArtifact = {
+      archive,
+      artifactId: 710000017,
+      artifactDigest: `sha256:${sha256(archive)}`,
+      fetchedAt: "2026-07-29T00:00:00.000Z",
+      repositoryId: enrollment.repositoryId,
+      runId: "30470000000",
+      sourceHead,
+    }
+    const success = command.runAuthorityCommand(authorityFetchArgs(childArtifact), {
       artifactInspector: () => assessment,
       githubToken: tokenMarker,
       projectDir,
@@ -4067,7 +4088,7 @@ async function assertAuthorityFetchChildBoundary(packageRoot, label, surface) {
       if (!enrollmentStore.writeAuthorityEnrollment(enrollment, { storeRoot })) {
         throw new Error(`${label} authority child ${diagnostic} enrollment did not persist`)
       }
-      const blocked = command.runAuthorityCommand(["fetch", "github", "--json"], {
+      const blocked = command.runAuthorityCommand(authorityFetchArgs(childArtifact), {
         githubToken: tokenMarker,
         projectDir,
         storeRoot,
@@ -4102,7 +4123,7 @@ async function assertAuthorityFetchChildBoundary(packageRoot, label, surface) {
     if (!enrollmentStore.writeAuthorityEnrollment(enrollment, { storeRoot: malformedStore })) {
       throw new Error(`${label} authority child malformed enrollment did not persist`)
     }
-    const malformed = command.runAuthorityCommand(["fetch", "github", "--json"], {
+    const malformed = command.runAuthorityCommand(authorityFetchArgs(childArtifact), {
       githubToken: tokenMarker,
       projectDir,
       storeRoot: malformedStore,
@@ -4150,6 +4171,23 @@ function writeAuthorityFetchChildWorker(runtimeRoot, fixturePath, auditPath) {
     '});',
     '',
   ].join("\n"))
+}
+
+function authorityFetchArgs(artifact, json = true) {
+  const args = [
+    "fetch",
+    "github",
+    "--artifact-id",
+    String(artifact.artifactId),
+    "--run-id",
+    artifact.runId,
+    "--source-head",
+    artifact.sourceHead,
+    "--artifact-digest",
+    artifact.artifactDigest,
+  ]
+  if (json) args.push("--json")
+  return args
 }
 
 function writeAuthorityFetchChildFixture(path, fixture) {

@@ -1,7 +1,10 @@
 import { writeAuthorityArtifact, type AuthorityArtifact } from "./authority-artifact-store.js"
 import {
   classifyAuthorityBindingReason,
+  classifyAuthorityArtifactTupleReason,
+  matchesAuthorityArtifactTuple,
   matchesAuthorityArtifactBinding,
+  type AuthorityArtifactTuple,
 } from "./authority-artifact-binding.js"
 import {
   authorityEnrollmentFromReadback,
@@ -35,7 +38,7 @@ import {
 import type { CliRunResult } from "./bearshell.js"
 
 type AuthorityCommandOptions = AuthorityEnrollmentStoreOptions & {
-  readonly artifactFetch?: (projectDir: string, enrollment: AuthorityEnrollment) => AuthorityArtifact | undefined
+  readonly artifactFetch?: (projectDir: string, enrollment: AuthorityEnrollment, expected: AuthorityArtifactTuple) => AuthorityArtifact | undefined
   readonly artifactInspector?: (
     projectDir: string,
     enrollment: AuthorityEnrollment,
@@ -123,6 +126,7 @@ function runEnrollment(
 function runFetch(args: readonly string[], options: AuthorityCommandOptions, invocationName: string): CliRunResult {
   const parsed = parseFetchArgs(args)
   if (parsed === undefined) return invalidAuthorityCommand(invocationName)
+  if (parsed.artifactTuple === undefined) return blockedFetch(parsed.json, "selection-required")
   const entries = readAuthorityEnrollments(options)
   if (entries.state !== "ready") {
     const summary = readAuthorityStatus(options)
@@ -140,14 +144,23 @@ function runFetch(args: readonly string[], options: AuthorityCommandOptions, inv
     return blockedFetch(parsed.json, "authentication-unavailable", "github-authenticate")
   }
   const fetched = options.artifactFetch === undefined
-    ? fetchGithubAuthorityArtifact(projectDir, enrollment, options.githubToken, options.now ?? new Date())
-    : { artifact: options.artifactFetch(projectDir, enrollment), kind: "ready" as const }
+    ? fetchGithubAuthorityArtifact(projectDir, enrollment, parsed.artifactTuple, options.githubToken, options.now ?? new Date())
+    : { artifact: options.artifactFetch(projectDir, enrollment, parsed.artifactTuple), kind: "ready" as const }
   if (fetched.kind === "blocked") {
     return blockedFetch(parsed.json, "missing", "authority-fetch-github", fetched.diagnostic)
   }
   const artifact = fetched.artifact
   if (artifact === undefined || artifact.repositoryId !== enrollment.repositoryId) {
     return blockedFetch(parsed.json, "missing")
+  }
+  if (!matchesAuthorityArtifactTuple(artifact, parsed.artifactTuple)) {
+    return blockedFetch(
+      parsed.json,
+      "binding-mismatch",
+      "authority-fetch-github",
+      undefined,
+      classifyAuthorityArtifactTupleReason(artifact, parsed.artifactTuple),
+    )
   }
   const assessment = (options.artifactInspector ?? inspectProjectFinishAttestationArtifact)(
     projectDir,

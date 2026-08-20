@@ -16,6 +16,12 @@ export function extractOriginalArtifactMembers(archive: Buffer): {
 export function fetchConsumerAuthorityArtifact(
   input: {
     readonly callerWorkflowPath: string
+    readonly expected: {
+      readonly artifactDigest: string
+      readonly artifactId: number
+      readonly runId: string
+      readonly sourceHead: string
+    }
     readonly repositoryId: number
     readonly repositorySlug: string
     readonly sourceHead: string
@@ -25,6 +31,7 @@ export function fetchConsumerAuthorityArtifact(
     readonly json: (url: URL) => Promise<unknown>
   },
 ): Promise<{
+  readonly artifactId: number
   readonly artifactDigest: string
   readonly archive: Buffer
   readonly bundle: Buffer

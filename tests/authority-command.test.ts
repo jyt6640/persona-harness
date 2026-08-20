@@ -187,12 +187,25 @@ describe("consumer authority command boundary", () => {
     if (enrollment === undefined) throw new Error("fixture enrollment must parse")
     expect(writeAuthorityEnrollment(enrollment, { storeRoot })).toBe(true)
     const archive = artifactArchive()
+    const artifactDigest = `sha256:${createHash("sha256").update(archive).digest("hex")}`
 
-    const result = runAuthorityCommand(["fetch", "github", "--json"], {
+    const result = runAuthorityCommand([
+      "fetch",
+      "github",
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      "a".repeat(40),
+      "--artifact-digest",
+      artifactDigest,
+      "--json",
+    ], {
       artifactFetch: () => ({
         archive,
         artifactId: 11,
-        artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+        artifactDigest,
         fetchedAt: "2026-07-24T00:00:00.000Z",
         repositoryId: 987654321,
         runId: "1001",
@@ -215,7 +228,7 @@ describe("consumer authority command boundary", () => {
     expect(result.stderr).toBe("")
     expect(JSON.parse(result.stdout)).toEqual({
       artifact: {
-        digest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+        digest: artifactDigest,
         id: 11,
         runId: "1001",
         sourceHead: "a".repeat(40),
@@ -231,6 +244,130 @@ describe("consumer authority command boundary", () => {
     expect(`${result.stdout}${result.stderr}`).not.toContain(projectDir)
   })
 
+  it("blocks repo-only authority selection before fetching or retaining an artifact", () => {
+    const projectDir = project()
+    const storeRoot = join(projectDir, "user-store")
+    const enrollment = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "project-finish.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      reusableWorkflowSha: "b".repeat(40),
+    }, new Date("2026-07-24T00:00:00.000Z"))
+    if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
+      throw new Error("fixture enrollment must persist")
+    }
+    const artifactFetch = vi.fn(() => undefined)
+
+    const result = runAuthorityCommand(["fetch", "github", "--json"], {
+      artifactFetch,
+      projectDir,
+      storeRoot,
+    })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      consumptionState: "not-applicable",
+      state: "selection-required",
+    })
+    expect(artifactFetch).not.toHaveBeenCalled()
+    expect(readAuthorityArtifact(987654321, { storeRoot }).state).toBe("missing")
+  })
+
+  it.each([
+    ["partial tuple", ["fetch", "github", "--artifact-id", "11", "--json"]],
+    ["malformed digest", ["fetch", "github", "--artifact-id", "11", "--run-id", "1001", "--source-head", "a".repeat(40), "--artifact-digest", "sha256:invalid", "--json"]],
+    ["malformed source head", ["fetch", "github", "--artifact-id", "11", "--run-id", "1001", "--source-head", "not-a-commit", "--artifact-digest", `sha256:${"a".repeat(64)}`, "--json"]],
+  ] as const)("blocks a %s selector before enrollment or fetching", (_label, args) => {
+    const projectDir = project()
+    const artifactFetch = vi.fn(() => undefined)
+
+    const result = runAuthorityCommand(args, {
+      artifactFetch,
+      projectDir,
+      storeRoot: join(projectDir, "user-store"),
+    })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      consumptionState: "not-applicable",
+      state: "selection-required",
+    })
+    expect(artifactFetch).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ["artifactId", { artifactId: 12, artifactDigest: undefined, runId: undefined, sourceHead: undefined }, "artifact"],
+    ["runId", { artifactId: undefined, artifactDigest: undefined, runId: "1002", sourceHead: undefined }, "run"],
+    ["sourceHead", { artifactId: undefined, artifactDigest: undefined, runId: undefined, sourceHead: "b".repeat(40) }, "source"],
+    ["artifactDigest", { artifactId: undefined, artifactDigest: `sha256:${"0".repeat(64)}`, runId: undefined, sourceHead: undefined }, "artifact"],
+  ] as const)("blocks a returned artifact when its %s differs from the explicit tuple", (_field, change, expectedReason) => {
+    const projectDir = project()
+    const storeRoot = join(projectDir, "user-store")
+    const enrollment = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "project-finish.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      reusableWorkflowSha: "b".repeat(40),
+    }, new Date("2026-07-24T00:00:00.000Z"))
+    if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
+      throw new Error("fixture enrollment must persist")
+    }
+    const archive = artifactArchive()
+    const artifactDigest = `sha256:${createHash("sha256").update(archive).digest("hex")}`
+    const expected = {
+      artifactId: 11,
+      artifactDigest,
+      runId: "1001",
+      sourceHead: "a".repeat(40),
+    }
+    const returned = {
+      archive,
+      artifactId: change.artifactId ?? expected.artifactId,
+      artifactDigest: change.artifactDigest ?? expected.artifactDigest,
+      fetchedAt: "2026-07-24T00:00:00.000Z",
+      repositoryId: enrollment.repositoryId,
+      runId: change.runId ?? expected.runId,
+      sourceHead: change.sourceHead ?? expected.sourceHead,
+    }
+    const artifactInspector = vi.fn(() => ({
+      authorityEligible: true as const,
+      consumptionState: "unconsumed" as const,
+      decision: "trusted" as const,
+      diagnostics: [],
+      receipt: trustedReceiptFor(enrollment, expected.runId),
+      state: "trusted" as const,
+      summary: "trusted",
+    }))
+
+    const result = runAuthorityCommand([
+      "fetch",
+      "github",
+      "--artifact-id",
+      String(expected.artifactId),
+      "--run-id",
+      expected.runId,
+      "--source-head",
+      expected.sourceHead,
+      "--artifact-digest",
+      expected.artifactDigest,
+      "--json",
+    ], {
+      artifactFetch: () => returned,
+      artifactInspector,
+      projectDir,
+      storeRoot,
+    })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      bindingReason: expectedReason,
+      consumptionState: "not-applicable",
+      state: "binding-mismatch",
+    })
+    expect(artifactInspector).not.toHaveBeenCalled()
+    expect(readAuthorityArtifact(987654321, { storeRoot }).state).toBe("missing")
+  })
+
   it("does not retain a verified-shaped archive when fetched run identity differs from the signed receipt", () => {
     const projectDir = project()
     const storeRoot = join(projectDir, "user-store")
@@ -244,12 +381,25 @@ describe("consumer authority command boundary", () => {
       throw new Error("fixture enrollment must persist")
     }
     const archive = artifactArchive()
+    const artifactDigest = `sha256:${createHash("sha256").update(archive).digest("hex")}`
 
-    const result = runAuthorityCommand(["fetch", "github", "--json"], {
+    const result = runAuthorityCommand([
+      "fetch",
+      "github",
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      "a".repeat(40),
+      "--artifact-digest",
+      artifactDigest,
+      "--json",
+    ], {
       artifactFetch: () => ({
         archive,
         artifactId: 11,
-        artifactDigest: `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+        artifactDigest,
         fetchedAt: "2026-07-24T00:00:00.000Z",
         repositoryId: 987654321,
         runId: "10",
@@ -327,6 +477,14 @@ describe("consumer authority command boundary", () => {
       "fetch",
       "github",
       "example/second-gradle-app",
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "10",
+      "--source-head",
+      "a".repeat(40),
+      "--artifact-digest",
+      `sha256:${createHash("sha256").update(archive).digest("hex")}`,
       "--json",
     ], {
       artifactFetch,
