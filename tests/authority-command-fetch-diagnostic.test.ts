@@ -112,7 +112,7 @@ describe("consumer authority fetch child diagnostic", () => {
     expect(JSON.parse(result.stdout)).toMatchObject({
       authorityEligible: false,
       bindingReason: "package-version",
-      schemaVersion: "consumer-authority-fetch.3",
+      schemaVersion: "consumer-authority-fetch.4",
       state: "binding-mismatch",
     })
     expect(`${result.stdout}${result.stderr}`).not.toContain(marker)

@@ -1,6 +1,7 @@
 import { writeAuthorityArtifact, type AuthorityArtifact } from "./authority-artifact-store.js"
 import {
   classifyAuthorityBindingReason,
+  classifyAuthoritySourceReason,
   classifyAuthorityArtifactTupleReason,
   matchesAuthorityArtifactTuple,
   matchesAuthorityArtifactBinding,
@@ -169,12 +170,14 @@ function runFetch(args: readonly string[], options: AuthorityCommandOptions, inv
     options.now ?? new Date(),
   )
   if (!matchesAuthorityArtifactBinding(artifact, enrollment, assessment)) {
+    const bindingReason = classifyAuthorityBindingReason(artifact, enrollment, assessment)
     return blockedFetch(
       parsed.json,
       "binding-mismatch",
       "authority-fetch-github",
       undefined,
-      classifyAuthorityBindingReason(artifact, enrollment, assessment),
+      bindingReason,
+      bindingReason === "source" ? classifyAuthoritySourceReason(artifact, assessment) : undefined,
     )
   }
   if (!writeAuthorityArtifact(artifact, options)) {
@@ -193,7 +196,7 @@ function runFetch(args: readonly string[], options: AuthorityCommandOptions, inv
         },
         consumptionState: assessment.consumptionState,
         next: "workflow-finish",
-        schemaVersion: "consumer-authority-fetch.3",
+        schemaVersion: "consumer-authority-fetch.4",
         state: "trusted",
       })}\n`
       : "Fetched and verified matching original public evidence. Artifact identity was retained. No completion authority was consumed.\n",

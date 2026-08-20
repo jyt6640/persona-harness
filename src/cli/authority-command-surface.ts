@@ -1,6 +1,7 @@
 import { authorityEnrollmentFromReadback } from "./authority-enrollment.js"
 import type { AuthorityArtifactTuple } from "./authority-artifact-binding.js"
 import type { AuthorityBindingReason } from "./authority-artifact-binding.js"
+import type { AuthoritySourceReason } from "./authority-artifact-binding.js"
 import type { CliRunResult } from "./bearshell.js"
 import type { GithubAuthorityFetchDiagnostic } from "./authority-fetch-worker.js"
 
@@ -162,7 +163,9 @@ export function blockedFetch(
   next: AuthorityStatus["next"] = "authority-fetch-github",
   diagnostic?: GithubAuthorityFetchDiagnostic,
   bindingReason?: AuthorityBindingReason,
+  sourceReason?: AuthoritySourceReason,
 ): CliRunResult {
+  const normalizedSourceReason = bindingReason === "source" ? sourceReason : undefined
   return {
     status: 1,
     stdout: json
@@ -171,11 +174,12 @@ export function blockedFetch(
         consumptionState: "not-applicable",
         ...(diagnostic === undefined ? {} : { diagnostic }),
         ...(bindingReason === undefined ? {} : { bindingReason }),
+        ...(normalizedSourceReason === undefined ? {} : { sourceReason: normalizedSourceReason }),
         next,
-        schemaVersion: "consumer-authority-fetch.3",
+        schemaVersion: "consumer-authority-fetch.4",
         state,
       })}\n`
-      : `Consumer authority fetch: BLOCKED (${state})${diagnostic === undefined ? "" : `; diagnostic: ${diagnostic}`}${bindingReason === undefined ? "" : `; binding reason: ${bindingReason}`}. No evidence was retained or consumed.\n`,
+      : `Consumer authority fetch: BLOCKED (${state})${diagnostic === undefined ? "" : `; diagnostic: ${diagnostic}`}${bindingReason === undefined ? "" : `; binding reason: ${bindingReason}`}${normalizedSourceReason === undefined ? "" : `; source reason: ${normalizedSourceReason}`}. No evidence was retained or consumed.\n`,
     stderr: "",
   }
 }

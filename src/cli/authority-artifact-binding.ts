@@ -66,6 +66,20 @@ export const AUTHORITY_BINDING_REASONS = [
 
 export type AuthorityBindingReason = typeof AUTHORITY_BINDING_REASONS[number]
 
+export const AUTHORITY_SOURCE_REASONS = [
+  "head",
+  "inputs",
+  "identity",
+  "status",
+  "index",
+  "content",
+  "working-tree",
+  "workspace",
+  "unknown",
+] as const
+
+export type AuthoritySourceReason = typeof AUTHORITY_SOURCE_REASONS[number]
+
 export function classifyAuthorityBindingReason(
   artifact: AuthorityArtifact,
   enrollment: AuthorityEnrollment,
@@ -81,6 +95,20 @@ export function classifyAuthorityBindingReason(
   }
 
   return classifyDiagnosticReason(assessment.diagnostics)
+}
+
+export function classifyAuthoritySourceReason(
+  artifact: AuthorityArtifact,
+  assessment: ProjectFinishAttestationVerifierAssessment,
+): AuthoritySourceReason {
+  if (assessment.state === "source-drift") {
+    const diagnostic = assessment.diagnostics.find(({ code }) => code === "source-drift")
+    return classifySourceDiagnosticPath(diagnostic?.path)
+  }
+  const receipt = assessment.receipt
+  return receipt !== undefined && artifact.sourceHead !== receipt.source.head
+    ? "head"
+    : "unknown"
 }
 
 function classifyAssessmentState(
@@ -152,6 +180,30 @@ function classifyDiagnosticPath(path: string): AuthorityBindingReason | undefine
   if (path === "predicate.receipt.lifecycle") return "freshness"
   if (["archive", "artifact", "bundle", "evidence", "payload", "predicate", "subject"].includes(path)) return "artifact"
   return undefined
+}
+
+function classifySourceDiagnosticPath(path: string | undefined): AuthoritySourceReason {
+  switch (path) {
+    case "source.repositoryHead":
+      return "head"
+    case "source.inputs":
+      return "inputs"
+    case "source.identity":
+    case "source.git":
+      return "identity"
+    case "source.gitStatusDigest":
+      return "status"
+    case "source.trackedIndexDigest":
+      return "index"
+    case "source.contentDigest":
+      return "content"
+    case "source.workingTreeBytesDifferFromMatchingGitIndex":
+      return "working-tree"
+    case "workspace":
+      return "workspace"
+    default:
+      return "unknown"
+  }
 }
 
 function assertNever(value: never): never {

@@ -7,16 +7,18 @@ import {
   V0812AcceptanceManifestError,
   canonicalV0812AcceptanceManifest,
   parseV0812AcceptanceManifest,
-  readV0812AcceptanceManifest,
 } from "../scripts/consumer-authority-v0812-acceptance-schema.mjs"
 import { parseV0810AcceptanceManifest } from "../scripts/consumer-authority-v0810-acceptance-schema.mjs"
 import { parseV0811AcceptanceManifest } from "../scripts/consumer-authority-v0811-acceptance-schema.mjs"
 
 const repositoryRoot = process.cwd()
 
-describe("consumer authority 0.8.12 acceptance schema", () => {
-  it("binds the current package to 0.8.12 while retaining 0.8.11 as history", () => {
-    const manifest = readV0812AcceptanceManifest(repositoryRoot)
+describe("historical consumer authority 0.8.12 acceptance schema", () => {
+  it("retains the strict 0.8.12 record while the current package advances", () => {
+    const manifest = parseV0812AcceptanceManifest(
+      JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v0812-acceptance.json"), "utf8")),
+      "0.8.12",
+    )
     const v0810 = parseV0810AcceptanceManifest(
       JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v0810-acceptance.json"), "utf8")),
       "0.8.10",
@@ -50,8 +52,8 @@ describe("consumer authority 0.8.12 acceptance schema", () => {
       "preflight-consumer-authority-external-artifact-transport.mjs",
     ]) {
       const source = readFileSync(join(repositoryRoot, "scripts", script), "utf8")
-      expect(source).toContain('from "./consumer-authority-v0812-acceptance-schema.mjs"')
-      expect(source).toContain("readV0812AcceptanceManifest(packageRoot)")
+      expect(source).not.toContain('from "./consumer-authority-v0812-acceptance-schema.mjs"')
+      expect(source).not.toContain("readV0812AcceptanceManifest(packageRoot)")
       expect(source).not.toContain('from "./consumer-authority-v0810-acceptance-schema.mjs"')
       expect(source).not.toContain("readV0810AcceptanceManifest(packageRoot)")
     }

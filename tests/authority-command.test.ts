@@ -236,12 +236,142 @@ describe("consumer authority command boundary", () => {
       authorityEligible: true,
       consumptionState: "unconsumed",
       next: "workflow-finish",
-      schemaVersion: "consumer-authority-fetch.3",
+      schemaVersion: "consumer-authority-fetch.4",
       state: "trusted",
     })
     expect(readAuthorityArtifact(987654321, { storeRoot }).state).toBe("ready")
     expect(existsSync(join(projectDir, ".persona", "evidence", "project-finish-attestation", "bundle.json"))).toBe(false)
     expect(`${result.stdout}${result.stderr}`).not.toContain(projectDir)
+  })
+
+  it.each([
+    ["repository head", "source.repositoryHead", "head"],
+    ["input snapshot", "source.inputs", "inputs"],
+    ["source identity", "source.identity", "identity"],
+    ["git identity", "source.git", "identity"],
+    ["git status", "source.gitStatusDigest", "status"],
+    ["tracked index", "source.trackedIndexDigest", "index"],
+    ["content", "source.contentDigest", "content"],
+    ["working tree", "source.workingTreeBytesDifferFromMatchingGitIndex", "working-tree"],
+    ["workspace", "workspace", "workspace"],
+    ["unknown path", "source.future", "unknown"],
+    ["missing path", undefined, "unknown"],
+  ] as const)("retains only a bounded source reason for %s", (_label, path, expectedReason) => {
+    const projectDir = project()
+    const storeRoot = join(projectDir, "user-store")
+    const enrollment = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "project-finish.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      reusableWorkflowSha: "b".repeat(40),
+    }, new Date("2026-07-24T00:00:00.000Z"))
+    if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
+      throw new Error("fixture enrollment must persist")
+    }
+    const archive = artifactArchive()
+    const artifactDigest = `sha256:${createHash("sha256").update(archive).digest("hex")}`
+    const result = runAuthorityCommand([
+      "fetch",
+      "github",
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      "a".repeat(40),
+      "--artifact-digest",
+      artifactDigest,
+      "--json",
+    ], {
+      artifactFetch: () => ({
+        archive,
+        artifactId: 11,
+        artifactDigest,
+        fetchedAt: "2026-07-24T00:00:00.000Z",
+        repositoryId: enrollment.repositoryId,
+        runId: "1001",
+        sourceHead: "a".repeat(40),
+      }),
+      artifactInspector: () => ({
+        authorityEligible: false,
+        consumptionState: "not-applicable" as const,
+        decision: "blocked" as const,
+        diagnostics: path === undefined ? [] : [{ code: "source-drift" as const, path }],
+        state: "source-drift" as const,
+        summary: "source binding blocked",
+      }),
+      projectDir,
+      storeRoot,
+    })
+
+    const output = JSON.parse(result.stdout) as Record<string, unknown>
+    expect(result.status).toBe(1)
+    expect(output).toMatchObject({
+      authorityEligible: false,
+      bindingReason: "source",
+      consumptionState: "not-applicable",
+      sourceReason: expectedReason,
+      state: "binding-mismatch",
+    })
+    expect(output).not.toHaveProperty("diagnostics")
+    expect(output).not.toHaveProperty("receipt")
+    expect(output).not.toHaveProperty("sourceHead")
+    expect(JSON.stringify(output)).not.toContain("source.future")
+    expect(readAuthorityArtifact(enrollment.repositoryId, { storeRoot }).state).toBe("missing")
+  })
+
+  it("does not add a source reason to a non-source binding result", () => {
+    const projectDir = project()
+    const storeRoot = join(projectDir, "user-store")
+    const enrollment = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "project-finish.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      reusableWorkflowSha: "b".repeat(40),
+    }, new Date("2026-07-24T00:00:00.000Z"))
+    if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
+      throw new Error("fixture enrollment must persist")
+    }
+    const archive = artifactArchive()
+    const artifactDigest = `sha256:${createHash("sha256").update(archive).digest("hex")}`
+    const result = runAuthorityCommand([
+      "fetch",
+      "github",
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      "a".repeat(40),
+      "--artifact-digest",
+      artifactDigest,
+      "--json",
+    ], {
+      artifactFetch: () => ({
+        archive,
+        artifactId: 11,
+        artifactDigest,
+        fetchedAt: "2026-07-24T00:00:00.000Z",
+        repositoryId: enrollment.repositoryId,
+        runId: "1001",
+        sourceHead: "a".repeat(40),
+      }),
+      artifactInspector: () => ({
+        authorityEligible: false,
+        consumptionState: "not-applicable" as const,
+        decision: "blocked" as const,
+        diagnostics: [{ code: "binding-mismatch" as const, path: "predicate.receipt.phVersion" }],
+        state: "binding-mismatch" as const,
+        summary: "package binding blocked",
+      }),
+      projectDir,
+      storeRoot,
+    })
+
+    const output = JSON.parse(result.stdout) as Record<string, unknown>
+    expect(result.status).toBe(1)
+    expect(output).toMatchObject({ bindingReason: "package-version", state: "binding-mismatch" })
+    expect(output).not.toHaveProperty("sourceReason")
   })
 
   it("blocks repo-only authority selection before fetching or retaining an artifact", () => {
