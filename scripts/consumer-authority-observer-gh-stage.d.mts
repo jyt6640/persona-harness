@@ -1,6 +1,7 @@
 export const OBSERVER_GH_STAGE_CODES: readonly [
   "observer-gh-tool-invalid",
   "observer-gh-tool-unavailable",
+  "observer-gh-tool-timeout",
   "observer-gh-tool-version-unsupported",
   "observer-gh-parser-rejected",
   "observer-gh-parser-timeout",

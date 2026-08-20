@@ -16,7 +16,11 @@ import {
   ObserverGhPackageRecordError,
   selectInstalledObserverGhCandidate,
 } from "../scripts/consumer-authority-observer-gh-package-record.mjs"
-import { observerGhStageCodeForPreflight } from "../scripts/consumer-authority-observer-gh-stage.mjs"
+import { assessObserverGhTool } from "../scripts/consumer-authority-observer-gh-tool.mjs"
+import {
+  observerGhStageCodeForPreflight,
+  observerGhStageCodeForPrivateCopy,
+} from "../scripts/consumer-authority-observer-gh-stage.mjs"
 import type { ExternalAttestationTopology } from "../scripts/consumer-authority-external-attestation-command-plan.mjs"
 
 const topology: ExternalAttestationTopology = {
@@ -89,6 +93,57 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
       expect(runExternalAttestationGrammarPreflight(canonicalExternalAttestationCommandPlan(), topology, {
         ghPath: alias,
       })).toMatchObject({ code: "gh-command-tool-invalid", state: "blocked" })
+    } finally {
+      rmSync(root, { force: true, recursive: true })
+    }
+  })
+
+  it("allows a bounded cold-start delay and distinguishes a real version-probe timeout", () => {
+    const root = mkdtempSync(join(tmpdir(), "beta27-observer-gh-timeout-"))
+    const stateRoot = join(root, "state")
+    const slowExecutable = join(root, "slow-gh")
+    const fastExecutable = join(root, "fast-gh")
+    try {
+      mkdirSync(stateRoot)
+      writeSlowGhFixture(slowExecutable, 6_000)
+      writeGhFixture(fastExecutable, "2.96.0")
+
+      expect(assessObserverGhTool(slowExecutable, { stateRoot })).toEqual({
+        code: "gh-command-tool-ready",
+        state: "ready",
+      })
+      expect(assessObserverGhTool(fastExecutable, {
+        execute: () => ({ error: Object.assign(new Error("timeout"), { code: "ETIMEDOUT" }), status: null }),
+        stateRoot,
+      })).toEqual({
+        code: "gh-command-version-timeout",
+        state: "blocked",
+      })
+    } finally {
+      rmSync(root, { force: true, recursive: true })
+    }
+  }, 20_000)
+
+  it("maps version-probe timeout through selector and preflight stage contracts", () => {
+    const root = mkdtempSync(join(tmpdir(), "beta27-observer-gh-timeout-map-"))
+    const runnerTemp = join(root, "runner-temp")
+    const githubOutput = join(root, "github-output")
+    try {
+      mkdirSync(runnerTemp)
+      writeFileSync(githubOutput, "")
+      expect(provisionWorkflowObserverGhTool({
+        assessTool: () => ({ code: "gh-command-version-timeout", state: "blocked" as const }),
+        environment: { GITHUB_OUTPUT: githubOutput, RUNNER_TEMP: runnerTemp },
+        lstatPackageRecord: () => fixtureStat(true, false, 0o100755),
+        readPackageRecord: () => ["/usr/bin/gh"],
+      })).toEqual({
+        code: "observer-gh-workflow-tool-timeout",
+        packageRecordShape: "canonical",
+        selectorStage: "source-assessment",
+        state: "blocked",
+      })
+      expect(observerGhStageCodeForPreflight({ code: "gh-command-version-timeout", state: "blocked" })).toBe("observer-gh-tool-timeout")
+      expect(readFileSync(githubOutput, "utf8")).toBe("")
     } finally {
       rmSync(root, { force: true, recursive: true })
     }
@@ -255,7 +310,13 @@ describe("consumer authority beta.27 observer gh tool contract", () => {
   it("maps only the fixed observer tool diagnostics across the package contract boundary", () => {
     expect(observerGhStageCodeForPreflight({ code: "gh-command-tool-invalid", state: "blocked" })).toBe("observer-gh-tool-invalid")
     expect(observerGhStageCodeForPreflight({ code: "gh-command-unavailable", state: "blocked" })).toBe("observer-gh-tool-unavailable")
+    expect(observerGhStageCodeForPreflight({ code: "gh-command-version-timeout", state: "blocked" })).toBe("observer-gh-tool-timeout")
     expect(observerGhStageCodeForPreflight({ code: "gh-command-version-unsupported", state: "blocked" })).toBe("observer-gh-tool-version-unsupported")
+    expect(observerGhStageCodeForPrivateCopy({
+      code: "observer-gh-workflow-tool-timeout",
+      selectorStage: "private-assessment",
+      state: "blocked",
+    })).toBe("observer-gh-tool-timeout")
     expect(observerGhStageCodeForPreflight({ code: "gh-command-parser-rejected", state: "blocked" })).toBe("observer-gh-parser-rejected")
     expect(observerGhStageCodeForPreflight({ code: "gh-command-parser-timeout", state: "blocked" })).toBe("observer-gh-parser-timeout")
     expect(observerGhStageCodeForPreflight({ code: "gh-command-parser-accepted", state: "ready" })).toBeUndefined()
@@ -326,6 +387,19 @@ function writeGhFixture(path: string, version: string): void {
     "  if (argumentsList[index] === '--signer-digest' && argumentsList[index + 1] === '--help') process.exit(1)",
     "}",
     "process.exit(0)",
+    "",
+  ].join("\n"))
+  chmodSync(path, 0o700)
+}
+
+function writeSlowGhFixture(path: string, delayMs: number): void {
+  writeFileSync(path, [
+    `#!${process.execPath}`,
+    "if (process.argv[2] === '--version') {",
+    `  setTimeout(() => process.stdout.write('gh version 2.96.0 (fixture)\\n'), ${delayMs})`,
+    "} else {",
+    "  process.exit(1)",
+    "}",
     "",
   ].join("\n"))
   chmodSync(path, 0o700)

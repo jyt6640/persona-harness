@@ -205,6 +205,8 @@ function mapToolCode(code) {
     case "gh-command-tool-required":
     case "gh-command-unavailable":
       return "observer-gh-workflow-tool-unavailable"
+    case "gh-command-version-timeout":
+      return "observer-gh-workflow-tool-timeout"
     case "gh-command-version-unsupported":
       return "observer-gh-workflow-tool-version-unsupported"
     default:

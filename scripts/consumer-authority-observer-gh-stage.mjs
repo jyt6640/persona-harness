@@ -7,6 +7,7 @@ const PACKAGE_RECORD_STAGE_CODES = OBSERVER_GH_PACKAGE_RECORD_SHAPES.map(
 const STAGE_CODES = Object.freeze([
   "observer-gh-tool-invalid",
   "observer-gh-tool-unavailable",
+  "observer-gh-tool-timeout",
   "observer-gh-tool-version-unsupported",
   "observer-gh-parser-rejected",
   "observer-gh-parser-timeout",
@@ -46,6 +47,8 @@ export function observerGhStageCodeForPreflight(value) {
     case "gh-command-tool-required":
     case "gh-command-unavailable":
       return "observer-gh-tool-unavailable"
+    case "gh-command-version-timeout":
+      return "observer-gh-tool-timeout"
     case "gh-command-version-unsupported":
       return "observer-gh-tool-version-unsupported"
     case "gh-authentication-required":
@@ -110,6 +113,8 @@ export function observerGhStageCodeForPrivateCopy(value) {
   switch (value.code) {
     case "observer-gh-workflow-tool-unavailable":
       return "observer-gh-tool-unavailable"
+    case "observer-gh-workflow-tool-timeout":
+      return "observer-gh-tool-timeout"
     case "observer-gh-workflow-tool-version-unsupported":
       return "observer-gh-tool-version-unsupported"
     case "observer-gh-workflow-tool-invalid":

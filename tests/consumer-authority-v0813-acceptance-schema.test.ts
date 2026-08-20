@@ -7,7 +7,6 @@ import {
   V0813AcceptanceManifestError,
   canonicalV0813AcceptanceManifest,
   parseV0813AcceptanceManifest,
-  readV0813AcceptanceManifest,
 } from "../scripts/consumer-authority-v0813-acceptance-schema.mjs"
 import { parseV0810AcceptanceManifest } from "../scripts/consumer-authority-v0810-acceptance-schema.mjs"
 import { parseV0811AcceptanceManifest } from "../scripts/consumer-authority-v0811-acceptance-schema.mjs"
@@ -15,9 +14,12 @@ import { parseV0812AcceptanceManifest } from "../scripts/consumer-authority-v081
 
 const repositoryRoot = process.cwd()
 
-describe("consumer authority 0.8.13 acceptance schema", () => {
-  it("binds the current package to 0.8.13 while retaining 0.8.12 as history", () => {
-    const manifest = readV0813AcceptanceManifest(repositoryRoot)
+describe("historical consumer authority 0.8.13 acceptance schema", () => {
+  it("retains the strict 0.8.13 record while the current package advances", () => {
+    const manifest = parseV0813AcceptanceManifest(
+      JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v0813-acceptance.json"), "utf8")),
+      "0.8.13",
+    )
     const v0810 = parseV0810AcceptanceManifest(
       JSON.parse(readFileSync(join(repositoryRoot, "docs", "current", "release", "consumer-authority-v0810-acceptance.json"), "utf8")),
       "0.8.10",
@@ -36,6 +38,7 @@ describe("consumer authority 0.8.13 acceptance schema", () => {
     expect(v0810.package).toMatchObject({ channel: "unpublished", scope: "source-candidate", version: "0.8.10" })
     expect(manifest.v0811HistoricalRelease).toMatchObject({ reusableForV0813: false, version: "0.8.11" })
     expect(manifest.v0812HistoricalRelease).toMatchObject({ reusableForV0813: false, version: "0.8.12" })
+    expect(manifest.v0813HistoricalRelease).toBeUndefined()
     expect(v0812.package).toMatchObject({ channel: "unpublished", scope: "source-candidate", version: "0.8.12" })
     expect(v0811.package).toMatchObject({ channel: "unpublished", scope: "source-candidate", version: "0.8.11" })
     expect(manifest.authority.fetchSelection).toMatchObject({
@@ -59,14 +62,16 @@ describe("consumer authority 0.8.13 acceptance schema", () => {
     expect(() => parseV0810AcceptanceManifest(canonicalV0813AcceptanceManifest(), "0.8.13")).toThrow()
   })
 
-  it("routes current preflights through v0813 and off historical records", () => {
+  it("routes current preflights through v0814 and off the historical v0813 record", () => {
     for (const script of [
       "preflight-consumer-authority-external-attestation.mjs",
       "preflight-consumer-authority-external-artifact-transport.mjs",
     ]) {
       const source = readFileSync(join(repositoryRoot, "scripts", script), "utf8")
-      expect(source).toContain('from "./consumer-authority-v0813-acceptance-schema.mjs"')
-      expect(source).toContain("readV0813AcceptanceManifest(packageRoot)")
+      expect(source).toContain('from "./consumer-authority-v0814-acceptance-schema.mjs"')
+      expect(source).toContain("readV0814AcceptanceManifest(packageRoot)")
+      expect(source).not.toContain('from "./consumer-authority-v0813-acceptance-schema.mjs"')
+      expect(source).not.toContain("readV0813AcceptanceManifest(packageRoot)")
       expect(source).not.toContain('from "./consumer-authority-v0810-acceptance-schema.mjs"')
       expect(source).not.toContain("readV0810AcceptanceManifest(packageRoot)")
     }
