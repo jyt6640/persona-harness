@@ -2,11 +2,42 @@ import { describe, expect, it } from "vitest"
 
 import {
   createAuthorityFetchChildEnvironment,
+  createAuthorityFetchChildInput,
   parseGithubAuthorityFetchDiagnostic,
   parseFetchedArtifact,
 } from "../src/cli/authority-fetch-worker.js"
 
 describe("consumer authority fetch worker output", () => {
+  it("serializes the child request in the canonical field order", () => {
+    const sourceHead = "a".repeat(40)
+    const expected = {
+      artifactDigest: `sha256:${"b".repeat(64)}`,
+      artifactId: 710000017,
+      runId: "30470000000",
+      sourceHead,
+    }
+    const input = createAuthorityFetchChildInput({
+      callerWorkflowPath: "persona-harness.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+    }, sourceHead, expected)
+
+    expect(Object.keys(input)).toEqual([
+      "callerWorkflowPath",
+      "expected",
+      "repositoryId",
+      "repositorySlug",
+      "sourceHead",
+    ])
+    expect(JSON.stringify(input)).toBe(JSON.stringify({
+      callerWorkflowPath: "persona-harness.yml",
+      expected,
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      sourceHead,
+    }))
+  })
+
   it("uses the exact runtime-owned Linux child environment rather than an inherited envelope", () => {
     expect(createAuthorityFetchChildEnvironment("ghp_worker_marker", "linux")).toEqual({
       LANG: "C",

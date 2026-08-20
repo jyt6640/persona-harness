@@ -23,6 +23,28 @@ export type GithubAuthorityFetchResult =
   | { readonly diagnostic?: GithubAuthorityFetchDiagnostic; readonly kind: "blocked" }
   | { readonly artifact: AuthorityArtifact; readonly kind: "ready" }
 
+export type AuthorityFetchChildInput = {
+  readonly callerWorkflowPath: string
+  readonly expected: AuthorityArtifactTuple
+  readonly repositoryId: number
+  readonly repositorySlug: string
+  readonly sourceHead: string
+}
+
+export function createAuthorityFetchChildInput(
+  enrollment: Pick<AuthorityEnrollment, "callerWorkflowPath" | "repositoryId" | "repositorySlug">,
+  sourceHead: string,
+  expected: AuthorityArtifactTuple,
+): AuthorityFetchChildInput {
+  return {
+    callerWorkflowPath: enrollment.callerWorkflowPath,
+    expected,
+    repositoryId: enrollment.repositoryId,
+    repositorySlug: enrollment.repositorySlug,
+    sourceHead,
+  }
+}
+
 export function fetchGithubAuthorityArtifact(
   projectDir: string,
   enrollment: AuthorityEnrollment,
@@ -42,13 +64,7 @@ export function fetchGithubAuthorityArtifact(
     cwd: workspace.value.realpath,
     encoding: "utf8",
     env: childEnvironment,
-    input: JSON.stringify({
-      callerWorkflowPath: enrollment.callerWorkflowPath,
-      repositoryId: enrollment.repositoryId,
-      repositorySlug: enrollment.repositorySlug,
-      sourceHead: git.head,
-      expected,
-    }),
+    input: JSON.stringify(createAuthorityFetchChildInput(enrollment, git.head, expected)),
     maxBuffer: MAX_OUTPUT_BYTES,
     shell: false,
     stdio: ["pipe", "pipe", "ignore"],
