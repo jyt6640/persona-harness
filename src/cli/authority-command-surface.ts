@@ -20,9 +20,35 @@ export type AuthorityFetchArgs = {
   readonly repositorySlug?: string
 }
 
+export type AuthorityVerifyArgs = {
+  readonly artifactPath: string
+  readonly artifactTuple?: AuthorityArtifactTuple
+  readonly json: boolean
+  readonly repositorySlug?: string
+}
+
+export const AUTHORITY_VERIFY_REASONS = [
+  "archive-digest-mismatch",
+  "archive-invalid",
+  "artifact-invalid",
+  "binding-mismatch",
+  "consumption-invalid",
+  "crypto-invalid",
+  "enrollment-unavailable",
+  "package-provenance-unavailable",
+  "runtime-unsupported",
+  "selection-required",
+  "source-mismatch",
+  "stale",
+  "trust-unavailable",
+  "verification-unavailable",
+] as const
+
+export type AuthorityVerifyReason = typeof AUTHORITY_VERIFY_REASONS[number]
+
 export function authorityUsage(invocationName = "ph"): string {
   return [
-    `Usage: ${invocationName} authority <status|explain|enroll|fetch> [args...]`,
+    `Usage: ${invocationName} authority <status|explain|enroll|fetch|verify> [args...]`,
     "",
     "Commands:",
     "  status [--json]                         Inspect non-consuming external authority readiness.",
@@ -32,6 +58,9 @@ export function authorityUsage(invocationName = "ph"): string {
     "  fetch github [owner/repository] --artifact-id <id> --run-id <id>",
     "    --source-head <sha> --artifact-digest <sha256> [--json]",
     "                                         Fetch one explicit original artifact without consuming it.",
+    "  verify [owner/repository] --archive <path> --artifact-id <id> --run-id <id>",
+    "    --source-head <sha> --artifact-digest <sha256> [--json]",
+    "                                         Verify one supplied original archive without storing or consuming authority.",
   ].join("\n")
 }
 
@@ -82,6 +111,56 @@ export function parseFetchArgs(args: readonly string[]): AuthorityFetchArgs | un
   return tuple === undefined
     ? { json, repositorySlug }
     : { artifactTuple: tuple, json, repositorySlug }
+}
+
+export function parseVerifyArgs(args: readonly string[]): AuthorityVerifyArgs | undefined {
+  let cursor = 0
+  const repositorySlug = args[cursor]?.startsWith("--") === false ? args[cursor++] : undefined
+  if (repositorySlug !== undefined && !isPublicRepositorySlug(repositorySlug)) return undefined
+  let artifactPath: string | undefined
+  let json = false
+  let artifactId: string | undefined
+  let artifactDigest: string | undefined
+  let runId: string | undefined
+  let sourceHead: string | undefined
+  while (cursor < args.length) {
+    const flag = args[cursor++]
+    if (flag === "--json" && !json) {
+      json = true
+      continue
+    }
+    const value = args[cursor++]
+    if (value === undefined || value.startsWith("--")) return undefined
+    switch (flag) {
+      case "--archive":
+        if (artifactPath !== undefined || !isArchivePath(value)) return undefined
+        artifactPath = value
+        break
+      case "--artifact-id":
+        if (artifactId !== undefined) return undefined
+        artifactId = value
+        break
+      case "--artifact-digest":
+        if (artifactDigest !== undefined) return undefined
+        artifactDigest = value
+        break
+      case "--run-id":
+        if (runId !== undefined) return undefined
+        runId = value
+        break
+      case "--source-head":
+        if (sourceHead !== undefined) return undefined
+        sourceHead = value
+        break
+      default:
+        return undefined
+    }
+  }
+  if (artifactPath === undefined) return undefined
+  const tuple = parseArtifactTuple(artifactId, artifactDigest, runId, sourceHead)
+  return tuple === undefined
+    ? { artifactPath, json, repositorySlug }
+    : { artifactPath, artifactTuple: tuple, json, repositorySlug }
 }
 
 function parseArtifactTuple(
@@ -184,6 +263,25 @@ export function blockedFetch(
   }
 }
 
+export function authorityVerifyResult(
+  state: "blocked" | "trusted",
+  reason: AuthorityVerifyReason | "none",
+): CliRunResult {
+  const trusted = state === "trusted"
+  return {
+    status: trusted ? 0 : 1,
+    stdout: `${JSON.stringify({
+      authorityEligible: trusted,
+      consumptionState: trusted ? "unconsumed" : "not-applicable",
+      reason,
+      schemaVersion: "consumer-authority-verify.1",
+      sourceFallback: false,
+      state,
+    })}\n`,
+    stderr: "",
+  }
+}
+
 export function githubAuthenticationRequired(): CliRunResult {
   return {
     status: 1,
@@ -207,4 +305,8 @@ function isPublicRepositorySlug(value: unknown): value is string {
     && value.length <= 256
     && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(value)
     && !value.split("/").some((part) => part === "." || part === "..")
+}
+
+function isArchivePath(value: string): boolean {
+  return value.length > 0 && value.length <= 4096 && !value.includes("\0")
 }

@@ -100,6 +100,20 @@ exit 1   Blocker: trusted-authority-required
 One attestation, one consumption. Fetching after consumption still reports
 `trusted`, with `consumption: consumed`.
 
+When an original archive has already been retained by an authorized procedure,
+the installed package also provides a read-only, non-consuming verification
+surface. It requires the complete artifact tuple and never fetches, stores, or
+consumes authority:
+
+```text
+npx ph authority verify <owner>/<repo> --archive <original-archive> \
+  --artifact-id <id> --run-id <run-id> --source-head <commit> \
+  --artifact-digest sha256:<digest> --json
+```
+
+The result is `consumer-authority-verify.1`; unavailable Sigstore trust is a
+bounded `trust-unavailable` result, never a trusted claim.
+
 ## Four things that will stop you
 
 These are the whole reason this document exists. Each one cost real time in the

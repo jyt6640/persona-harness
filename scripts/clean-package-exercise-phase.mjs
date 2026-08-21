@@ -27,6 +27,7 @@ export const PACKAGE_EXERCISE_PHASES = Object.freeze({
     "observer-gh-selector",
     "attestation-parser",
     "artifact-transport",
+    "authority-verify",
     "authority-discovery",
     "authority-lifecycle",
     "staged-artifact-verifier",

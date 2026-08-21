@@ -512,6 +512,8 @@ describe("package files policy", () => {
       "scripts/consumer-authority-v0813-acceptance-schema.mjs",
       "scripts/consumer-authority-v0814-acceptance-schema.d.mts",
       "scripts/consumer-authority-v0814-acceptance-schema.mjs",
+      "scripts/consumer-authority-v0815-acceptance-schema.d.mts",
+      "scripts/consumer-authority-v0815-acceptance-schema.mjs",
       "scripts/consumer-authority-final-observer-v4-cleanliness.d.mts",
       "scripts/consumer-authority-final-observer-v4-cleanliness.mjs",
       "scripts/consumer-authority-observer-gh-tool.d.mts",
@@ -548,11 +550,13 @@ describe("package files policy", () => {
       "dist/cli/authority-artifact-binding.js",
       "dist/cli/authority-artifact-store.js",
       "dist/cli/authority-command.js",
+      "dist/cli/authority-command-surface.js",
       "dist/cli/authority-enrollment.js",
       "dist/cli/authority-fetch-worker.js",
       "dist/cli/authority-github-readback-worker.js",
       "dist/cli/authority-project-attestation.js",
       "dist/cli/project-finish-attestation-workflow-identity.js",
+      "dist/io/no-follow-file.js",
     ]
     const sourceOnlyPaths = [
       "tests/authority-artifact-fetch.test.ts",
@@ -602,6 +606,7 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-v0812-acceptance.json",
       "docs/current/release/consumer-authority-v0813-acceptance.json",
       "docs/current/release/consumer-authority-v0814-acceptance.json",
+      "docs/current/release/consumer-authority-v0815-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {

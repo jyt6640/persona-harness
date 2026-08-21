@@ -84,6 +84,32 @@ Network inability to obtain the fixed Sigstore trust root returns
 network-unavailable. Invalid DSSE, certificate, identity, Rekor, or signature
 evidence returns crypto-failed. Neither result consumes authority.
 
+## Read-only Public Archive Verification
+
+The installed package exposes a host-neutral, non-consuming command for a
+caller that already holds one original archive:
+
+```text
+ph authority verify [owner/repository] --archive <original-archive> \
+  --artifact-id <id> --run-id <run-id> --source-head <commit> \
+  --artifact-digest sha256:<digest> --json
+```
+
+The command requires all four tuple fields, the current enrolled source and
+reusable-workflow binding, and installed package provenance with
+`sourceFallback=false`. It validates the archive as a regular no-follow file
+and checks its digest before invoking the existing verifier. It never reads a
+GitHub credential, fetches an artifact, writes the authority store, consumes
+authority, runs Finish, or performs replay.
+
+Its only public result is `consumer-authority-verify.1` with fixed fields for
+eligibility, consumption state, bounded reason, schema, source-fallback state,
+and terminal state. A missing or malformed input, binding mismatch, symlink,
+source drift, stale result, runtime/crypto failure, or non-single enrollment
+blocks. Sigstore trust-root unavailability, network/DNS inability, and the
+bounded verification timeout all map to `trust-unavailable`; no offline result
+is treated as trusted.
+
 ## Package And Hosted Boundary
 
 The packaged runtime includes the verifier core and its fixed worker script.

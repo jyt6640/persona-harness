@@ -22,6 +22,23 @@ const FRESH_TAR_MARKER = "installed-package-exercise-phase"
 const FRESH_TAR_SUCCESS = "installed-package-exercise-contract: PASS"
 
 describe("clean package exercise phase protocol", () => {
+  it("keeps installed authority verification in the fresh-tar phase order", () => {
+    const phases = PACKAGE_EXERCISE_PHASES["fresh-tar"]
+    const artifactTransport = phases.indexOf("artifact-transport")
+    const authorityVerify = phases.indexOf("authority-verify")
+    const authorityDiscovery = phases.indexOf("authority-discovery")
+
+    expect(authorityVerify).toBe(artifactTransport + 1)
+    expect(authorityDiscovery).toBe(authorityVerify + 1)
+    expect(formatPackageExercisePhaseRecord(
+      "fresh-tar",
+      "authority-verify",
+      "ready",
+      "passed",
+      FRESH_TAR_MARKER,
+    )).toContain('"phase":"authority-verify"')
+  })
+
   it("requires every ordered source-built phase before accepting the terminal marker", () => {
     const output = [
       ...PACKAGE_EXERCISE_PHASES["source-built"].map((phase) =>
