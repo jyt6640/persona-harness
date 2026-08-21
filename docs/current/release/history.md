@@ -9,23 +9,30 @@ version/package chronology, use
 [`docs/releases/README.md`](../../releases/README.md) and
 [`docs/releases/package-index.md`](../../releases/package-index.md).
 
-## Current 0.8.19 Package Authority
+## Current 0.8.20 Package Authority
 
-The current unpublished package authority is 0.8.19. Its root package,
-lockfile, private shared-skills package, and v0819 acceptance record must agree
-exactly. The tagged-but-unpublished 0.8.18 release is immutable historical
-evidence only and must not be retagged, rerun, or published.
+The current unpublished package authority is 0.8.20. Its root package,
+lockfile, private shared-skills package, and v0820 acceptance record must agree
+exactly. The published 0.8.19 release is immutable historical evidence only
+and must not be retagged, rerun, or published.
 The package-visible read-only `ph authority verify` surface never fetches,
 persists, consumes, finishes, or replays authority. Its `.2` result exposes a
 finite `sourceReason` only alongside `source-mismatch`; unavailable Sigstore
 trust remains a fixed blocked result rather than a trust claim.
 
-Project initialization now registers the exact installed
+Project initialization registers the exact installed
 `persona-harness@<version>` npm plugin for OpenCode instead of an
 installation-root absolute `dist/index.js` path. This keeps generated harness
 state portable between independent consumers. A pre-existing absolute entry is
 migrated only when the intact owned init manifest verifies its matching package
 binding; unrelated plugin entries remain untouched.
+
+Repairing a manifest-less, recognized portable static baseline preserves the
+caller project's canonical realpath while staging ownership checks run. The
+package-template digest remains derived from canonical package templates, while
+the strict-bootstrap overlay records only effective source file digests. A
+repaired baseline can therefore pass its subsequent strict bootstrap and plan
+lifecycle without weakening ownership or package-binding checks.
 
 On Darwin, the root-owned `/tmp -> private/tmp` system alias is canonicalized
 to its physical path before the existing no-follow archive checks run. Any

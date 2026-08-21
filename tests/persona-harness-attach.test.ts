@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import { loadHarnessConfig } from "../src/config/harness-config.js"
 import { runPersonaCli } from "../src/cli/index.js"
+import { readInitManifest } from "../src/cli/init-manifest.js"
 
 const projects: string[] = []
 
@@ -171,6 +172,21 @@ describe("ph attach", () => {
     expect({ status: repair.status, stderr: repair.stderr }).toEqual({ status: 0, stderr: "" })
     expect(cli(projectDir, ["doctor"]).stdout).toContain("Session reachability: PASS")
     expect(cli(projectDir, ["go", "Add a task endpoint."]).status).toBe(0)
+  })
+
+  it("repairs a manifest-less portable static baseline with ownership bound to the caller project", () => {
+    const projectDir = createJavaProject()
+    expect(cli(projectDir, ["bootstrap", "backend", "--strict"]).status).toBe(0)
+    rmSync(join(projectDir, ".persona", ".ph-init-manifest.json"))
+    rmSync(join(projectDir, ".persona", ".init-backups"), { recursive: true, force: true })
+    rmSync(join(projectDir, ".persona", "evidence"), { recursive: true, force: true })
+    rmSync(join(projectDir, ".persona", "workflow"), { recursive: true, force: true })
+
+    const repair = cli(projectDir, ["attach", "--repair", "--yes"])
+
+    expect({ status: repair.status, stderr: repair.stderr }).toEqual({ status: 0, stderr: "" })
+    expect(readInitManifest(projectDir)?.project.realPath).toBe(realpathSync(projectDir))
+    expect(cli(projectDir, ["bootstrap", "backend", "--strict"]).status).toBe(0)
   })
 
   it("preserves user-authored text outside a recognized managed AGENTS block during repair", () => {

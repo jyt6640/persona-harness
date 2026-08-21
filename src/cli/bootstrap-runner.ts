@@ -58,7 +58,9 @@ export function runBackendBootstrap(
     } else {
       if (readInitManifest(projectDir) === null) {
         initializePersonaHarness({
-          bootstrapPersonaState: { kind: "preinitialized" },
+          bootstrapPersonaState: options.attachStagingOwnership?.kind === "repair"
+            ? { kind: "preinitialized", manifestProjectRealPath: options.attachStagingOwnership.projectRealPath }
+            : { kind: "preinitialized" },
           packageRoot: options.packageRoot,
           projectDir,
         })
