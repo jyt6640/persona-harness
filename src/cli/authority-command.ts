@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { dirname, join, resolve } from "node:path"
+import { join, resolve } from "node:path"
 
 import { writeAuthorityArtifact, type AuthorityArtifact } from "./authority-artifact-store.js"
 import {
@@ -38,6 +38,7 @@ import {
   type AuthorityStatus,
 } from "./authority-command-surface.js"
 import { readEnrolledProjectFinishAttestations } from "./authority-project-attestation.js"
+import { readExplicitAuthorityArchive } from "./authority-archive-input.js"
 import { captureGitIdentity, captureWorkspaceIdentity } from "./ci-reverification-identity.js"
 import {
   inspectProjectFinishAttestationArtifact,
@@ -47,8 +48,6 @@ import type { CliRunResult } from "./bearshell.js"
 import {
   captureNoFollowDirectory,
   readNoFollowRegularFile,
-  sameNoFollowPathIdentity,
-  type NoFollowPathIdentity,
 } from "../io/no-follow-file.js"
 import { personaHarnessVersion } from "./version.js"
 
@@ -230,7 +229,7 @@ function runVerify(args: readonly string[], options: AuthorityCommandOptions): C
   if (!hasInstalledPackageProvenance(options.packageRoot)) {
     return authorityVerifyResult("blocked", "package-provenance-unavailable")
   }
-  const archive = readExplicitArchive(parsed.artifactPath)
+  const archive = readExplicitAuthorityArchive(parsed.artifactPath)
   if (archive === undefined) return authorityVerifyResult("blocked", "archive-invalid")
   const actualDigest = `sha256:${createHash("sha256").update(archive).digest("hex")}`
   if (actualDigest !== parsed.artifactTuple.artifactDigest) {
@@ -374,33 +373,6 @@ function hasInstalledPackageProvenance(packageRoot: string | undefined): boolean
       && bin["persona-harness"] === "dist/cli/index.js"
   } catch {
     return false
-  }
-}
-
-function readExplicitArchive(path: string): Buffer | undefined {
-  const absolutePath = resolve(path)
-  const parentPath = dirname(absolutePath)
-  const chain = captureDirectoryChain(parentPath)
-  if (chain === undefined) return undefined
-  const source = readNoFollowRegularFile(absolutePath, 8 * 1024 * 1024, parentPath)
-  if (source.kind !== "ready") return undefined
-  for (const entry of chain) {
-    const current = captureNoFollowDirectory(entry.path)
-    if (current.kind !== "ready" || !sameNoFollowPathIdentity(entry.identity, current.value)) return undefined
-  }
-  return source.value.bytes
-}
-
-function captureDirectoryChain(path: string): readonly { readonly identity: NoFollowPathIdentity; readonly path: string }[] | undefined {
-  const chain: Array<{ readonly identity: NoFollowPathIdentity; readonly path: string }> = []
-  let currentPath = resolve(path)
-  while (true) {
-    const directory = captureNoFollowDirectory(currentPath)
-    if (directory.kind !== "ready") return undefined
-    chain.unshift({ identity: directory.value, path: currentPath })
-    const parentPath = dirname(currentPath)
-    if (parentPath === currentPath) return chain
-    currentPath = parentPath
   }
 }
 

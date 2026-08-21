@@ -1059,6 +1059,40 @@ describe("consumer authority command boundary", () => {
     expect(artifactInspector).not.toHaveBeenCalled()
   })
 
+  it("rejects an archive symlink ancestor before verifier or store", () => {
+    const projectDir = project()
+    const packageRoot = installedPackageRoot()
+    const archive = artifactArchive()
+    const targetDirectory = join(projectDir, "real-artifacts")
+    const archiveDirectory = join(projectDir, "linked-artifacts")
+    mkdirSync(targetDirectory)
+    writeFileSync(join(targetDirectory, "attestation.zip"), archive)
+    symlinkSync(targetDirectory, archiveDirectory)
+    const artifactInspector = vi.fn()
+    const result = runAuthorityCommand([
+      "verify",
+      "--archive",
+      join(archiveDirectory, "attestation.zip"),
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      "a".repeat(40),
+      "--artifact-digest",
+      `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+      "--json",
+    ], { artifactInspector, packageRoot, projectDir, storeRoot: join(projectDir, "user-store") })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      reason: "archive-invalid",
+      schemaVersion: "consumer-authority-verify.2",
+      state: "blocked",
+    })
+    expect(artifactInspector).not.toHaveBeenCalled()
+  })
+
   it("rejects a source checkout before verifier as source fallback", () => {
     const projectDir = project()
     const archive = artifactArchive()
