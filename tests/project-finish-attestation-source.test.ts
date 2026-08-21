@@ -95,6 +95,55 @@ describe("project finish attestation source binding", () => {
     expect(matchesAt(worktree, expected)).toBe(false)
   })
 
+  it("keeps repair inference observations out of the signed source comparison while binding adopted policy", () => {
+    const primary = createProject()
+    const expected = captureBoundSourceIdentity(primary)
+    const worktreeParent = track(mkdtempSync(join(tmpdir(), "persona-project-finish-source-")))
+    const worktree = join(worktreeParent, "consumer")
+    execFileSync("git", ["worktree", "add", "--detach", worktree, "HEAD"], { cwd: primary })
+    const instructions = join(worktree, ".persona", "instructions")
+    mkdirSync(instructions, { recursive: true })
+    writeFileSync(join(instructions, "inferred.json"), JSON.stringify({
+      generatedAt: "2026-08-22T00:00:00.000Z",
+      projectDir: "/private/var/folders/example/persona-attach-repair-staging",
+    }))
+    writeFileSync(join(instructions, "conflicts.json"), JSON.stringify({ conflicts: [] }))
+
+    expect(matchesAt(worktree, expected)).toBe(true)
+
+    writeFileSync(join(instructions, "adopted.json"), JSON.stringify({ rules: [{ id: "reviewed-rule" }] }))
+
+    expect(matchesAt(worktree, expected)).toBe(false)
+  })
+
+  it("preserves a portable static source binding through attach repair and plan acceptance", () => {
+    const primary = createPublicProject()
+    const bootstrap = run(primary, ["bootstrap", "backend", "--strict", "--no-developer-mcp"])
+    expect(bootstrap.status, bootstrap.stderr).toBe(0)
+    const normalize = run(primary, ["attach", "--repair", "--yes"])
+    expect(normalize.status, normalize.stderr).toBe(0)
+    rmSync(join(primary, ".persona", ".ph-init-manifest.json"))
+    rmSync(join(primary, ".persona", ".init-backups"), { force: true, recursive: true })
+    rmSync(join(primary, ".persona", "evidence"), { force: true, recursive: true })
+    rmSync(join(primary, ".persona", "instructions", "conflicts.json"))
+    rmSync(join(primary, ".persona", "instructions", "inferred.json"))
+    rmSync(join(primary, ".persona", "workflow"), { force: true, recursive: true })
+    commitBootstrapCheckpoint(primary)
+    const expected = captureBoundSourceIdentity(primary)
+    const worktreeParent = track(mkdtempSync(join(tmpdir(), "persona-project-finish-source-")))
+    const worktree = join(worktreeParent, "consumer")
+    execFileSync("git", ["worktree", "add", "--detach", worktree, "HEAD"], { cwd: primary })
+
+    const repair = run(worktree, ["attach", "--repair", "--yes"])
+    expect(repair.status, repair.stderr).toBe(0)
+    expect(existsSync(join(worktree, ".persona", "instructions", "inferred.json"))).toBe(true)
+    expect(existsSync(join(worktree, ".persona", "instructions", "conflicts.json"))).toBe(true)
+    expect(run(worktree, ["bootstrap", "backend", "--strict", "--no-developer-mcp"]).status).toBe(0)
+    expect(run(worktree, ["plan", "--accept"]).status).toBe(0)
+
+    expect(matchesAt(worktree, expected)).toBe(true)
+  })
+
   it("accepts a portable signed binding in a clean worktree and blocks tracked source drift", () => {
     const primary = createProject()
     const expected = captureBoundSourceIdentity(primary)

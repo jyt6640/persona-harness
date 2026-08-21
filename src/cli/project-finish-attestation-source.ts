@@ -21,6 +21,8 @@ import type { SourceIdentity } from "./source-identity-types.js"
 
 const PROJECT_FINISH_RUNTIME_EXCLUSIONS = [
   INIT_MANIFEST_RELATIVE_PATH,
+  ".persona/instructions/conflicts.json",
+  ".persona/instructions/inferred.json",
   ".persona/workflow",
 ] as const
 
