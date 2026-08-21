@@ -153,6 +153,14 @@ function readJsonObject(path: string): Record<string, unknown> {
   return isRecord(parsed) ? parsed : {}
 }
 
+function currentOpenCodePluginSpecifier(): string {
+  const packageJson = readJsonObject(join(process.cwd(), "package.json"))
+  if (packageJson.name !== "persona-harness" || typeof packageJson.version !== "string") {
+    throw new TypeError("current package must identify Persona Harness")
+  }
+  return `${packageJson.name}@${packageJson.version}`
+}
+
 function writeJavaRoleFiles(projectDir: string): void {
   writeFileSync(join(projectDir, "settings.gradle"), "rootProject.name = 'task-api'\n")
   writeFileSync(
@@ -1692,7 +1700,7 @@ describe("ph bootstrap backend", () => {
     expect(JSON.stringify(agents["test-writer"])).toContain("Do not weaken, delete, or rewrite existing tests")
     expect(JSON.stringify(agents.implementer)).toContain("PH Role Checklist Relay is a main-session role checklist rail")
     expect(JSON.stringify(agents.reviewer)).toContain("Do not implement features unless explicitly reassigned")
-    expect(opencodeConfig.plugin).toEqual(expect.arrayContaining([expect.stringContaining("dist/index.js")]))
+    expect(opencodeConfig.plugin).toEqual(expect.arrayContaining([currentOpenCodePluginSpecifier()]))
   })
 
   it("preserves existing OpenCode plugin and migrates old relay agent keys when enabling the relay preview", () => {
@@ -1725,7 +1733,7 @@ describe("ph bootstrap backend", () => {
     expect(result.status).toBe(0)
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
     expect(opencodeConfig.plugin).toEqual(
-      expect.arrayContaining(["/tmp/existing-plugin.js", expect.stringContaining("dist/index.js")]),
+      expect.arrayContaining(["/tmp/existing-plugin.js", currentOpenCodePluginSpecifier()]),
     )
     const agents = isRecord(opencodeConfig.agent) ? opencodeConfig.agent : {}
     expect(agents.implementer).toMatchObject({
@@ -1808,7 +1816,7 @@ describe("ph bootstrap backend", () => {
       enabled: true,
       command: ["node", join(process.cwd(), "packages", "lsp-tools-mcp", "bin", "code-nav-mcp.mjs"), "mcp"],
     })
-    expect(opencodeConfig.plugin).toEqual(expect.arrayContaining([expect.stringContaining("dist/index.js")]))
+    expect(opencodeConfig.plugin).toEqual(expect.arrayContaining([currentOpenCodePluginSpecifier()]))
   })
 
   it("preserves existing OpenCode plugin, agent, and MCP fields when enabling code-nav preview", () => {
@@ -1843,7 +1851,7 @@ describe("ph bootstrap backend", () => {
     expect(result.status).toBe(0)
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
     expect(opencodeConfig.plugin).toEqual(
-      expect.arrayContaining(["/tmp/existing-plugin.js", expect.stringContaining("dist/index.js")]),
+      expect.arrayContaining(["/tmp/existing-plugin.js", currentOpenCodePluginSpecifier()]),
     )
     expect(opencodeConfig.agent).toEqual({ custom: { mode: "primary" } })
     const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
@@ -2076,7 +2084,7 @@ describe("ph bootstrap backend", () => {
     expect(result.status).toBe(0)
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
     expect(opencodeConfig.plugin).toEqual(
-      expect.arrayContaining(["/tmp/existing-plugin.js", expect.stringContaining("dist/index.js")]),
+      expect.arrayContaining(["/tmp/existing-plugin.js", currentOpenCodePluginSpecifier()]),
     )
     expect(opencodeConfig.agent).toEqual({ custom: { mode: "primary" } })
     const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}

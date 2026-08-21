@@ -9,6 +9,10 @@ import { inspectReadySigstoreTrust } from "./helpers/sigstore-trust-readiness.js
 
 const tempProjects: string[] = []
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
 function createTempProject(): string {
   const projectDir = mkdtempSync(join(tmpdir(), "persona-doctor-reachability-test-"))
   tempProjects.push(projectDir)
@@ -30,10 +34,14 @@ function writeHarnessConfig(projectDir: string, executeVerification: boolean): v
 }
 
 function writePluginConfig(projectDir: string): void {
+  const packageJson: unknown = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"))
+  if (!isRecord(packageJson) || packageJson.name !== "persona-harness" || typeof packageJson.version !== "string") {
+    throw new TypeError("package root must identify Persona Harness")
+  }
   writeProjectFile(
     projectDir,
     ".opencode/opencode.json",
-    `${JSON.stringify({ plugin: ["node_modules/persona-harness/dist/index.js"] }, null, 2)}\n`,
+    `${JSON.stringify({ plugin: [`${packageJson.name}@${packageJson.version}`] }, null, 2)}\n`,
   )
 }
 

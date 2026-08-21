@@ -15,6 +15,7 @@ import {
   LEGACY_FINISH_COMMAND,
   LEGACY_IMPLEMENT_COMMAND,
 } from "./agents-contract.js"
+import { isPersonaHarnessNpmPluginSpecifier } from "./init-source.js"
 
 const CURRENT_PLUGIN_PATH = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -112,6 +113,7 @@ function isPersonaHarnessPluginEntry(entry: string): boolean {
   return (
     normalized === CURRENT_PLUGIN_PATH
     || normalized === "persona-harness"
+    || isPersonaHarnessNpmPluginSpecifier(normalized)
     || normalized === PERSONA_HARNESS_DIST_PATH
     || normalized.endsWith(`/${PERSONA_HARNESS_DIST_PATH}`)
   )
