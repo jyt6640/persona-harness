@@ -253,10 +253,13 @@ function runVerify(args: readonly string[], options: AuthorityCommandOptions): C
 
   const projectDir = options.projectDir ?? process.cwd()
   const workspace = captureWorkspaceIdentity(projectDir)
-  if (workspace.status !== "available") return authorityVerifyResult("blocked", "source-mismatch")
+  if (workspace.status !== "available") return authorityVerifyResult("blocked", "source-mismatch", "workspace")
   const git = captureGitIdentity(projectDir, workspace.value)
-  if (!git.available || git.head !== parsed.artifactTuple.sourceHead) {
-    return authorityVerifyResult("blocked", "source-mismatch")
+  if (!git.available) {
+    return authorityVerifyResult("blocked", "source-mismatch", classifyDirectVerifySourceReason(git.diagnosticCode))
+  }
+  if (git.head !== parsed.artifactTuple.sourceHead) {
+    return authorityVerifyResult("blocked", "source-mismatch", "head")
   }
   const now = options.now ?? new Date()
   const artifact: AuthorityArtifact = {
@@ -280,14 +283,38 @@ function runVerify(args: readonly string[], options: AuthorityCommandOptions): C
     return authorityVerifyResult("blocked", "verification-unavailable")
   }
   const reason = authorityVerifyReason(assessment)
-  if (reason !== undefined) return authorityVerifyResult("blocked", reason)
+  if (reason !== undefined) {
+    return authorityVerifyResult(
+      "blocked",
+      reason,
+      reason === "source-mismatch" ? classifyAuthoritySourceReason(artifact, assessment) : undefined,
+    )
+  }
   if (assessment.consumptionState !== "unconsumed") {
     return authorityVerifyResult("blocked", "consumption-invalid")
   }
   if (!matchesAuthorityArtifactBinding(artifact, enrollment, assessment)) {
-    return authorityVerifyResult("blocked", "binding-mismatch")
+    const bindingReason = classifyAuthorityBindingReason(artifact, enrollment, assessment)
+    return bindingReason === "source"
+      ? authorityVerifyResult("blocked", "source-mismatch", classifyAuthoritySourceReason(artifact, assessment))
+      : authorityVerifyResult("blocked", "binding-mismatch")
   }
   return authorityVerifyResult("trusted", "none")
+}
+
+function classifyDirectVerifySourceReason(diagnosticCode: string): "head" | "status" | "workspace" | "unknown" {
+  switch (diagnosticCode) {
+    case "git-head-unavailable":
+      return "head"
+    case "git-status-unavailable":
+      return "status"
+    case "git-worktree-root-mismatch":
+    case "git-worktree-root-unavailable":
+    case "git-worktree-unavailable":
+      return "workspace"
+    default:
+      return "unknown"
+  }
 }
 
 function authorityVerifyReason(

@@ -9,14 +9,15 @@ version/package chronology, use
 [`docs/releases/README.md`](../../releases/README.md) and
 [`docs/releases/package-index.md`](../../releases/package-index.md).
 
-## Current 0.8.15 Package Authority
+## Current 0.8.16 Package Authority
 
-The current unpublished package authority is 0.8.15. Its root package,
-lockfile, private shared-skills package, and v0815 acceptance record must agree
-exactly. The published 0.8.14 release is immutable historical evidence only.
-The read-only `ph authority verify` surface is package-visible and never
-fetches, persists, consumes, finishes, or replays authority; unavailable
-Sigstore trust is a fixed blocked result rather than a trust claim.
+The current unpublished package authority is 0.8.16. Its root package,
+lockfile, private shared-skills package, and v0816 acceptance record must agree
+exactly. The published 0.8.15 release is immutable historical evidence only.
+The package-visible read-only `ph authority verify` surface never fetches,
+persists, consumes, finishes, or replays authority. Its `.2` result exposes a
+finite `sourceReason` only alongside `source-mismatch`; unavailable Sigstore
+trust remains a fixed blocked result rather than a trust claim.
 
 ## Retained Workflow Lifecycle Boundary
 

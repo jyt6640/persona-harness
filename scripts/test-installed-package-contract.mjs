@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readV0815AcceptanceManifest } from "./consumer-authority-v0815-acceptance-schema.mjs"
+import { readV0816AcceptanceManifest } from "./consumer-authority-v0816-acceptance-schema.mjs"
 import {
   observerGhStageCodeForPreflight,
   observerGhStageCodeForPrivateCopy,
@@ -709,7 +709,7 @@ async function assertPackagedAuthorityVerifyBoundary(packageRoot, label) {
       || successPayload?.authorityEligible !== true
       || successPayload?.consumptionState !== "unconsumed"
       || successPayload?.reason !== "none"
-      || successPayload?.schemaVersion !== "consumer-authority-verify.1"
+      || successPayload?.schemaVersion !== "consumer-authority-verify.2"
       || successPayload?.sourceFallback !== false
       || successPayload?.state !== "trusted"
       || artifactStore.readAuthorityArtifact(enrollment.repositoryId, { storeRoot: successStore }).state !== "missing"
@@ -741,7 +741,7 @@ async function assertPackagedAuthorityVerifyBoundary(packageRoot, label) {
       if (
         blocked.status !== 1
         || payload?.reason !== "trust-unavailable"
-        || payload?.schemaVersion !== "consumer-authority-verify.1"
+        || payload?.schemaVersion !== "consumer-authority-verify.2"
         || payload?.sourceFallback !== false
         || payload?.state !== "blocked"
         || artifactStore.readAuthorityArtifact(enrollment.repositoryId, { storeRoot }).state !== "missing"
@@ -3320,7 +3320,7 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
 }
 
 function readGaPreAuthorityReadiness(packageRoot) {
-  const manifest = readV0815AcceptanceManifest(packageRoot)
+  const manifest = readV0816AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -3329,7 +3329,7 @@ function readGaPreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readV0815AcceptanceManifest(packageRoot)
+    readV0816AcceptanceManifest(packageRoot)
   } catch {
     throw new Error(`${label} current observer handoff contract is invalid`)
   }
@@ -3471,7 +3471,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readV0815AcceptanceManifest(packageRoot)
+  const manifest = readV0816AcceptanceManifest(packageRoot)
   let packageMetadata
   try {
     packageMetadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
@@ -3551,6 +3551,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
     "consumer-authority-v0810-acceptance-schema.mjs",
     "consumer-authority-v0813-acceptance-schema.mjs",
     "consumer-authority-v0815-acceptance-schema.mjs",
+    "consumer-authority-v0816-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
@@ -3835,6 +3836,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     "consumer-authority-v0810-acceptance-schema.mjs",
     "consumer-authority-v0813-acceptance-schema.mjs",
     "consumer-authority-v0815-acceptance-schema.mjs",
+    "consumer-authority-v0816-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
@@ -3879,7 +3881,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readV0815AcceptanceManifest(packageRoot)
+  const manifest = readV0816AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),

@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs"
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
@@ -14,15 +15,20 @@ import { parseV0814AcceptanceManifest } from "../scripts/consumer-authority-v081
 const repositoryRoot = process.cwd()
 
 describe("consumer authority 0.8.15 acceptance schema", () => {
-  it("binds the current package and read-only authority verification boundary", () => {
-    const manifest = readV0815AcceptanceManifest(repositoryRoot)
-    expect(manifest.package).toMatchObject({ channel: "unpublished", scope: "source-candidate", version: "0.8.15" })
-    expect(manifest.v0814HistoricalRelease).toMatchObject({ reusableForV0815: false, version: "0.8.14" })
-    expect(manifest.authority.readOnlyVerify).toMatchObject({
-      command: "ph authority verify",
-      schemaVersion: "consumer-authority-verify.1",
-      noCredentialFetchStoreConsumeFinishReplay: true,
-    })
+  it("binds the historical package and read-only authority verification boundary", () => {
+    const historicalPackageRoot = createHistoricalPackageRoot()
+    try {
+      const manifest = readV0815AcceptanceManifest(historicalPackageRoot)
+      expect(manifest.package).toMatchObject({ channel: "unpublished", scope: "source-candidate", version: "0.8.15" })
+      expect(manifest.v0814HistoricalRelease).toMatchObject({ reusableForV0815: false, version: "0.8.14" })
+      expect(manifest.authority.readOnlyVerify).toMatchObject({
+        command: "ph authority verify",
+        schemaVersion: "consumer-authority-verify.1",
+        noCredentialFetchStoreConsumeFinishReplay: true,
+      })
+    } finally {
+      rmSync(historicalPackageRoot, { force: true, recursive: true })
+    }
   })
 
   it("rejects neighboring versions, drift, and reused 0.8.14 authority", () => {
@@ -34,16 +40,28 @@ describe("consumer authority 0.8.15 acceptance schema", () => {
     expect(() => parseV0815AcceptanceManifest(manifest, "0.8.15")).toThrow(V0815AcceptanceManifestError)
   })
 
-  it("routes current preflights through v0815 and keeps v0814 historical", () => {
+  it("keeps current preflights off the historical v0815 record", () => {
     for (const script of [
       "preflight-consumer-authority-external-attestation.mjs",
       "preflight-consumer-authority-external-artifact-transport.mjs",
     ]) {
       const source = readFileSync(join(repositoryRoot, "scripts", script), "utf8")
-      expect(source).toContain('from "./consumer-authority-v0815-acceptance-schema.mjs"')
-      expect(source).toContain("readV0815AcceptanceManifest(packageRoot)")
-      expect(source).not.toContain('from "./consumer-authority-v0814-acceptance-schema.mjs"')
-      expect(source).not.toContain("readV0814AcceptanceManifest(packageRoot)")
+      expect(source).toContain('from "./consumer-authority-v0816-acceptance-schema.mjs"')
+      expect(source).toContain("readV0816AcceptanceManifest(packageRoot)")
+      expect(source).not.toContain('from "./consumer-authority-v0815-acceptance-schema.mjs"')
+      expect(source).not.toContain("readV0815AcceptanceManifest(packageRoot)")
     }
   })
 })
+
+function createHistoricalPackageRoot() {
+  const packageRoot = mkdtempSync(join(tmpdir(), "persona-harness-v0815-history-"))
+  const releaseRoot = join(packageRoot, "docs", "current", "release")
+  mkdirSync(releaseRoot, { recursive: true })
+  copyFileSync(
+    join(repositoryRoot, "docs", "current", "release", "consumer-authority-v0815-acceptance.json"),
+    join(releaseRoot, "consumer-authority-v0815-acceptance.json"),
+  )
+  writeFileSync(join(packageRoot, "package.json"), '{"version":"0.8.15"}\n', "utf8")
+  return packageRoot
+}

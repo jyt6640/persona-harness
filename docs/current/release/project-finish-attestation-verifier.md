@@ -102,13 +102,14 @@ and checks its digest before invoking the existing verifier. It never reads a
 GitHub credential, fetches an artifact, writes the authority store, consumes
 authority, runs Finish, or performs replay.
 
-Its only public result is `consumer-authority-verify.1` with fixed fields for
+Its public result is `consumer-authority-verify.2` with fixed fields for
 eligibility, consumption state, bounded reason, schema, source-fallback state,
-and terminal state. A missing or malformed input, binding mismatch, symlink,
-source drift, stale result, runtime/crypto failure, or non-single enrollment
-blocks. Sigstore trust-root unavailability, network/DNS inability, and the
-bounded verification timeout all map to `trust-unavailable`; no offline result
-is treated as trusted.
+and terminal state. Only `source-mismatch` includes a finite nonreflective
+`sourceReason`; all other results omit it. A missing or malformed input,
+binding mismatch, symlink, source drift, stale result, runtime/crypto failure,
+or non-single enrollment blocks. Sigstore trust-root unavailability,
+network/DNS inability, and the bounded verification timeout all map to
+`trust-unavailable`; no offline result is treated as trusted.
 
 ## Package And Hosted Boundary
 

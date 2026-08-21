@@ -514,6 +514,8 @@ describe("package files policy", () => {
       "scripts/consumer-authority-v0814-acceptance-schema.mjs",
       "scripts/consumer-authority-v0815-acceptance-schema.d.mts",
       "scripts/consumer-authority-v0815-acceptance-schema.mjs",
+      "scripts/consumer-authority-v0816-acceptance-schema.d.mts",
+      "scripts/consumer-authority-v0816-acceptance-schema.mjs",
       "scripts/consumer-authority-final-observer-v4-cleanliness.d.mts",
       "scripts/consumer-authority-final-observer-v4-cleanliness.mjs",
       "scripts/consumer-authority-observer-gh-tool.d.mts",
@@ -607,6 +609,7 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-v0813-acceptance.json",
       "docs/current/release/consumer-authority-v0814-acceptance.json",
       "docs/current/release/consumer-authority-v0815-acceptance.json",
+      "docs/current/release/consumer-authority-v0816-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
