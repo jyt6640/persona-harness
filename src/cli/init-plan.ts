@@ -134,11 +134,13 @@ function rejectForeignNewTargets(
 function nextInitState(
   projectDir: string,
   packageRoot: string,
+  packageTemplateTargets: readonly InitTarget[],
   sourceTargets: readonly InitTarget[],
   current: InitManifest | null,
+  manifestProjectRealPath: string | undefined,
 ): { readonly manifest: InitManifest; readonly targets: readonly InitTarget[] } {
   const currentProfileDigest = profileDigest(projectDir)
-  const currentPackage = packageBinding(packageRoot, sourceTemplateDigest(sourceTargets))
+  const currentPackage = packageBinding(packageRoot, sourceTemplateDigest(packageTemplateTargets))
   let verified: VerifiedInitOwnership | undefined
   if (current !== null) {
     verified = verifiedManifestBinding(projectDir, current, currentPackage, currentProfileDigest)
@@ -150,7 +152,7 @@ function nextInitState(
     rejectForeignNewTargets(projectDir, current, targets)
   }
   const projectBinding: InitProjectBinding = {
-    realPath: realpathSync(projectDir),
+    realPath: realpathSync(manifestProjectRealPath ?? projectDir),
     profileDigest: currentProfileDigest,
   }
   const currentByPath = new Map(current?.files.map((entry) => [entry.path, entry]) ?? [])
@@ -222,7 +224,14 @@ export function prepareInit(options: InitOptions, defaultPackageRoot: string): P
   const pluginPath = versionedNpmPluginSpecifier(packageRoot)
   const builtTargets = buildTargets(projectDir, packageRoot, pluginPath, ownedLegacyPluginPaths(projectDir, currentManifest))
   const sourceTargets = partialPersona ? prepareBootstrapPersonaTargets(projectDir, builtTargets) : builtTargets
-  const state = nextInitState(projectDir, packageRoot, sourceTargets, currentManifest)
+  const state = nextInitState(
+    projectDir,
+    packageRoot,
+    builtTargets,
+    sourceTargets,
+    currentManifest,
+    options.bootstrapPersonaState?.manifestProjectRealPath,
+  )
   return {
     currentManifest,
     manifest: state.manifest,

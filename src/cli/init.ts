@@ -14,7 +14,10 @@ import {
 export { formatInitNonInteractiveInterviewMessage, formatInitResult } from "./init-output.js"
 
 export type InitOptions = {
-  readonly bootstrapPersonaState?: { readonly kind: "preinitialized" }
+  readonly bootstrapPersonaState?: {
+    readonly kind: "preinitialized"
+    readonly manifestProjectRealPath?: string
+  }
   readonly dryRun?: boolean
   readonly onAfterCommitFile?: (relativePath: string) => void
   readonly onBeforeCommit?: () => void

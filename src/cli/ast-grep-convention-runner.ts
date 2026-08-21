@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, readFileSync, realpathSync } from "node:fs"
 import { delimiter, dirname, join, relative, resolve } from "node:path"
 import { spawnSync } from "node:child_process"
 import { createRequire } from "node:module"
@@ -79,12 +79,16 @@ function verifiedAstGrepExecutable(candidate: string): string | undefined {
  * package's own platform executable is directly spawnable, so prefer it.
  */
 function optionalPeerAstGrepExecutable(): string | undefined {
+  const packageName = optionalPeerPackageName()
+  if (packageName === undefined) {
+    return undefined
+  }
   const names = process.platform === "win32"
     ? ["ast-grep.exe", "sg.exe"]
     : ["ast-grep", "sg"]
   let packageRoot: string
   try {
-    packageRoot = dirname(createRequire(import.meta.url).resolve("@ast-grep/cli/package.json"))
+    packageRoot = dirname(createRequire(import.meta.url).resolve(`${packageName}/package.json`))
   } catch {
     return undefined
   }
@@ -97,20 +101,75 @@ function optionalPeerAstGrepExecutable(): string | undefined {
   return undefined
 }
 
+function isOptionalPeerFallbackShim(candidate: string): boolean {
+  const names = process.platform === "win32"
+    ? ["ast-grep.exe", "sg.exe"]
+    : ["ast-grep", "sg"]
+  let packageRoot: string
+  try {
+    packageRoot = dirname(createRequire(import.meta.url).resolve("@ast-grep/cli/package.json"))
+  } catch {
+    return false
+  }
+  let resolvedCandidate: string
+  try {
+    resolvedCandidate = realpathSync(candidate)
+  } catch {
+    return false
+  }
+  return names.some((name) => {
+    try {
+      return realpathSync(join(packageRoot, name)) === resolvedCandidate
+    } catch {
+      return false
+    }
+  })
+}
+
+function optionalPeerPackageName(): string | undefined {
+  if (process.platform === "darwin") {
+    return process.arch === "arm64"
+      ? "@ast-grep/cli-darwin-arm64"
+      : process.arch === "x64"
+        ? "@ast-grep/cli-darwin-x64"
+        : undefined
+  }
+  if (process.platform === "linux") {
+    return process.arch === "arm64"
+      ? "@ast-grep/cli-linux-arm64-gnu"
+      : process.arch === "x64"
+        ? "@ast-grep/cli-linux-x64-gnu"
+        : undefined
+  }
+  if (process.platform === "win32") {
+    return process.arch === "arm64"
+      ? "@ast-grep/cli-win32-arm64-msvc"
+      : process.arch === "ia32"
+        ? "@ast-grep/cli-win32-ia32-msvc"
+        : process.arch === "x64"
+          ? "@ast-grep/cli-win32-x64-msvc"
+          : undefined
+  }
+  return undefined
+}
+
 export function findAstGrepBinary(): string | undefined {
   const override = process.env.PH_AST_GREP_BIN
   if (override !== undefined && override.trim() !== "") {
     return verifiedAstGrepExecutable(override)
   }
   const onPath = verifiedAstGrepExecutable("ast-grep") ?? verifiedAstGrepExecutable("sg")
-  if (onPath !== undefined) {
+  if (onPath !== undefined && !isOptionalPeerFallbackShim(onPath)) {
     return onPath
   }
-  // Fall back to an explicitly supplied optional peer executable. This keeps a
-  // Windows `.cmd` shim out of the spawn path without making the tool part of a
-  // normal Persona Harness consumer install.
+  // A supplied PATH binary keeps its precedence. The package's own fallback
+  // shim is the exception because it can emit diagnostics when postinstall was
+  // skipped; prefer the optional platform binary when it is available.
   const optionalPeer = optionalPeerAstGrepExecutable()
-  return optionalPeer === undefined ? undefined : verifiedAstGrepExecutable(optionalPeer)
+  if (optionalPeer !== undefined) {
+    return verifiedAstGrepExecutable(optionalPeer) ?? onPath
+  }
+  return onPath
 }
 
 function stringValue(record: Record<string, unknown>, key: string): string | undefined {
