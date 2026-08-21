@@ -686,7 +686,7 @@ describe("consumer authority command boundary", () => {
       authorityEligible: true,
       consumptionState: "unconsumed",
       reason: "none",
-      schemaVersion: "consumer-authority-verify.1",
+      schemaVersion: "consumer-authority-verify.2",
       sourceFallback: false,
       state: "trusted",
     })
@@ -751,7 +751,7 @@ describe("consumer authority command boundary", () => {
       authorityEligible: false,
       consumptionState: "not-applicable",
       reason: "trust-unavailable",
-      schemaVersion: "consumer-authority-verify.1",
+      schemaVersion: "consumer-authority-verify.2",
       sourceFallback: false,
       state: "blocked",
     })
@@ -786,7 +786,7 @@ describe("consumer authority command boundary", () => {
     expect(JSON.parse(result.stdout)).toMatchObject({
       authorityEligible: false,
       reason: expectedReason,
-      schemaVersion: "consumer-authority-verify.1",
+      schemaVersion: "consumer-authority-verify.2",
       sourceFallback: false,
       state: "blocked",
     })
@@ -794,14 +794,14 @@ describe("consumer authority command boundary", () => {
   })
 
   it.each([
-    ["crypto", "crypto-failed", "crypto-invalid"],
-    ["source", "source-drift", "source-mismatch"],
-    ["stale", "stale", "stale"],
-    ["runtime", "runtime-unsupported", "runtime-unsupported"],
-    ["malformed", "malformed", "artifact-invalid"],
-    ["binding", "binding-mismatch", "binding-mismatch"],
-    ["replayed", "replayed", "consumption-invalid"],
-  ] as const)("normalizes %s verifier outcomes without persistence", (_label, state, expectedReason) => {
+    ["crypto", "crypto-failed", "crypto-invalid", undefined],
+    ["source", "source-drift", "source-mismatch", "unknown"],
+    ["stale", "stale", "stale", undefined],
+    ["runtime", "runtime-unsupported", "runtime-unsupported", undefined],
+    ["malformed", "malformed", "artifact-invalid", undefined],
+    ["binding", "binding-mismatch", "binding-mismatch", undefined],
+    ["replayed", "replayed", "consumption-invalid", undefined],
+  ] as const)("normalizes %s verifier outcomes without persistence", (_label, state, expectedReason, expectedSourceReason) => {
     const gitProject = gitBackedProject()
     const projectDir = gitProject.path
     const packageRoot = installedPackageRoot()
@@ -843,16 +843,134 @@ describe("consumer authority command boundary", () => {
     ], { artifactInspector, packageRoot, projectDir, storeRoot })
 
     expect(result.status).toBe(1)
-    expect(JSON.parse(result.stdout)).toMatchObject({
+    const output = JSON.parse(result.stdout)
+    expect(output).toMatchObject({
       authorityEligible: false,
       consumptionState: "not-applicable",
       reason: expectedReason,
-      schemaVersion: "consumer-authority-verify.1",
+      schemaVersion: "consumer-authority-verify.2",
       sourceFallback: false,
       state: "blocked",
     })
+    if (expectedSourceReason === undefined) {
+      expect(output).not.toHaveProperty("sourceReason")
+    } else {
+      expect(output).toMatchObject({ sourceReason: expectedSourceReason })
+    }
     expect(readAuthorityArtifact(enrollment.repositoryId, { storeRoot }).state).toBe("missing")
     expect(artifactInspector).toHaveBeenCalledOnce()
+  })
+
+  it("emits a bounded source reason for verifier source drift without retaining authority", () => {
+    // Given
+    const gitProject = gitBackedProject()
+    const projectDir = gitProject.path
+    const packageRoot = installedPackageRoot()
+    const storeRoot = join(projectDir, "user-store")
+    const enrollment = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "project-finish.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      reusableWorkflowSha: "b".repeat(40),
+    }, new Date("2026-07-24T00:00:00.000Z"))
+    if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
+      throw new Error("fixture enrollment must persist")
+    }
+    const archive = artifactArchive()
+    const archivePath = join(projectDir, "attestation.zip")
+    writeFileSync(archivePath, archive)
+
+    // When
+    const result = runAuthorityCommand([
+      "verify",
+      enrollment.repositorySlug,
+      "--archive",
+      realpathSync(archivePath),
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      gitProject.head,
+      "--artifact-digest",
+      `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+      "--json",
+    ], {
+      artifactInspector: () => ({
+        authorityEligible: false,
+        consumptionState: "not-applicable" as const,
+        decision: "blocked" as const,
+        diagnostics: [{ code: "source-drift" as const, path: "source.contentDigest" }],
+        state: "source-drift" as const,
+        summary: "blocked",
+      }),
+      packageRoot,
+      projectDir,
+      storeRoot,
+    })
+
+    // Then
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toEqual({
+      authorityEligible: false,
+      consumptionState: "not-applicable",
+      reason: "source-mismatch",
+      schemaVersion: "consumer-authority-verify.2",
+      sourceFallback: false,
+      sourceReason: "content",
+      state: "blocked",
+    })
+    expect(readAuthorityArtifact(enrollment.repositoryId, { storeRoot }).state).toBe("missing")
+    expect(`${result.stdout}${result.stderr}`).not.toContain("source.contentDigest")
+  })
+
+  it("blocks a current Git head mismatch before verifier with a bounded source reason", () => {
+    const gitProject = gitBackedProject()
+    const projectDir = gitProject.path
+    const packageRoot = installedPackageRoot()
+    const storeRoot = join(projectDir, "user-store")
+    const enrollment = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "project-finish.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      reusableWorkflowSha: "b".repeat(40),
+    }, new Date("2026-07-24T00:00:00.000Z"))
+    if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
+      throw new Error("fixture enrollment must persist")
+    }
+    const archive = artifactArchive()
+    const archivePath = join(projectDir, "attestation.zip")
+    writeFileSync(archivePath, archive)
+    const artifactInspector = vi.fn()
+
+    const result = runAuthorityCommand([
+      "verify",
+      enrollment.repositorySlug,
+      "--archive",
+      realpathSync(archivePath),
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      "a".repeat(40),
+      "--artifact-digest",
+      `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+      "--json",
+    ], { artifactInspector, packageRoot, projectDir, storeRoot })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toEqual({
+      authorityEligible: false,
+      consumptionState: "not-applicable",
+      reason: "source-mismatch",
+      schemaVersion: "consumer-authority-verify.2",
+      sourceFallback: false,
+      sourceReason: "head",
+      state: "blocked",
+    })
+    expect(artifactInspector).not.toHaveBeenCalled()
+    expect(readAuthorityArtifact(enrollment.repositoryId, { storeRoot }).state).toBe("missing")
   })
 
   it("requires an explicit repository when multiple enrollments are present", () => {
@@ -902,7 +1020,7 @@ describe("consumer authority command boundary", () => {
     expect(result.status).toBe(1)
     expect(JSON.parse(result.stdout)).toMatchObject({
       reason: "selection-required",
-      schemaVersion: "consumer-authority-verify.1",
+      schemaVersion: "consumer-authority-verify.2",
       state: "blocked",
     })
     expect(artifactInspector).not.toHaveBeenCalled()
@@ -935,7 +1053,7 @@ describe("consumer authority command boundary", () => {
     expect(result.status).toBe(1)
     expect(JSON.parse(result.stdout)).toMatchObject({
       reason: "archive-invalid",
-      schemaVersion: "consumer-authority-verify.1",
+      schemaVersion: "consumer-authority-verify.2",
       state: "blocked",
     })
     expect(artifactInspector).not.toHaveBeenCalled()
@@ -965,7 +1083,7 @@ describe("consumer authority command boundary", () => {
     expect(result.status).toBe(1)
     expect(JSON.parse(result.stdout)).toMatchObject({
       reason: "package-provenance-unavailable",
-      schemaVersion: "consumer-authority-verify.1",
+      schemaVersion: "consumer-authority-verify.2",
       sourceFallback: false,
       state: "blocked",
     })

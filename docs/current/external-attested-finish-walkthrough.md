@@ -111,8 +111,9 @@ npx ph authority verify <owner>/<repo> --archive <original-archive> \
   --artifact-digest sha256:<digest> --json
 ```
 
-The result is `consumer-authority-verify.1`; unavailable Sigstore trust is a
-bounded `trust-unavailable` result, never a trusted claim.
+The result is `consumer-authority-verify.2`; `source-mismatch` may include a
+finite `sourceReason`, while unavailable Sigstore trust remains a bounded
+`trust-unavailable` result, never a trusted claim.
 
 ## Four things that will stop you
 

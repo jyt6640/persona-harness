@@ -266,16 +266,19 @@ export function blockedFetch(
 export function authorityVerifyResult(
   state: "blocked" | "trusted",
   reason: AuthorityVerifyReason | "none",
+  sourceReason?: AuthoritySourceReason,
 ): CliRunResult {
   const trusted = state === "trusted"
+  const normalizedSourceReason = reason === "source-mismatch" ? sourceReason ?? "unknown" : undefined
   return {
     status: trusted ? 0 : 1,
     stdout: `${JSON.stringify({
       authorityEligible: trusted,
       consumptionState: trusted ? "unconsumed" : "not-applicable",
       reason,
-      schemaVersion: "consumer-authority-verify.1",
+      schemaVersion: "consumer-authority-verify.2",
       sourceFallback: false,
+      ...(normalizedSourceReason === undefined ? {} : { sourceReason: normalizedSourceReason }),
       state,
     })}\n`,
     stderr: "",
