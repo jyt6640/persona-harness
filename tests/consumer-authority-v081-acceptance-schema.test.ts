@@ -101,8 +101,8 @@ describe("consumer authority 0.8.1 acceptance schema", () => {
       "preflight-consumer-authority-external-artifact-transport.mjs",
     ]) {
       const source = readFileSync(join(repositoryRoot, "scripts", script), "utf8")
-      expect(source).toContain('from "./consumer-authority-v0818-acceptance-schema.mjs"')
-      expect(source).toContain("readV0818AcceptanceManifest(packageRoot)")
+      expect(source).toContain('from "./consumer-authority-v0819-acceptance-schema.mjs"')
+      expect(source).toContain("readV0819AcceptanceManifest(packageRoot)")
       expect(source).not.toContain("readV081AcceptanceManifest(packageRoot)")
       expect(source).not.toContain("readV082AcceptanceManifest(packageRoot)")
       expect(source).not.toContain("readGaAcceptanceManifest")
