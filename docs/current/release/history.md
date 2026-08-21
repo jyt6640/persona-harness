@@ -9,11 +9,12 @@ version/package chronology, use
 [`docs/releases/README.md`](../../releases/README.md) and
 [`docs/releases/package-index.md`](../../releases/package-index.md).
 
-## Current 0.8.18 Package Authority
+## Current 0.8.19 Package Authority
 
-The current unpublished package authority is 0.8.18. Its root package,
-lockfile, private shared-skills package, and v0818 acceptance record must agree
-exactly. The published 0.8.17 release is immutable historical evidence only.
+The current unpublished package authority is 0.8.19. Its root package,
+lockfile, private shared-skills package, and v0819 acceptance record must agree
+exactly. The tagged-but-unpublished 0.8.18 release is immutable historical
+evidence only and must not be retagged, rerun, or published.
 The package-visible read-only `ph authority verify` surface never fetches,
 persists, consumes, finishes, or replays authority. Its `.2` result exposes a
 finite `sourceReason` only alongside `source-mismatch`; unavailable Sigstore
@@ -29,7 +30,9 @@ binding; unrelated plugin entries remain untouched.
 On Darwin, the root-owned `/tmp -> private/tmp` system alias is canonicalized
 to its physical path before the existing no-follow archive checks run. Any
 other symlink ancestor or archive leaf stays blocked before the verifier or
-store.
+store. An archive and its direct parent retain full no-follow identity checks;
+retained ancestors require the same no-follow directory location and mode, so
+unrelated concurrent sibling entries cannot invalidate an unchanged archive.
 
 ## Retained Workflow Lifecycle Boundary
 

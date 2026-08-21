@@ -1,4 +1,6 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { spawn } from "node:child_process"
+import { once } from "node:events"
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
@@ -64,6 +66,47 @@ describe("authority archive input", () => {
       writeFileSync(archivePath, archive)
       expect(readExplicitAuthorityArchive(archivePath)).toEqual(archive)
     } finally {
+      rmSync(root, { force: true, recursive: true })
+    }
+  })
+
+  it("accepts an archive while an ancestor receives unrelated directory entries", async () => {
+    // Given
+    const root = mkdtempSync(join(realpathSync(process.cwd()), ".persona-harness-authority-archive-"))
+    const archiveDirectory = join(root, "archive")
+    const archivePath = join(archiveDirectory, "original.zip")
+    const archive = Buffer.alloc(1024 * 1024, 1)
+    const churn = spawn(process.execPath, ["--input-type=module", "-e", `
+      import { mkdirSync, rmSync } from "node:fs"
+      import { join } from "node:path"
+      const root = process.argv[1]
+      if (root === undefined) process.exit(1)
+      process.stdout.write("ready\\n")
+      let index = 0
+      for (;;) {
+        const entry = join(root, \`entry-\${index}\`)
+        mkdirSync(entry)
+        rmSync(entry)
+        index = (index + 1) % 8
+      }
+    `, root], { stdio: ["ignore", "pipe", "ignore"] })
+    if (churn.stdout === null) throw new Error("ancestor churn stdout unavailable")
+
+    try {
+      mkdirSync(archiveDirectory)
+      writeFileSync(archivePath, archive)
+      await once(churn.stdout, "data")
+
+      // When / Then
+      for (let attempt = 0; attempt < 16; attempt += 1) {
+        const received = readExplicitAuthorityArchive(archivePath)
+        expect(received?.equals(archive)).toBe(true)
+      }
+    } finally {
+      if (churn.exitCode === null) {
+        churn.kill()
+        await once(churn, "exit")
+      }
       rmSync(root, { force: true, recursive: true })
     }
   })

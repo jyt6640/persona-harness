@@ -4,7 +4,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import {
   captureNoFollowDirectory,
   readNoFollowRegularFile,
-  sameNoFollowPathIdentity,
+  sameNoFollowPathLocation,
   type NoFollowPathIdentity,
 } from "../io/no-follow-file.js"
 
@@ -34,7 +34,7 @@ export function readExplicitAuthorityArchive(path: string): Buffer | undefined {
   if (source.kind !== "ready") return undefined
   for (const entry of chain) {
     const current = captureNoFollowDirectory(entry.path)
-    if (current.kind !== "ready" || !sameNoFollowPathIdentity(entry.identity, current.value)) return undefined
+    if (current.kind !== "ready" || !sameNoFollowPathLocation(entry.identity, current.value)) return undefined
   }
   return source.value.bytes
 }
