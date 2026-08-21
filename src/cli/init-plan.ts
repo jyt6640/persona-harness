@@ -1,5 +1,5 @@
 import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs"
-import { join, relative, resolve, sep } from "node:path"
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import process from "node:process"
 
 import type { InitOptions } from "./init.js"
@@ -18,9 +18,12 @@ import {
   buildTargets,
   ensureRegularOrMissing,
   isMissing,
+  OPENCODE_CONFIG_PATH,
   packageBinding,
   profileDigest,
+  readOpencodeConfig,
   sourceTemplateDigest,
+  versionedNpmPluginSpecifier,
 } from "./init-source.js"
 import type { InitTarget } from "./init-transaction.js"
 import { InitManifestError } from "./init-manifest.js"
@@ -65,6 +68,36 @@ function existingBytes(projectDir: string, relativePath: string): Buffer | null 
   }
   ensureRegularOrMissing(path, relativePath)
   return readFileSync(path)
+}
+
+function pluginEntries(config: Record<string, unknown>): readonly string[] {
+  const plugin = config.plugin
+  if (typeof plugin === "string") return [plugin]
+  return Array.isArray(plugin) ? plugin.filter((entry): entry is string => typeof entry === "string") : []
+}
+
+function isVerifiedLegacyPluginPath(entry: string, manifest: InitManifest): boolean {
+  if (!isAbsolute(entry)) return false
+  const pluginPath = resolve(entry)
+  const packageRoot = dirname(dirname(pluginPath))
+  if (pluginPath !== join(packageRoot, "dist", "index.js")) return false
+  try {
+    const binding = packageBinding(packageRoot, "")
+    return binding.name === manifest.package.name && binding.version === manifest.package.version
+  } catch {
+    return false
+  }
+}
+
+function ownedLegacyPluginPaths(projectDir: string, manifest: InitManifest | null): readonly string[] {
+  if (manifest === null) return []
+  const manifestEntry = manifest.files.find((entry) => entry.path === OPENCODE_CONFIG_PATH)
+  const configBytes = existingBytes(projectDir, OPENCODE_CONFIG_PATH)
+  if (manifestEntry === undefined || configBytes === null || sha256Bytes(configBytes) !== manifestEntry.digest) {
+    return []
+  }
+  return pluginEntries(readOpencodeConfig(join(projectDir, OPENCODE_CONFIG_PATH)))
+    .filter((entry) => isVerifiedLegacyPluginPath(entry, manifest))
 }
 
 function verifiedManifestBinding(
@@ -181,13 +214,13 @@ function prepareBootstrapPersonaTargets(
 export function prepareInit(options: InitOptions, defaultPackageRoot: string): PreparedInit {
   const projectDir = resolve(options.projectDir ?? process.cwd())
   const packageRoot = resolve(options.packageRoot ?? defaultPackageRoot)
-  const pluginPath = join(packageRoot, "dist", "index.js")
   const currentManifest = readInitManifest(projectDir)
   const partialPersona = currentManifest === null && partialInitialization(projectDir)
   if (partialPersona && options.bootstrapPersonaState?.kind !== "preinitialized") {
     throw new InitManifestError("A partial or unrecognized Persona Harness initialization exists; no files were changed.")
   }
-  const builtTargets = buildTargets(projectDir, packageRoot, pluginPath)
+  const pluginPath = versionedNpmPluginSpecifier(packageRoot)
+  const builtTargets = buildTargets(projectDir, packageRoot, pluginPath, ownedLegacyPluginPaths(projectDir, currentManifest))
   const sourceTargets = partialPersona ? prepareBootstrapPersonaTargets(projectDir, builtTargets) : builtTargets
   const state = nextInitState(projectDir, packageRoot, sourceTargets, currentManifest)
   return {

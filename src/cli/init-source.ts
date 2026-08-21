@@ -8,6 +8,9 @@ import type { InitTarget } from "./init-transaction.js"
 import { InitManifestError } from "./init-manifest.js"
 
 export const OPENCODE_CONFIG_PATH = ".opencode/opencode.json"
+export const PERSONA_HARNESS_PACKAGE_NAME = "persona-harness"
+
+const VERSIONED_NPM_PACKAGE_PATTERN = /^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u
 
 const PROJECT_NOISE_IGNORE_ENTRIES = [
   "node_modules/",
@@ -73,7 +76,24 @@ export function readOpencodeConfig(configPath: string): Record<string, unknown> 
   return { ...parsed }
 }
 
-export function mergePluginPath(config: Record<string, unknown>, pluginPath: string): Record<string, unknown> {
+export function isPersonaHarnessNpmPluginSpecifier(entry: string): boolean {
+  const prefix = `${PERSONA_HARNESS_PACKAGE_NAME}@`
+  return entry.startsWith(prefix) && VERSIONED_NPM_PACKAGE_PATTERN.test(entry.slice(prefix.length))
+}
+
+export function versionedNpmPluginSpecifier(packageRoot: string): string {
+  const binding = packageBinding(packageRoot, "")
+  if (!VERSIONED_NPM_PACKAGE_PATTERN.test(binding.version)) {
+    throw new InitManifestError("Package binding version cannot form a versioned OpenCode plugin specifier; no files were changed.")
+  }
+  return `${binding.name}@${binding.version}`
+}
+
+export function mergePluginPath(
+  config: Record<string, unknown>,
+  pluginSpecifier: string,
+  legacyOwnedPluginPaths: readonly string[] = [],
+): Record<string, unknown> {
   const plugin = config.plugin
   const existingPlugins =
     typeof plugin === "string"
@@ -81,9 +101,11 @@ export function mergePluginPath(config: Record<string, unknown>, pluginPath: str
       : Array.isArray(plugin)
         ? plugin.filter((entry): entry is string => typeof entry === "string")
         : []
+  const legacyOwned = new Set(legacyOwnedPluginPaths)
+  const retainedPlugins = existingPlugins.filter((entry) => !legacyOwned.has(entry))
   return {
     ...config,
-    plugin: existingPlugins.includes(pluginPath) ? existingPlugins : [...existingPlugins, pluginPath],
+    plugin: retainedPlugins.includes(pluginSpecifier) ? retainedPlugins : [...retainedPlugins, pluginSpecifier],
   }
 }
 
@@ -183,7 +205,12 @@ export function sourceTemplateDigest(targets: readonly InitTarget[]): string {
   return sha256Text(JSON.stringify(sourceFiles))
 }
 
-export function buildTargets(projectDir: string, packageRoot: string, pluginPath: string): readonly InitTarget[] {
+export function buildTargets(
+  projectDir: string,
+  packageRoot: string,
+  pluginSpecifier: string,
+  legacyOwnedPluginPaths: readonly string[] = [],
+): readonly InitTarget[] {
   const sourcePersonaDir = join(packageRoot, ".persona")
   const sourceHarnessConfig = join(sourcePersonaDir, "harness.jsonc")
   const sourceConventionsDir = join(sourcePersonaDir, "conventions")
@@ -208,7 +235,7 @@ export function buildTargets(projectDir: string, packageRoot: string, pluginPath
     targets.push({ relativePath: `.persona/rules/${relativePath}`, nextBytes: readFileSync(sourcePath) })
   }
   const opencodePath = join(projectDir, OPENCODE_CONFIG_PATH)
-  const mergedConfig = mergePluginPath(readOpencodeConfig(opencodePath), pluginPath)
+  const mergedConfig = mergePluginPath(readOpencodeConfig(opencodePath), pluginSpecifier, legacyOwnedPluginPaths)
   targets.push({
     relativePath: OPENCODE_CONFIG_PATH,
     nextBytes: Buffer.from(`${JSON.stringify(mergedConfig, null, 2)}\n`, "utf8"),

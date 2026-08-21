@@ -19,6 +19,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import { formatInitNonInteractiveInterviewMessage, formatInitResult, initializePersonaHarness } from "../src/cli/init.js"
 import { runPersonaCli } from "../src/cli/index.js"
+import { createInitManifest, readInitManifest, serializeInitManifest, sha256Bytes } from "../src/cli/init-manifest.js"
 
 const tempProjects: string[] = []
 const tempPackageRoots: string[] = []
@@ -30,7 +31,7 @@ function createTempProject(): string {
   return projectDir
 }
 
-function createPackageRoot(): string {
+function createPackageRoot(version?: string): string {
   const packageRoot = mkdtempSync(join(tmpdir(), "persona-init-package-"))
   tempPackageRoots.push(packageRoot)
   // `.persona/evidence` is 37 of this directory's 38 MB and cannot exist in a
@@ -45,6 +46,10 @@ function createPackageRoot(): string {
     recursive: true,
   })
   cpSync(join(process.cwd(), "package.json"), join(packageRoot, "package.json"))
+  if (version !== undefined) {
+    const packageJson = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as Record<string, unknown>
+    writeFileSync(join(packageRoot, "package.json"), `${JSON.stringify({ ...packageJson, version }, null, 2)}\n`, "utf8")
+  }
   mkdirSync(join(packageRoot, "dist"), { recursive: true })
   writeFileSync(join(packageRoot, "dist", "index.js"), "// synthetic plugin\n")
   return packageRoot
@@ -77,6 +82,14 @@ function snapshotTree(root: string): Record<string, string> {
 
 function readOpencodeConfig(projectDir: string): unknown {
   return JSON.parse(readFileSync(join(projectDir, ".opencode", "opencode.json"), "utf8"))
+}
+
+function portablePluginSpecifier(packageRoot = process.cwd()): string {
+  const packageJson: unknown = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
+  if (!isRecord(packageJson) || packageJson.name !== "persona-harness" || typeof packageJson.version !== "string") {
+    throw new TypeError("package root must identify Persona Harness")
+  }
+  return `${packageJson.name}@${packageJson.version}`
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -157,7 +170,7 @@ describe("persona-harness init", () => {
     if (!isRecord(config)) {
       return
     }
-    expect(config.plugin).toEqual([join(process.cwd(), "dist", "index.js")])
+    expect(config.plugin).toEqual([portablePluginSpecifier()])
   })
 
   it("preserves an existing OpenCode config while adding the Persona plugin path once", () => {
@@ -177,9 +190,77 @@ describe("persona-harness init", () => {
       return
     }
     expect(config.model).toBe("openai/gpt-5.4-mini-fast")
-    expect(config.plugin).toEqual(["/tmp/existing-plugin.js", join(process.cwd(), "dist", "index.js")])
+    expect(config.plugin).toEqual(["/tmp/existing-plugin.js", portablePluginSpecifier()])
     expect(existsSync(join(projectDir, ".persona", "evidence"))).toBe(false)
     expect(rerun.decision).toBe("no-op")
+  })
+
+  it("writes byte-identical portable OpenCode registration from separate package roots", () => {
+    const firstProject = createTempProject()
+    const secondProject = createTempProject()
+    const firstPackage = createPackageRoot()
+    const secondPackage = createPackageRoot()
+
+    initializePersonaHarness({ projectDir: firstProject, packageRoot: firstPackage })
+    initializePersonaHarness({ projectDir: secondProject, packageRoot: secondPackage })
+
+    const firstConfig = readFileSync(join(firstProject, ".opencode", "opencode.json"), "utf8")
+    const secondConfig = readFileSync(join(secondProject, ".opencode", "opencode.json"), "utf8")
+    expect(firstConfig).toBe(secondConfig)
+    expect(readOpencodeConfig(firstProject)).toEqual({ plugin: [portablePluginSpecifier(firstPackage)] })
+    expect(firstConfig).not.toContain(firstPackage)
+    expect(secondConfig).not.toContain(secondPackage)
+  })
+
+  it("migrates only a manifest-verified legacy Persona Harness plugin path", () => {
+    const projectDir = createTempProject()
+    const legacyPackage = createPackageRoot("0.8.17")
+    const nextPackage = createPackageRoot("0.8.18")
+    initializePersonaHarness({ projectDir, packageRoot: legacyPackage })
+
+    const legacyPluginPath = join(legacyPackage, "dist", "index.js")
+    const legacyConfig = Buffer.from(
+      `${JSON.stringify({ plugin: ["/tmp/third-party-plugin.mjs", legacyPluginPath] }, null, 2)}\n`,
+      "utf8",
+    )
+    const currentManifest = readInitManifest(projectDir)
+    if (currentManifest === null) throw new Error("expected init manifest")
+    const updatedManifest = createInitManifest(
+      currentManifest.package,
+      currentManifest.project,
+      currentManifest.files.map((entry) => entry.path === ".opencode/opencode.json"
+        ? { ...entry, digest: sha256Bytes(legacyConfig) }
+        : entry),
+    )
+    writeFileSync(join(projectDir, ".opencode", "opencode.json"), legacyConfig)
+    writeFileSync(
+      join(projectDir, ".persona", ".ph-init-manifest.json"),
+      serializeInitManifest(updatedManifest),
+    )
+
+    const result = initializePersonaHarness({ projectDir, packageRoot: nextPackage })
+
+    expect(result.decision).toBe("apply")
+    expect(readOpencodeConfig(projectDir)).toEqual({
+      plugin: ["/tmp/third-party-plugin.mjs", portablePluginSpecifier(nextPackage)],
+    })
+  })
+
+  it("fails closed instead of migrating an absolute plugin path after its owned config was modified", () => {
+    const projectDir = createTempProject()
+    const legacyPackage = createPackageRoot("0.8.17")
+    const nextPackage = createPackageRoot("0.8.18")
+    initializePersonaHarness({ projectDir, packageRoot: legacyPackage })
+
+    const changedConfig = Buffer.from(
+      `${JSON.stringify({ plugin: ["/tmp/third-party-plugin.mjs", join(legacyPackage, "dist", "index.js")] }, null, 2)}\n`,
+      "utf8",
+    )
+    const configPath = join(projectDir, ".opencode", "opencode.json")
+    writeFileSync(configPath, changedConfig)
+
+    expect(() => initializePersonaHarness({ projectDir, packageRoot: nextPackage })).toThrow("Init ownership conflict")
+    expect(readFileSync(configPath)).toEqual(changedConfig)
   })
 
   it("is a byte-identical no-op on an unchanged owned rerun", () => {

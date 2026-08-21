@@ -9,15 +9,22 @@ version/package chronology, use
 [`docs/releases/README.md`](../../releases/README.md) and
 [`docs/releases/package-index.md`](../../releases/package-index.md).
 
-## Current 0.8.17 Package Authority
+## Current 0.8.18 Package Authority
 
-The current unpublished package authority is 0.8.17. Its root package,
-lockfile, private shared-skills package, and v0817 acceptance record must agree
-exactly. The published 0.8.16 release is immutable historical evidence only.
+The current unpublished package authority is 0.8.18. Its root package,
+lockfile, private shared-skills package, and v0818 acceptance record must agree
+exactly. The published 0.8.17 release is immutable historical evidence only.
 The package-visible read-only `ph authority verify` surface never fetches,
 persists, consumes, finishes, or replays authority. Its `.2` result exposes a
 finite `sourceReason` only alongside `source-mismatch`; unavailable Sigstore
 trust remains a fixed blocked result rather than a trust claim.
+
+Project initialization now registers the exact installed
+`persona-harness@<version>` npm plugin for OpenCode instead of an
+installation-root absolute `dist/index.js` path. This keeps generated harness
+state portable between independent consumers. A pre-existing absolute entry is
+migrated only when the intact owned init manifest verifies its matching package
+binding; unrelated plugin entries remain untouched.
 
 On Darwin, the root-owned `/tmp -> private/tmp` system alias is canonicalized
 to its physical path before the existing no-follow archive checks run. Any

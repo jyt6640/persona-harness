@@ -127,7 +127,11 @@ describe("PH LSP MCP preview wrapper", () => {
 
     expect(result.status).toBe(0)
     const opencodeConfig = readJsonObject(join(projectDir, ".opencode", "opencode.json"))
-    expect(opencodeConfig.plugin).toEqual(["./plugin.mjs", join(process.cwd(), "dist", "index.js")])
+    const packageJson: unknown = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"))
+    expect(opencodeConfig.plugin).toEqual([
+      "./plugin.mjs",
+      `persona-harness@${isRecord(packageJson) ? packageJson.version : "invalid"}`,
+    ])
     expect(opencodeConfig.agent).toEqual({ reviewer: { mode: "subagent" } })
     expect(opencodeConfig.custom).toEqual({ unchanged: true })
     const mcp = isRecord(opencodeConfig.mcp) ? opencodeConfig.mcp : {}
