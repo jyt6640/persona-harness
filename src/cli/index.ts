@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync, realpathSync } from "node:fs"
 import process from "node:process"
+import { dirname, resolve } from "node:path"
 import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
 
@@ -175,6 +176,7 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   if (command === "authority") {
     return runAuthorityCommand(args.slice(1), {
       githubToken: selectAuthorityGithubToken(options.env ?? process.env),
+      packageRoot: options.packageRoot,
       projectDir: options.cwd,
     }, invocationName)
   }
@@ -239,9 +241,10 @@ function writeResult(result: CliRunResult): void {
 async function runCliEntrypoint(): Promise<void> {
   const args = process.argv.slice(2)
   const invocationName = process.argv[1]?.endsWith("/persona-harness") ? "persona-harness" : "ph"
+  const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 
   if (args[0] === "init") {
-    writeResult(runPersonaCli(args, { cwd: process.cwd(), env: process.env, invocationName }))
+    writeResult(runPersonaCli(args, { cwd: process.cwd(), env: process.env, invocationName, packageRoot }))
     return
   }
 
@@ -272,6 +275,7 @@ async function runCliEntrypoint(): Promise<void> {
     if (githubToken === undefined) {
       writeResult(runAuthorityCommand(args.slice(1), {
         githubToken,
+        packageRoot,
         projectDir: process.cwd(),
       }, invocationName))
       return
@@ -282,6 +286,7 @@ async function runCliEntrypoint(): Promise<void> {
       writeResult(runAuthorityCommand(args.slice(1), {
         confirmEnrollment: confirmation.trim().toLowerCase() === "y",
         githubToken,
+        packageRoot,
         projectDir: process.cwd(),
       }, invocationName))
     } finally {
@@ -295,6 +300,7 @@ async function runCliEntrypoint(): Promise<void> {
       cwd: process.cwd(),
       env: process.env,
       invocationName,
+      packageRoot,
       stdin: await cliStdin(args),
     }),
   )

@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto"
+import { dirname, join, resolve } from "node:path"
+
 import { writeAuthorityArtifact, type AuthorityArtifact } from "./authority-artifact-store.js"
 import {
   classifyAuthorityBindingReason,
@@ -21,6 +24,7 @@ import { fetchGithubAuthorityArtifact } from "./authority-fetch-worker.js"
 import { isAuthorityGithubToken } from "./authority-github-token.js"
 import {
   authorityUsage,
+  authorityVerifyResult,
   blockedFetch,
   githubAuthenticationRequired,
   invalidAuthorityCommand,
@@ -28,15 +32,25 @@ import {
   parseEnrollmentArgs,
   parseFetchArgs,
   parseReadOnlyArgs,
+  parseVerifyArgs,
+  type AuthorityVerifyReason,
   textStatus,
   type AuthorityStatus,
 } from "./authority-command-surface.js"
 import { readEnrolledProjectFinishAttestations } from "./authority-project-attestation.js"
+import { captureGitIdentity, captureWorkspaceIdentity } from "./ci-reverification-identity.js"
 import {
   inspectProjectFinishAttestationArtifact,
   type ProjectFinishAttestationVerifierAssessment,
 } from "./project-finish-attestation-verifier.js"
 import type { CliRunResult } from "./bearshell.js"
+import {
+  captureNoFollowDirectory,
+  readNoFollowRegularFile,
+  sameNoFollowPathIdentity,
+  type NoFollowPathIdentity,
+} from "../io/no-follow-file.js"
+import { personaHarnessVersion } from "./version.js"
 
 type AuthorityCommandOptions = AuthorityEnrollmentStoreOptions & {
   readonly artifactFetch?: (projectDir: string, enrollment: AuthorityEnrollment, expected: AuthorityArtifactTuple) => AuthorityArtifact | undefined
@@ -49,6 +63,7 @@ type AuthorityCommandOptions = AuthorityEnrollmentStoreOptions & {
   readonly confirmEnrollment?: boolean
   readonly enrollmentReadback?: (repositorySlug: string, workflowPath: string) => AuthorityEnrollmentReadback | undefined
   readonly githubToken?: string
+  readonly packageRoot?: string
   readonly projectDir?: string
 }
 
@@ -79,6 +94,9 @@ export function runAuthorityCommand(
   }
   if (command === "fetch") {
     return runFetch(args.slice(1), options, invocationName)
+  }
+  if (command === "verify") {
+    return runVerify(args.slice(1), options)
   }
   return invalidAuthorityCommand(invocationName)
 }
@@ -202,6 +220,165 @@ function runFetch(args: readonly string[], options: AuthorityCommandOptions, inv
       : "Fetched and verified matching original public evidence. Artifact identity was retained. No completion authority was consumed.\n",
     stderr: "",
   }
+}
+
+function runVerify(args: readonly string[], options: AuthorityCommandOptions): CliRunResult {
+  const parsed = parseVerifyArgs(args)
+  if (parsed === undefined || parsed.artifactTuple === undefined) {
+    return authorityVerifyResult("blocked", "selection-required")
+  }
+  if (!hasInstalledPackageProvenance(options.packageRoot)) {
+    return authorityVerifyResult("blocked", "package-provenance-unavailable")
+  }
+  const archive = readExplicitArchive(parsed.artifactPath)
+  if (archive === undefined) return authorityVerifyResult("blocked", "archive-invalid")
+  const actualDigest = `sha256:${createHash("sha256").update(archive).digest("hex")}`
+  if (actualDigest !== parsed.artifactTuple.artifactDigest) {
+    return authorityVerifyResult("blocked", "archive-digest-mismatch")
+  }
+
+  const entries = readAuthorityEnrollments(options)
+  if (entries.state !== "ready") return authorityVerifyResult("blocked", "enrollment-unavailable")
+  const enrollment = parsed.repositorySlug === undefined
+    ? entries.value.length === 1 ? entries.value[0] : undefined
+    : entries.value.find((entry) => entry.repositorySlug === parsed.repositorySlug)
+  if (enrollment === undefined) {
+    return authorityVerifyResult(
+      "blocked",
+      entries.value.length > 1 && parsed.repositorySlug === undefined
+        ? "selection-required"
+        : "enrollment-unavailable",
+    )
+  }
+
+  const projectDir = options.projectDir ?? process.cwd()
+  const workspace = captureWorkspaceIdentity(projectDir)
+  if (workspace.status !== "available") return authorityVerifyResult("blocked", "source-mismatch")
+  const git = captureGitIdentity(projectDir, workspace.value)
+  if (!git.available || git.head !== parsed.artifactTuple.sourceHead) {
+    return authorityVerifyResult("blocked", "source-mismatch")
+  }
+  const now = options.now ?? new Date()
+  const artifact: AuthorityArtifact = {
+    archive,
+    artifactId: parsed.artifactTuple.artifactId,
+    artifactDigest: parsed.artifactTuple.artifactDigest,
+    fetchedAt: now.toISOString(),
+    repositoryId: enrollment.repositoryId,
+    runId: parsed.artifactTuple.runId,
+    sourceHead: parsed.artifactTuple.sourceHead,
+  }
+  let assessment: ProjectFinishAttestationVerifierAssessment
+  try {
+    assessment = (options.artifactInspector ?? inspectProjectFinishAttestationArtifact)(
+      projectDir,
+      enrollment,
+      archive,
+      now,
+    )
+  } catch {
+    return authorityVerifyResult("blocked", "verification-unavailable")
+  }
+  const reason = authorityVerifyReason(assessment)
+  if (reason !== undefined) return authorityVerifyResult("blocked", reason)
+  if (assessment.consumptionState !== "unconsumed") {
+    return authorityVerifyResult("blocked", "consumption-invalid")
+  }
+  if (!matchesAuthorityArtifactBinding(artifact, enrollment, assessment)) {
+    return authorityVerifyResult("blocked", "binding-mismatch")
+  }
+  return authorityVerifyResult("trusted", "none")
+}
+
+function authorityVerifyReason(
+  assessment: ProjectFinishAttestationVerifierAssessment,
+): AuthorityVerifyReason | undefined {
+  switch (assessment.state) {
+    case "trusted":
+      return assessment.authorityEligible ? undefined : "verification-unavailable"
+    case "dns-unavailable":
+    case "network-unavailable":
+    case "trust-root-unavailable":
+    case "verification-timeout":
+      return "trust-unavailable"
+    case "runtime-unsupported":
+      return "runtime-unsupported"
+    case "source-drift":
+      return "source-mismatch"
+    case "stale":
+      return "stale"
+    case "replayed":
+      return "consumption-invalid"
+    case "binding-mismatch":
+    case "wrong-policy":
+      return "binding-mismatch"
+    case "certificate-invalid":
+    case "crypto-failed":
+    case "signature-invalid":
+    case "transparency-invalid":
+      return "crypto-invalid"
+    case "malformed":
+    case "malformed-bundle":
+    case "missing":
+      return "artifact-invalid"
+    default:
+      return "verification-unavailable"
+  }
+}
+
+function hasInstalledPackageProvenance(packageRoot: string | undefined): boolean {
+  if (packageRoot === undefined) return false
+  const root = resolve(packageRoot)
+  if (captureNoFollowDirectory(root).kind !== "ready") return false
+  const dist = captureNoFollowDirectory(join(root, "dist"))
+  const cli = captureNoFollowDirectory(join(root, "dist", "cli"))
+  if (dist.kind !== "ready" || cli.kind !== "ready") return false
+  const manifest = readNoFollowRegularFile(join(root, "package.json"), 256 * 1024, root)
+  const entrypoint = readNoFollowRegularFile(join(root, "dist", "cli", "index.js"), 4 * 1024 * 1024, join(root, "dist", "cli"))
+  if (manifest.kind !== "ready" || entrypoint.kind !== "ready") return false
+  if (captureNoFollowDirectory(join(root, "src")).kind !== "absent") return false
+  if (captureNoFollowDirectory(join(root, ".git")).kind !== "absent") return false
+  try {
+    const value: unknown = JSON.parse(manifest.value.bytes.toString("utf8"))
+    if (!isRecord(value) || value.version !== personaHarnessVersion()) return false
+    const bin = value.bin
+    return isRecord(bin)
+      && bin.ph === "dist/cli/index.js"
+      && bin["persona-harness"] === "dist/cli/index.js"
+  } catch {
+    return false
+  }
+}
+
+function readExplicitArchive(path: string): Buffer | undefined {
+  const absolutePath = resolve(path)
+  const parentPath = dirname(absolutePath)
+  const chain = captureDirectoryChain(parentPath)
+  if (chain === undefined) return undefined
+  const source = readNoFollowRegularFile(absolutePath, 8 * 1024 * 1024, parentPath)
+  if (source.kind !== "ready") return undefined
+  for (const entry of chain) {
+    const current = captureNoFollowDirectory(entry.path)
+    if (current.kind !== "ready" || !sameNoFollowPathIdentity(entry.identity, current.value)) return undefined
+  }
+  return source.value.bytes
+}
+
+function captureDirectoryChain(path: string): readonly { readonly identity: NoFollowPathIdentity; readonly path: string }[] | undefined {
+  const chain: Array<{ readonly identity: NoFollowPathIdentity; readonly path: string }> = []
+  let currentPath = resolve(path)
+  while (true) {
+    const directory = captureNoFollowDirectory(currentPath)
+    if (directory.kind !== "ready") return undefined
+    chain.unshift({ identity: directory.value, path: currentPath })
+    const parentPath = dirname(currentPath)
+    if (parentPath === currentPath) return chain
+    currentPath = parentPath
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 export function readAuthorityStatus(options: AuthorityCommandOptions = {}): AuthorityStatus {

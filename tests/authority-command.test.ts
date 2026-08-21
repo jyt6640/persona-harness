@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto"
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
+import { spawnSync } from "node:child_process"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -19,6 +20,7 @@ import {
 import { runPersonaCli } from "../src/cli/index.js"
 import { parseProjectFinishAttestationStatement } from "../src/cli/project-finish-attestation-parser.js"
 import { projectFinishAttestationReusableCertificateSan } from "../src/cli/project-finish-attestation-workflow-identity.js"
+import { personaHarnessVersion } from "../src/cli/version.js"
 import { createValidProjectFinishAttestationStatement } from "./helpers/project-finish-attestation-fixture.js"
 
 const projects: string[] = []
@@ -630,6 +632,345 @@ describe("consumer authority command boundary", () => {
       repositorySlug: "example/second-gradle-app",
     })
   })
+
+  it("verifies one explicit original archive without storing or consuming authority", () => {
+    const gitProject = gitBackedProject()
+    const projectDir = gitProject.path
+    const sourceHead = gitProject.head
+    const packageRoot = installedPackageRoot()
+    const storeRoot = join(projectDir, "user-store")
+    const enrollment = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "project-finish.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      reusableWorkflowSha: "b".repeat(40),
+    }, new Date("2026-07-24T00:00:00.000Z"))
+    if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
+      throw new Error("fixture enrollment must persist")
+    }
+    const archive = artifactArchive()
+    const archivePath = join(projectDir, "attestation.zip")
+    writeFileSync(archivePath, archive)
+    const artifactDigest = `sha256:${createHash("sha256").update(archive).digest("hex")}`
+    const result = runAuthorityCommand([
+      "verify",
+      "example/public-gradle-app",
+      "--archive",
+      realpathSync(archivePath),
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      sourceHead,
+      "--artifact-digest",
+      artifactDigest,
+      "--json",
+    ], {
+      artifactInspector: () => ({
+        authorityEligible: true,
+        consumptionState: "unconsumed",
+        decision: "trusted",
+        diagnostics: [],
+        receipt: trustedReceiptFor(enrollment, "1001", sourceHead),
+        state: "trusted",
+        summary: "trusted",
+      }),
+      packageRoot,
+      projectDir,
+      storeRoot,
+    })
+
+    expect(result.status).toBe(0)
+    expect(JSON.parse(result.stdout)).toEqual({
+      authorityEligible: true,
+      consumptionState: "unconsumed",
+      reason: "none",
+      schemaVersion: "consumer-authority-verify.1",
+      sourceFallback: false,
+      state: "trusted",
+    })
+    expect(readAuthorityArtifact(enrollment.repositoryId, { storeRoot }).state).toBe("missing")
+    expect(`${result.stdout}${result.stderr}`).not.toContain(archivePath)
+  })
+
+  it.each([
+    "dns-unavailable",
+    "network-unavailable",
+    "trust-root-unavailable",
+    "verification-timeout",
+  ] as const)("maps %s to a blocked nonreflective result", (state) => {
+    const gitProject = gitBackedProject()
+    const projectDir = gitProject.path
+    const sourceHead = gitProject.head
+    const packageRoot = installedPackageRoot()
+    const storeRoot = join(projectDir, "user-store")
+    const enrollment = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "project-finish.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      reusableWorkflowSha: "b".repeat(40),
+    }, new Date("2026-07-24T00:00:00.000Z"))
+    if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
+      throw new Error("fixture enrollment must persist")
+    }
+    const archive = artifactArchive()
+    const archivePath = join(projectDir, "attestation.zip")
+    writeFileSync(archivePath, archive)
+    const artifactDigest = `sha256:${createHash("sha256").update(archive).digest("hex")}`
+    const result = runAuthorityCommand([
+      "verify",
+      "example/public-gradle-app",
+      "--archive",
+      realpathSync(archivePath),
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      sourceHead,
+      "--artifact-digest",
+      artifactDigest,
+      "--json",
+    ], {
+      artifactInspector: () => ({
+        authorityEligible: false,
+        consumptionState: "not-applicable" as const,
+        decision: "blocked" as const,
+        diagnostics: [],
+        state,
+        summary: "trust root unavailable",
+      }),
+      packageRoot,
+      projectDir,
+      storeRoot,
+    })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toEqual({
+      authorityEligible: false,
+      consumptionState: "not-applicable",
+      reason: "trust-unavailable",
+      schemaVersion: "consumer-authority-verify.1",
+      sourceFallback: false,
+      state: "blocked",
+    })
+    expect(readAuthorityArtifact(enrollment.repositoryId, { storeRoot }).state).toBe("missing")
+  })
+
+  it.each([
+    ["partial tuple", ["--artifact-id", "11"], "selection-required"],
+    ["digest mismatch", ["--artifact-id", "11", "--run-id", "1001", "--source-head", "a".repeat(40), "--artifact-digest", `sha256:${"a".repeat(64)}`], "archive-digest-mismatch"],
+  ] as const)("blocks a %s before verifier or store", (_label, tupleArgs, expectedReason) => {
+    const projectDir = project()
+    const packageRoot = installedPackageRoot()
+    const artifactInspector = vi.fn(() => ({
+      authorityEligible: true as const,
+      consumptionState: "unconsumed" as const,
+      decision: "trusted" as const,
+      diagnostics: [],
+      state: "trusted" as const,
+      summary: "trusted",
+    }))
+    const archivePath = join(projectDir, "attestation.zip")
+    writeFileSync(archivePath, artifactArchive())
+    const result = runAuthorityCommand([
+      "verify",
+      "--archive",
+      realpathSync(archivePath),
+      ...tupleArgs,
+      "--json",
+    ], { artifactInspector, packageRoot, projectDir, storeRoot: join(projectDir, "user-store") })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      authorityEligible: false,
+      reason: expectedReason,
+      schemaVersion: "consumer-authority-verify.1",
+      sourceFallback: false,
+      state: "blocked",
+    })
+    expect(artifactInspector).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ["crypto", "crypto-failed", "crypto-invalid"],
+    ["source", "source-drift", "source-mismatch"],
+    ["stale", "stale", "stale"],
+    ["runtime", "runtime-unsupported", "runtime-unsupported"],
+    ["malformed", "malformed", "artifact-invalid"],
+    ["binding", "binding-mismatch", "binding-mismatch"],
+    ["replayed", "replayed", "consumption-invalid"],
+  ] as const)("normalizes %s verifier outcomes without persistence", (_label, state, expectedReason) => {
+    const gitProject = gitBackedProject()
+    const projectDir = gitProject.path
+    const packageRoot = installedPackageRoot()
+    const storeRoot = join(projectDir, "user-store")
+    const enrollment = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "project-finish.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/public-gradle-app",
+      reusableWorkflowSha: "b".repeat(40),
+    }, new Date("2026-07-24T00:00:00.000Z"))
+    if (enrollment === undefined || !writeAuthorityEnrollment(enrollment, { storeRoot })) {
+      throw new Error("fixture enrollment must persist")
+    }
+    const archive = artifactArchive()
+    const archivePath = join(projectDir, "attestation.zip")
+    writeFileSync(archivePath, archive)
+    const artifactInspector = vi.fn(() => ({
+      authorityEligible: false as const,
+      consumptionState: "not-applicable" as const,
+      decision: "blocked" as const,
+      diagnostics: [],
+      state,
+      summary: "blocked",
+    }))
+    const result = runAuthorityCommand([
+      "verify",
+      enrollment.repositorySlug,
+      "--archive",
+      realpathSync(archivePath),
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      gitProject.head,
+      "--artifact-digest",
+      `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+      "--json",
+    ], { artifactInspector, packageRoot, projectDir, storeRoot })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      authorityEligible: false,
+      consumptionState: "not-applicable",
+      reason: expectedReason,
+      schemaVersion: "consumer-authority-verify.1",
+      sourceFallback: false,
+      state: "blocked",
+    })
+    expect(readAuthorityArtifact(enrollment.repositoryId, { storeRoot }).state).toBe("missing")
+    expect(artifactInspector).toHaveBeenCalledOnce()
+  })
+
+  it("requires an explicit repository when multiple enrollments are present", () => {
+    const gitProject = gitBackedProject()
+    const projectDir = gitProject.path
+    const packageRoot = installedPackageRoot()
+    const storeRoot = join(projectDir, "user-store")
+    const first = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "project-finish.yml",
+      repositoryId: 987654321,
+      repositorySlug: "example/first-gradle-app",
+      reusableWorkflowSha: "b".repeat(40),
+    })
+    const second = authorityEnrollmentFromReadback({
+      callerWorkflowPath: "project-finish.yml",
+      repositoryId: 987654322,
+      repositorySlug: "example/second-gradle-app",
+      reusableWorkflowSha: "c".repeat(40),
+    })
+    if (
+      first === undefined
+      || second === undefined
+      || !writeAuthorityEnrollment(first, { storeRoot })
+      || !writeAuthorityEnrollment(second, { storeRoot })
+    ) {
+      throw new Error("multiple enrollment fixture must persist")
+    }
+    const archive = artifactArchive()
+    const archivePath = join(projectDir, "attestation.zip")
+    writeFileSync(archivePath, archive)
+    const artifactInspector = vi.fn()
+    const result = runAuthorityCommand([
+      "verify",
+      "--archive",
+      realpathSync(archivePath),
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      gitProject.head,
+      "--artifact-digest",
+      `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+      "--json",
+    ], { artifactInspector, packageRoot, projectDir, storeRoot })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      reason: "selection-required",
+      schemaVersion: "consumer-authority-verify.1",
+      state: "blocked",
+    })
+    expect(artifactInspector).not.toHaveBeenCalled()
+  })
+
+  it("rejects an archive symlink before verifier or store", () => {
+    const projectDir = project()
+    const packageRoot = installedPackageRoot()
+    const archive = artifactArchive()
+    const targetPath = join(projectDir, "real-attestation.zip")
+    const archivePath = join(projectDir, "attestation.zip")
+    writeFileSync(targetPath, archive)
+    symlinkSync(targetPath, archivePath)
+    const artifactInspector = vi.fn()
+    const result = runAuthorityCommand([
+      "verify",
+      "--archive",
+      archivePath,
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      "a".repeat(40),
+      "--artifact-digest",
+      `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+      "--json",
+    ], { artifactInspector, packageRoot, projectDir, storeRoot: join(projectDir, "user-store") })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      reason: "archive-invalid",
+      schemaVersion: "consumer-authority-verify.1",
+      state: "blocked",
+    })
+    expect(artifactInspector).not.toHaveBeenCalled()
+  })
+
+  it("rejects a source checkout before verifier as source fallback", () => {
+    const projectDir = project()
+    const archive = artifactArchive()
+    const archivePath = join(projectDir, "attestation.zip")
+    writeFileSync(archivePath, archive)
+    const artifactInspector = vi.fn()
+    const result = runAuthorityCommand([
+      "verify",
+      "--archive",
+      realpathSync(archivePath),
+      "--artifact-id",
+      "11",
+      "--run-id",
+      "1001",
+      "--source-head",
+      "a".repeat(40),
+      "--artifact-digest",
+      `sha256:${createHash("sha256").update(archive).digest("hex")}`,
+      "--json",
+    ], { artifactInspector, packageRoot: process.cwd(), projectDir, storeRoot: join(projectDir, "user-store") })
+
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      reason: "package-provenance-unavailable",
+      schemaVersion: "consumer-authority-verify.1",
+      sourceFallback: false,
+      state: "blocked",
+    })
+    expect(artifactInspector).not.toHaveBeenCalled()
+  })
 })
 
 function project(): string {
@@ -638,11 +979,42 @@ function project(): string {
   return projectDir
 }
 
-function trustedReceiptFor(enrollment: AuthorityEnrollment, runId: string) {
+function gitBackedProject(): { readonly head: string; readonly path: string } {
+  const path = project()
+  writeFileSync(join(path, "README.md"), "fixture\n")
+  for (const args of [
+    ["init", "-q"],
+    ["config", "user.email", "authority-test@example.invalid"],
+    ["config", "user.name", "authority-test"],
+    ["add", "README.md"],
+    ["commit", "-qm", "fixture"],
+  ]) {
+    const result = spawnSync("git", args, { cwd: path, encoding: "utf8" })
+    if (result.status !== 0) throw new Error("git fixture setup failed")
+  }
+  const head = spawnSync("git", ["rev-parse", "HEAD"], { cwd: path, encoding: "utf8" })
+  if (head.status !== 0) throw new Error("git fixture head failed")
+  return { head: head.stdout.trim(), path }
+}
+
+function installedPackageRoot(): string {
+  const root = project()
+  mkdirSync(join(root, "dist", "cli"), { recursive: true })
+  writeFileSync(join(root, "package.json"), JSON.stringify({
+    bin: {
+      "persona-harness": "dist/cli/index.js",
+      ph: "dist/cli/index.js",
+    },
+    version: personaHarnessVersion(),
+  }))
+  writeFileSync(join(root, "dist", "cli", "index.js"), "")
+  return root
+}
+
+function trustedReceiptFor(enrollment: AuthorityEnrollment, runId: string, sourceHead = "a".repeat(40)) {
   const parsed = parseProjectFinishAttestationStatement(createValidProjectFinishAttestationStatement())
   if (!parsed.ok) throw new Error("fixture receipt must parse")
   const receipt = parsed.value.predicate.receipt
-  const sourceHead = "a".repeat(40)
   return {
     ...receipt,
     lifecycle: {

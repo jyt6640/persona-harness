@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readV0814AcceptanceManifest } from "./consumer-authority-v0814-acceptance-schema.mjs"
+import { readV0815AcceptanceManifest } from "./consumer-authority-v0815-acceptance-schema.mjs"
 import {
   observerGhStageCodeForPreflight,
   observerGhStageCodeForPrivateCopy,
@@ -586,6 +586,7 @@ async function assertPackagedConsumerAuthorityBoundary(
     ))
   }
   await runPhase("artifact-transport", () => assertExternalArtifactTransportPlan(installedPackage, consumerDirectory, "installed package"))
+  await runPhase("authority-verify", () => assertPackagedAuthorityVerifyBoundary(installedPackage, "installed package"))
   const authorityDiscoveryResult = await runPhase("authority-discovery", () => assertBoundAuthorityDiscovery(
     installedPackage,
     "installed package",
@@ -598,6 +599,185 @@ async function assertPackagedConsumerAuthorityBoundary(
     join(consumerDirectory, "consumer-authority-home"),
     "installed package",
   ))
+}
+
+async function assertPackagedAuthorityVerifyBoundary(packageRoot, label) {
+  const moduleRoot = join(packageRoot, "dist", "cli")
+  const [command, enrollmentStore, artifactStore, producer, version] = await Promise.all([
+    import(pathToFileURL(join(moduleRoot, "authority-command.js")).href),
+    import(pathToFileURL(join(moduleRoot, "authority-enrollment.js")).href),
+    import(pathToFileURL(join(moduleRoot, "authority-artifact-store.js")).href),
+    import(pathToFileURL(join(moduleRoot, "project-finish-attestation-producer.js")).href),
+    import(pathToFileURL(join(moduleRoot, "version.js")).href),
+  ])
+  const projectDir = mkdtempSync(join(temporaryRoot, "authority-verify-project-"))
+  const archiveDirectory = mkdtempSync(join(temporaryRoot, "authority-verify-archive-"))
+  try {
+    writeFileSync(join(projectDir, "README.md"), "# authority verify fixture\n")
+    initializeFixtureGit(projectDir, `${label} authority verify`, {
+      email: "authority-verify@example.invalid",
+      message: "authority verify fixture",
+      name: "Authority Verify",
+    })
+    const sourceHead = runCommand(projectDir, "git", ["rev-parse", "HEAD"]).stdout.trim()
+    const enrollment = enrollmentStore.authorityEnrollmentFromReadback({
+      callerWorkflowPath: MODELED_AUTHORITY_TOPOLOGY.callerWorkflowPath,
+      repositoryId: MODELED_AUTHORITY_TOPOLOGY.repositoryId,
+      repositorySlug: MODELED_AUTHORITY_TOPOLOGY.repositorySlug,
+      reusableWorkflowSha: MODELED_AUTHORITY_TOPOLOGY.reusableWorkflowSha,
+    })
+    if (enrollment === undefined) throw new Error(`${label} authority verify enrollment fixture did not parse`)
+    const runId = "30480000000"
+    const produced = producer.createProjectFinishAttestationProducerArtifacts({
+      buildArtifactDigest: `sha256:${"a".repeat(64)}`,
+      callerWorkflowRef: `${enrollment.repositorySlug}/.github/workflows/${enrollment.callerWorkflowPath}@refs/heads/main`,
+      callerWorkflowSha: sourceHead,
+      issuedAt: "2026-08-20T00:00:00.000Z",
+      phVersion: version.personaHarnessVersion(),
+      repository: { id: enrollment.repositoryId, slug: enrollment.repositorySlug, visibility: "public" },
+      reusableWorkflowSha: enrollment.reusableWorkflowSha,
+      runAttempt: 1,
+      runId,
+      source: {
+        head: sourceHead,
+        identity: {
+          contentDigest: `sha256:${"b".repeat(64)}`,
+          entryCount: 1,
+          exclusions: [".git/**", ".gradle/**", "build/**", "node_modules/**", "<configured-evidence>/**"],
+          gitStatusDigest: `sha256:${"c".repeat(64)}`,
+          repositoryHead: sourceHead,
+          schemaVersion: "source-identity.1",
+          trackedEntryCount: 1,
+          trackedIndexDigest: `sha256:${"d".repeat(64)}`,
+          untrackedEntryCount: 0,
+        },
+        root: ".",
+      },
+      test: {
+        count: 1,
+        junitDigest: `sha256:${"e".repeat(64)}`,
+        passed: 1,
+        skipped: 0,
+      },
+    })
+    const archive = authorityArtifactArchive({
+      "bundle.json": Buffer.from(JSON.stringify(produced.statement), "utf8"),
+      "predicate.json": Buffer.from(JSON.stringify(produced.predicate), "utf8"),
+      "receipt.json": produced.receiptBytes,
+    })
+    const archivePath = join(archiveDirectory, "original-attestation.zip")
+    writeFileSync(archivePath, archive)
+    const canonicalArchivePath = realpathSync(archivePath)
+    const artifactDigest = `sha256:${sha256(archive)}`
+    const baseArgs = [
+      "verify",
+      enrollment.repositorySlug,
+      "--archive",
+      canonicalArchivePath,
+      "--artifact-id",
+      "710000019",
+      "--run-id",
+      runId,
+      "--source-head",
+      sourceHead,
+      "--artifact-digest",
+      artifactDigest,
+      "--json",
+    ]
+    const assessment = {
+      authorityEligible: true,
+      consumptionState: "unconsumed",
+      decision: "trusted",
+      diagnostics: [],
+      receipt: produced.receipt,
+      state: "trusted",
+      summary: "installed-authority-verify-boundary",
+    }
+    const successStore = mkdtempSync(join(temporaryRoot, "authority-verify-success-store-"))
+    if (!enrollmentStore.writeAuthorityEnrollment(enrollment, { storeRoot: successStore })) {
+      throw new Error(`${label} authority verify enrollment setup failed`)
+    }
+    const success = command.runAuthorityCommand(baseArgs, {
+      artifactInspector: () => assessment,
+      packageRoot,
+      projectDir,
+      storeRoot: successStore,
+    })
+    const successPayload = JSON.parse(success.stdout)
+    if (
+      success.status !== 0
+      || successPayload?.authorityEligible !== true
+      || successPayload?.consumptionState !== "unconsumed"
+      || successPayload?.reason !== "none"
+      || successPayload?.schemaVersion !== "consumer-authority-verify.1"
+      || successPayload?.sourceFallback !== false
+      || successPayload?.state !== "trusted"
+      || artifactStore.readAuthorityArtifact(enrollment.repositoryId, { storeRoot: successStore }).state !== "missing"
+      || `${success.stdout}${success.stderr}`.includes(projectDir)
+      || `${success.stdout}${success.stderr}`.includes(canonicalArchivePath)
+    ) {
+      throw new Error(`${label} installed authority verify success boundary failed`)
+    }
+
+    for (const state of ["dns-unavailable", "network-unavailable", "trust-root-unavailable", "verification-timeout"]) {
+      const storeRoot = mkdtempSync(join(temporaryRoot, `authority-verify-${state}-store-`))
+      if (!enrollmentStore.writeAuthorityEnrollment(enrollment, { storeRoot })) {
+        throw new Error(`${label} authority verify ${state} enrollment setup failed`)
+      }
+      const blocked = command.runAuthorityCommand(baseArgs, {
+        artifactInspector: () => ({
+          authorityEligible: false,
+          consumptionState: "not-applicable",
+          decision: "blocked",
+          diagnostics: [],
+          state,
+          summary: "bounded-trust-unavailable",
+        }),
+        packageRoot,
+        projectDir,
+        storeRoot,
+      })
+      const payload = JSON.parse(blocked.stdout)
+      if (
+        blocked.status !== 1
+        || payload?.reason !== "trust-unavailable"
+        || payload?.schemaVersion !== "consumer-authority-verify.1"
+        || payload?.sourceFallback !== false
+        || payload?.state !== "blocked"
+        || artifactStore.readAuthorityArtifact(enrollment.repositoryId, { storeRoot }).state !== "missing"
+      ) {
+        throw new Error(`${label} installed authority verify ${state} did not fail closed`)
+      }
+    }
+
+    const partial = command.runAuthorityCommand([
+      "verify",
+      "--archive",
+      canonicalArchivePath,
+      "--artifact-id",
+      "710000019",
+      "--json",
+    ], { packageRoot, projectDir, storeRoot: successStore })
+    const partialPayload = JSON.parse(partial.stdout)
+    if (partial.status !== 1 || partialPayload?.reason !== "selection-required" || partialPayload?.state !== "blocked") {
+      throw new Error(`${label} installed authority verify partial tuple did not fail closed`)
+    }
+
+    const symlinkPath = join(archiveDirectory, "symlink-attestation.zip")
+    symlinkSync(canonicalArchivePath, symlinkPath)
+    const symlink = command.runAuthorityCommand([
+      ...baseArgs.slice(0, 3),
+      symlinkPath,
+      ...baseArgs.slice(4),
+    ], { packageRoot, projectDir, storeRoot: successStore })
+    const symlinkPayload = JSON.parse(symlink.stdout)
+    if (symlink.status !== 1 || symlinkPayload?.reason !== "archive-invalid" || symlinkPayload?.state !== "blocked") {
+      throw new Error(`${label} installed authority verify archive symlink did not fail closed`)
+    }
+  } finally {
+    rmSync(projectDir, { force: true, recursive: true })
+    rmSync(archiveDirectory, { force: true, recursive: true })
+  }
 }
 
 async function assertSourceConsumerAuthorityBoundary(phPath, observerGh, packageExercise, runPhase) {
@@ -3140,7 +3320,7 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
 }
 
 function readGaPreAuthorityReadiness(packageRoot) {
-  const manifest = readV0814AcceptanceManifest(packageRoot)
+  const manifest = readV0815AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -3149,7 +3329,7 @@ function readGaPreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readV0814AcceptanceManifest(packageRoot)
+    readV0815AcceptanceManifest(packageRoot)
   } catch {
     throw new Error(`${label} current observer handoff contract is invalid`)
   }
@@ -3291,7 +3471,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readV0814AcceptanceManifest(packageRoot)
+  const manifest = readV0815AcceptanceManifest(packageRoot)
   let packageMetadata
   try {
     packageMetadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
@@ -3370,7 +3550,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
     "consumer-authority-v089-acceptance-schema.mjs",
     "consumer-authority-v0810-acceptance-schema.mjs",
     "consumer-authority-v0813-acceptance-schema.mjs",
-    "consumer-authority-v0814-acceptance-schema.mjs",
+    "consumer-authority-v0815-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
@@ -3654,7 +3834,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     "consumer-authority-v089-acceptance-schema.mjs",
     "consumer-authority-v0810-acceptance-schema.mjs",
     "consumer-authority-v0813-acceptance-schema.mjs",
-    "consumer-authority-v0814-acceptance-schema.mjs",
+    "consumer-authority-v0815-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
@@ -3699,7 +3879,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readV0814AcceptanceManifest(packageRoot)
+  const manifest = readV0815AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),
