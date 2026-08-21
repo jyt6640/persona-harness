@@ -772,7 +772,7 @@ describe("consumer authority command boundary", () => {
       state: "trusted" as const,
       summary: "trusted",
     }))
-    const archivePath = join(projectDir, "attestation.zip")
+    const archivePath = physicalArchivePath()
     writeFileSync(archivePath, artifactArchive())
     const result = runAuthorityCommand([
       "verify",
@@ -1129,6 +1129,12 @@ function project(): string {
   const projectDir = mkdtempSync(join(tmpdir(), "persona-authority-command-"))
   projects.push(projectDir)
   return projectDir
+}
+
+function physicalArchivePath(): string {
+  const archiveDir = mkdtempSync(join(realpathSync(process.cwd()), ".persona-authority-archive-"))
+  projects.push(archiveDir)
+  return join(archiveDir, "attestation.zip")
 }
 
 function gitBackedProject(): { readonly head: string; readonly path: string } {

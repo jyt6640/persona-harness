@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process"
+import { execFileSync, spawnSync } from "node:child_process"
 import {
   existsSync,
   mkdirSync,
@@ -16,6 +16,16 @@ export type RealCooperativeGradleFixture = {
   readonly projectDir: string
 }
 
+export type RealGradleWarmupResult = {
+  readonly output: string
+  readonly status: number
+}
+
+export type RealGradleWarmupRunner = (projectDir: string) => RealGradleWarmupResult
+export type RealGradleWarmupPause = () => void
+
+const MAVEN_CENTRAL_RATE_LIMIT_BACKOFF_MS = 1_000
+
 export function createRealCooperativeGradleFixture(): RealCooperativeGradleFixture {
   const projectDir = mkdtempSync(join(tmpdir(), "persona-real-cooperative-gradle-"))
   try {
@@ -27,6 +37,9 @@ export function createRealCooperativeGradleFixture(): RealCooperativeGradleFixtu
     })
     rmSync(join(projectDir, ".gradle"), { force: true, recursive: true })
     writeBuildFiles(projectDir)
+    warmRealCooperativeGradleDependencies(projectDir)
+    rmSync(join(projectDir, ".gradle"), { force: true, recursive: true })
+    rmSync(join(projectDir, "build"), { force: true, recursive: true })
     writeCurrentWorkflowLifecycleLoopStates(projectDir)
     execFileSync("git", ["init", "-q"], { cwd: projectDir })
     execFileSync("git", ["config", "gc.auto", "0"], { cwd: projectDir })
@@ -44,6 +57,48 @@ export function createRealCooperativeGradleFixture(): RealCooperativeGradleFixtu
     cleanup: () => rmSync(projectDir, { force: true, recursive: true }),
     projectDir,
   }
+}
+
+export function warmRealCooperativeGradleDependencies(
+  projectDir: string,
+  runner: RealGradleWarmupRunner = runRealGradleWarmup,
+  pause: RealGradleWarmupPause = waitForMavenCentralRateLimitBackoff,
+): void {
+  const initial = runner(projectDir)
+  if (initial.status === 0) return
+  if (!isRetryableMavenCentralRateLimit(initial)) throwGradleWarmupFailure(initial)
+
+  pause()
+  const retry = runner(projectDir)
+  if (retry.status === 0) return
+  throwGradleWarmupFailure(retry)
+}
+
+export function isRetryableMavenCentralRateLimit(result: RealGradleWarmupResult): boolean {
+  return result.status !== 0
+    && result.output.includes("repo.maven.apache.org")
+    && result.output.includes("Received status code 429")
+}
+
+function runRealGradleWarmup(projectDir: string): RealGradleWarmupResult {
+  const result = spawnSync("./gradlew", ["--no-daemon", "test"], {
+    cwd: projectDir,
+    encoding: "utf8",
+  })
+  if (result.error !== undefined) throw result.error
+  return {
+    output: `${result.stdout}\n${result.stderr}`,
+    status: result.status ?? 1,
+  }
+}
+
+function waitForMavenCentralRateLimitBackoff(): void {
+  const state = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT))
+  Atomics.wait(state, 0, 0, MAVEN_CENTRAL_RATE_LIMIT_BACKOFF_MS)
+}
+
+function throwGradleWarmupFailure(result: RealGradleWarmupResult): never {
+  throw new Error(`real-cooperative-gradle-warmup-failed\n${result.output}`)
 }
 
 export function realJUnitResultPath(projectDir: string): string {
