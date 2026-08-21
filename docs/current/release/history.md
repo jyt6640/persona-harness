@@ -9,11 +9,11 @@ version/package chronology, use
 [`docs/releases/README.md`](../../releases/README.md) and
 [`docs/releases/package-index.md`](../../releases/package-index.md).
 
-## Current 0.8.20 Package Authority
+## Current 0.8.21 Package Authority
 
-The current unpublished package authority is 0.8.20. Its root package,
-lockfile, private shared-skills package, and v0820 acceptance record must agree
-exactly. The published 0.8.19 release is immutable historical evidence only
+The current unpublished package authority is 0.8.21. Its root package,
+lockfile, private shared-skills package, and v0821 acceptance record must agree
+exactly. The published 0.8.20 release is immutable historical evidence only
 and must not be retagged, rerun, or published.
 The package-visible read-only `ph authority verify` surface never fetches,
 persists, consumes, finishes, or replays authority. Its `.2` result exposes a
@@ -33,6 +33,12 @@ package-template digest remains derived from canonical package templates, while
 the strict-bootstrap overlay records only effective source file digests. A
 repaired baseline can therefore pass its subsequent strict bootstrap and plan
 lifecycle without weakening ownership or package-binding checks.
+
+Project-finish identity excludes only the two generated repair-inference
+observations, `.persona/instructions/inferred.json` and
+`.persona/instructions/conflicts.json`. A user-reviewed
+`.persona/instructions/adopted.json` and every other project file remain bound
+to the signed source identity.
 
 On Darwin, the root-owned `/tmp -> private/tmp` system alias is canonicalized
 to its physical path before the existing no-follow archive checks run. Any
