@@ -1,0 +1,59 @@
+{
+  "$schema": "https://cyclonedx.org/schema/bom-1.5.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "bom-ref": "pkg:npm/persona-harness@0.8.27",
+      "type": "application",
+      "name": "persona-harness",
+      "version": "0.8.27",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/jyt6640/persona-harness.git"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "git+https://github.com/code-yeongyu/ast-grep-skill@3148c69c370a51afb661b9f37879c0bd7cf0cc3b",
+      "type": "file",
+      "name": "ast-grep-skill",
+      "version": "0.43.0",
+      "scope": "optional",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/code-yeongyu/ast-grep-skill/tree/3148c69c370a51afb661b9f37879c0bd7cf0cc3b"
+        }
+      ],
+      "properties": [
+        {
+          "name": "persona-harness:retained-path",
+          "value": "packages/shared-skills/skills/ast-grep"
+        },
+        {
+          "name": "persona-harness:source-marker",
+          "value": "packages/shared-skills/skills/ast-grep/SOURCE"
+        }
+      ]
+    }
+  ]
+}

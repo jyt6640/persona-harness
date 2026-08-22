@@ -117,6 +117,7 @@ values in their historical rows; they are not competing live claims.
 | `0.8.4` | 2026-08-11 | unpublished stable source candidate | [`release notes`](../current/release/v0.8.4-release-notes.md) | adds the normalized authority binding-reason contract; requires its own exact package facts and normal package and hosted gates |
 | `0.8.24` | 2026-08-22 | published stable release | [`release notes`](../current/release/v0.8.24-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm `latest`, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
 | `0.8.25` | 2026-08-22 | published stable release | [`release notes`](../current/release/v0.8.25-release-notes.md) | release-truth contract, protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
+| `0.8.26` | 2026-08-22 | published stable release | [`release notes`](../current/release/v0.8.26-release-notes.md) | package-visible live lookup, protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
 
 ## Future Migration Notes
 

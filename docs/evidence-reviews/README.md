@@ -15,3 +15,4 @@ Current synthesis anchors:
 - `generated-demo-quality-synthesis.md`
 - `v0.3.0-domain-behavior-clean-generation-review.md`
 - `v0.3.0-bearshell-guidance-clean-generation-review.md`
+- `2026-08-22-source-provenance-audit.md`

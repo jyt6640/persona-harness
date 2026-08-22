@@ -11,9 +11,9 @@ version/package chronology, use
 
 ## Current Source Authority And Live Release Lookup
 
-The current source package authority is 0.8.26. Its root package, lockfile,
-private shared-skills package, and v0826 acceptance record must agree exactly.
-Published 0.8.25 is immutable historical evidence and cannot authorize a later
+The current source package authority is 0.8.27. Its root package, lockfile,
+private shared-skills package, and v0827 acceptance record must agree exactly.
+Published 0.8.26 is immutable historical evidence and cannot authorize a later
 package, tag, release, or npm publication.
 
 For the current live npm dist-tags, read

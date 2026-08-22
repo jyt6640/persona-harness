@@ -16,30 +16,19 @@ The runtime shared-skill router selects the generic programming skill, and the
 Role Checklist Relay detail reference points to the Java testing reference. This
 index does not change either runtime behavior.
 
-## Dormant Source References
+## Removed Dormant References
 
-The following programming reference directories remain in repository source to
-preserve their internal paths and history. They are advanced/dormant source
-material, not part of the Java-first front-door or current npm package:
+The former multi-language programming, LSP, workflow-driver, and other dormant
+reference trees are not part of the candidate source boundary. They were removed
+under the [source provenance audit](../evidence-reviews/2026-08-22-source-provenance-audit.md)
+because their source provenance did not provide a redistributable grant for this
+repository. Git history remains the historical record; the active source and
+package boundary does not retain those paths.
 
-```text
-packages/shared-skills/skills/programming/references/go/
-packages/shared-skills/skills/programming/references/python/
-packages/shared-skills/skills/programming/references/rust/
-packages/shared-skills/skills/programming/references/rust-ub/
-packages/shared-skills/skills/programming/references/typescript/
-```
-
-The related multi-language LSP setup tree remains source-only advanced material:
-
-```text
-packages/shared-skills/skills/lsp-setup/references/
-```
-
-No reference content is deleted or moved by this index. The current package
-allowlist includes the Java reference directory and excludes the dormant
-programming and LSP reference trees. Do not add these paths to npm package
-contents merely to make them easier to discover.
+Future advanced reference material must be authored independently or introduced
+with a recorded compatible license, required notices, and a deliberate product
+scope decision. The Java reference directory remains the only active packaged
+programming reference set.
 
 ## Preview And Advanced Operations
 
@@ -80,19 +69,13 @@ For evidence history and detailed caveats, use:
 - `docs/current/ci-finish-contract.md`
 - `docs/current/ci-evidence-reverification-design.md`
 - `docs/current/canonical-docs-index.md`
+- `docs/evidence-reviews/2026-08-22-source-provenance-audit.md`
 
-## Source-Only Agent Driver
+## Retired Source-Only Agent Driver
 
-`packages/shared-skills/skills/advanced/superpowers-driver/SKILL.md` is a
-repository-only manual driver for compatible coding agents. In a prepared
-project it directs an agent to `npx ph go "<concrete implementation goal>"`,
-the emitted rail, plaintext `npx ph workflow finish implement`, and
-`npx ph workflow closure next --json` only as structured guidance.
-
-The driver is not selected by the runtime router, is not packaged, and does not
-create a hook, default, auto-spawn path, or host-specific enforcement. It cannot
-verify reports, weaken PH closure/check/finish gates, auto-finish work, or
-certify generated applications.
+The former source-only methodology driver was removed with the dormant
+reference material. There is no installed or repository-only driver at that
+path, and this index makes no claim about its historical behavior.
 
 ## Boundaries
 

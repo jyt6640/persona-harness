@@ -1,0 +1,16 @@
+Persona Harness NOTICE
+Copyright 2026 Persona Harness contributors.
+
+This repository retains the following separately licensed source material:
+
+- ast-grep-skill, version 0.43.0
+  Source: https://github.com/code-yeongyu/ast-grep-skill
+  Revision: 3148c69c370a51afb661b9f37879c0bd7cf0cc3b
+  License: MIT License
+  Retained path: packages/shared-skills/skills/ast-grep/
+  Source marker: packages/shared-skills/skills/ast-grep/SOURCE
+  License text: packages/shared-skills/skills/ast-grep/LICENSE
+
+The root Apache-2.0 license applies only to material for which Persona Harness
+contributors can grant it. This NOTICE is informational and does not alter the
+terms of any third-party license.

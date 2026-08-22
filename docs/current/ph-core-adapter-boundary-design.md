@@ -158,7 +158,7 @@ cannot auto-finish work, verify reports, alter gates, or create a host default.
 | Java/Spring evidence limit | `docs/current/java-precision-warnings-acceptance-record.md:Accepted Contract @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Records the three current warn-only Java precision rules and their non-promotion boundary. |
 | CI adapter | `docs/current/ci-finish-contract.md:GitHub Actions Recipe @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d`; `docs/current/ci-evidence-reverification-design.md:Decision @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Documents the existing CLI-driving recipe and the separate future independent-reverification design. |
 | Host adapter | `src/runtime/hooks.ts:createPhase0Hooks @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Current host hook/injection translation point, guarded by the existing runtime-injection configuration. |
-| Methodology driver | `packages/shared-skills/skills/advanced/superpowers-driver/SKILL.md:Superpowers Driver @ 16c741026c3b0c6abc6e3022c976c4f6909e9a2d` | Manual source-only driver that explicitly defers authority to PH CLI exit and closure/finish surfaces. |
+| Methodology driver | Removed dormant source material; see `docs/evidence-reviews/2026-08-22-source-provenance-audit.md` | No live driver path remains. A future driver requires an independently licensed source and a separate scope decision. |
 
 All references other than the implemented completion-decision core describe
 current placement only. They are not a mandate to rename, extract, or relocate
@@ -178,9 +178,10 @@ the listed files in this tranche.
 4. **I25-4 Host adapter inventory:** define supported invocation/discovery
    translations and their test matrix without making runtime injection or a
    hook a default or a requirement.
-5. **I25-5 Methodology-driver policy:** specify how source-only manual drivers
-   may reference public PH commands without becoming installed authority,
-   automatic orchestration, or completion evidence.
+5. **I25-5 Methodology-driver policy:** decide whether a future independently
+   licensed source-only driver is needed before it can reference public PH
+   commands without becoming installed authority, automatic orchestration, or
+   completion evidence.
 6. **I25-6 Additional language-pack decision:** choose a second language only
    after its stack scope, fixtures, precision evidence, distribution, and
    release/default decisions are separately accepted.

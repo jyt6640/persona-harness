@@ -8,6 +8,14 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+- Record the public technical source-provenance audit, remove dormant
+  non-compatible shared-skill source material, and make the retained MIT
+  ast-grep attribution visible in the npm package through `NOTICE` and its
+  source marker. This inventory does not replace an independent license review
+  or establish contest eligibility.
+
+## [0.8.26] - 2026-08-22
+
 - Replace static live-release snapshots in package-visible current documents
   with npm and GitHub lookup links, so a newly published package cannot become
   stale at the instant its governed publish completes.
