@@ -37,9 +37,10 @@ If that form is unavailable, email `jyt6640@naver.com` only to request a
 private reporting channel. Do not include credentials, tokens, private keys,
 exploit details, or private code in a public issue or email.
 
-Include: affected version, reproduction steps, and impact. You'll get an
-acknowledgement as soon as the maintainer sees it. This is a single-maintainer
-project, so response time is best-effort, not contractual.
+The repository maintainer owns this intake. Include: affected version,
+reproduction steps, and impact. You'll get an acknowledgement as soon as the
+maintainer sees it. This is a single-maintainer project, so response time is
+best-effort, not contractual.
 
 ## GitHub security-control disclosure
 

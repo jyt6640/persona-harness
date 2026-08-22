@@ -23,6 +23,7 @@ describe("security reporting policy", () => {
     expect(securityPolicy).toContain("Do not include credentials, tokens, private keys, exploit details, or private code in a public issue or email.")
     expect(securityPolicy).toContain("jyt6640@naver.com")
     expect(securityPolicy).toContain("request a private reporting channel")
+    expect(securityPolicy).toContain("The repository maintainer owns this intake.")
     expect(securityPolicy).not.toContain("address on the npm package page")
 
     expect(bugReport).toContain("Do not use this form to report a vulnerability")
