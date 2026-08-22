@@ -18,6 +18,25 @@ These commands build the package, create an `npm pack` tarball, install that tar
 - `demo:bootstrap`: installed plugin handles README bootstrap injection and writes runtime evidence only after hook execution.
 - `demo:java-mvp`: installed plugin drives the Phase 0 hooks against a Java Controller target.
 
+The two runtime-hook demos load the supported named `PersonaHarnessPlugin`
+entrypoint and explicitly run `ph bootstrap backend
+--runtime-injection-preview --no-developer-mcp` inside their disposable demo
+projects. That opt-in is test-local; `runtimeInjection` stays default-off for
+ordinary installs.
+
+For the longer workflow boundary, repository maintainers and reviewers run:
+
+```bash
+npm ci
+node scripts/verify-cooperative-finish-demo.mjs
+```
+
+This command requires Node 20.19+, JDK 21, and Gradle 9.4.0. It installs the
+exact packed package into a disposable Java/Spring fixture, proves the initial
+`workflow-state-uninitialized` block, runs real Gradle/JUnit verification, and
+then reaches `Finish status: PASS` with `--assurance cooperative`. The required
+repository CI job executes the same command.
+
 The release-facing install path is documented in [java-backend-mvp-install-guide.md](java-backend-mvp-install-guide.md).
 
 Use `-- --keep` to keep the temporary demo project for manual inspection:
@@ -39,10 +58,12 @@ npm run demo:java-mvp -- --keep
 - The injection includes the Java common and Spring Controller rules.
 - The model-input transform receives the same pending injection.
 - Phase 0 evidence JSON is written under the temporary project's ignored `.persona/evidence/phase0` directory.
+- The cooperative demo records real Gradle/JUnit evidence before its local
+  cooperative Finish PASS.
 
 ## What This Proves
 
-This proves the MVP can be packed, installed into another project, loaded as an OpenCode plugin module, and exercised through the same hook surface the plugin relies on at runtime.
+This proves the MVP can be packed, installed into another project, loaded as an OpenCode plugin module, and exercised through the same hook surface the plugin relies on at runtime. The cooperative demo additionally proves a local, exact-package Gradle/JUnit workflow contract.
 
 ## Non-Goals
 
@@ -51,6 +72,7 @@ This proves the MVP can be packed, installed into another project, loaded as an 
 - Not a rule compliance enforcement gate.
 - Not Guard/AST/linter validation.
 - Not frontend, infra, or multi-domain productization.
+- Not trusted external authority, provenance, or a production-readiness claim.
 
 ## Current Decision
 

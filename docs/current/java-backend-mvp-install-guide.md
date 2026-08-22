@@ -122,9 +122,18 @@ npm run demo:java-mvp
 
 `npm run demo:init`은 package artifact가 실제 설치 환경에서 `persona-harness init`으로 clean project를 안전하게 초기화하는지 확인한다.
 
-`npm run demo:bootstrap`은 init 이후 README target에서 bootstrap injection과 runtime evidence 생성이 되는지 확인한다.
+`npm run demo:bootstrap`은 init 이후 README target에서 bootstrap injection과 runtime evidence 생성이 되는지 확인한다. 설치된 named `PersonaHarnessPlugin` export를 사용하고 임시 프로젝트 안에서만 `ph bootstrap backend --runtime-injection-preview --no-developer-mcp`를 명시적으로 적용한다. 이 opt-in은 기본 `runtimeInjection` 설정을 바꾸지 않는다.
 
-`npm run demo:java-mvp`는 package artifact가 실제 설치 환경에서도 Java Controller plugin hook, injection, model input transform, evidence 생성 경로를 재현하는지 확인한다.
+`npm run demo:java-mvp`는 package artifact가 실제 설치 환경에서도 Java Controller plugin hook, injection, model input transform, evidence 생성 경로를 재현하는지 확인한다. 마찬가지로 disposable fixture에서만 preview opt-in을 사용한다.
+
+저장소 maintainer/reviewer가 실제 Gradle/JUnit과 workflow Finish 경계를 검증하려면 Node 20.19+, JDK 21, Gradle 9.4.0 환경에서 다음을 실행한다.
+
+```bash
+npm ci
+node scripts/verify-cooperative-finish-demo.mjs
+```
+
+이 명령은 exact packed package를 disposable Java/Spring fixture에 설치하고, 먼저 `workflow-state-uninitialized` BLOCK을 확인한 다음 실제 Gradle/JUnit evidence와 `--assurance cooperative`의 `Finish status: PASS`를 확인한다. required repository CI도 같은 명령을 실행한다. 이는 trusted external authority나 production quality를 증명하지 않는다.
 
 검증하는 것:
 
@@ -212,7 +221,7 @@ Plugin hook이 발동하면 연결한 Java/Spring 프로젝트의 configured evi
 
 ## Non-Goals
 
-이 install guide와 `npm run demo:java-mvp`는 다음을 보증하지 않는다.
+이 install guide와 `npm run demo:java-mvp` 및 `node scripts/verify-cooperative-finish-demo.mjs`는 다음을 보증하지 않는다.
 
 - 생성된 Spring application의 품질
 - 테스트 충분성

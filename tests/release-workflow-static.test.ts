@@ -44,7 +44,7 @@ describe("CI and release workflow policy surface", () => {
     expect(staticFixturePaths).toContain("scripts/release-workflow-checker-inputs.mjs")
     expect(staticFixturePaths).toContain("scripts/consumer-authority-observer-gh-package-record.mjs")
     expect(staticFixturePaths).toContain("package.json")
-    expect(staticFixturePaths).toContain("docs/current/release/consumer-authority-v0823-acceptance.json")
+    expect(staticFixturePaths).toContain("docs/current/release/consumer-authority-v0824-acceptance.json")
     expect(staticFixturePaths).not.toContain(CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT)
     expect(CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS).not.toContain("scripts/check-release-workflows.mjs")
   })
@@ -54,7 +54,7 @@ describe("CI and release workflow policy surface", () => {
     try {
       copyReleaseWorkflowCheckerFixture(fixtureDir)
       copyFileSync(join(process.cwd(), "package.json"), join(fixtureDir, "package.json"))
-      const acceptancePath = "docs/current/release/consumer-authority-v0823-acceptance.json"
+      const acceptancePath = "docs/current/release/consumer-authority-v0824-acceptance.json"
       const acceptanceTarget = join(fixtureDir, acceptancePath)
       mkdirSync(dirname(acceptanceTarget), { recursive: true })
       copyFileSync(join(process.cwd(), acceptancePath), acceptanceTarget)
@@ -85,7 +85,9 @@ describe("CI and release workflow policy surface", () => {
         const sourcePath = join(process.cwd(), workflowPath)
         const floatingText = readFileSync(sourcePath, "utf8")
           .replaceAll("actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5", "actions/checkout@v4")
+          .replaceAll("actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961", "actions/setup-java@v5")
           .replaceAll("actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020", "actions/setup-node@v4")
+          .replaceAll("gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb", "gradle/actions/setup-gradle@v6")
           .replaceAll("actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc", "actions/attest@v2")
           .replaceAll("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", "actions/upload-artifact@v4")
         writeFileSync(join(fixtureDir, workflowPath), floatingText)

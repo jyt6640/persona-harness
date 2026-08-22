@@ -11,12 +11,14 @@ const immutableActionPins = {
   attest: "actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc",
   checkout: "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5",
   githubScript: "actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd",
+  setupGradle: "gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb",
+  setupJava: "actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961",
   setupNode: "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
   uploadArtifact: "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
 }
 
 const expectedActionCounts = {
-  ".github/workflows/ci.yml": { checkout: 1, setupNode: 1 },
+  ".github/workflows/ci.yml": { checkout: 1, setupGradle: 1, setupJava: 1, setupNode: 1 },
   ".github/workflows/publish.yml": { checkout: 1, setupNode: 2, uploadArtifact: 1 },
   ".github/workflows/release.yml": { checkout: 2, setupNode: 3 },
   ".github/workflows/canonical-clean-ci-attestation-builder.yml": {
@@ -67,7 +69,7 @@ function hasImmutableActionPins(path, text) {
   return Object.entries(immutableActionPins).every(([name, pin]) => {
     const expectedCount = expected[name] ?? 0
     return countOccurrences(text, pin) === expectedCount
-  }) && !/actions\/(?:attest|checkout|github-script|setup-node|upload-artifact)@v\d+\b/.test(text)
+  }) && !/(?:actions\/(?:attest|checkout|github-script|setup-java|setup-node|upload-artifact)|gradle\/actions\/setup-gradle)@v\d+\b/.test(text)
 }
 
 function hasContextDiagnosticSafeRuntime(text) {
@@ -480,7 +482,7 @@ async function main() {
     observerGhPackageRecord,
     observerGhTool,
     packageManifest,
-    v0823AcceptanceManifest,
+    v0824AcceptanceManifest,
   } = inputs
   const failures = []
   for (const [name, path, predicate] of requirements) {
@@ -553,7 +555,7 @@ async function main() {
   if (!hasWorkflowOwnedObserverGhProvisioner(observerGhProvisioner, observerGhSelector, observerGhPackageRecord, observerGhTool)) {
     failures.push("workflow-owned observer gh provisioner")
   }
-  if (!hasPackageObserverResponsibility(packageManifest, v0823AcceptanceManifest)) {
+  if (!hasPackageObserverResponsibility(packageManifest, v0824AcceptanceManifest)) {
     failures.push("Package observer responsibility")
   }
   if (failures.length > 0) {

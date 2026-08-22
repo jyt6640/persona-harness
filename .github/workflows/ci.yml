@@ -30,6 +30,17 @@ jobs:
           node-version: 20.19.0
           cache: npm
 
+      - name: Setup Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+        with:
+          gradle-version: "9.4.0"
+
       - name: Select observer GitHub CLI
         id: observer-gh
         run: node .github/scripts/prepare-observer-gh-tool.mjs
@@ -80,3 +91,6 @@ jobs:
 
       - name: Pack dry run
         run: npm pack --dry-run --json
+
+      - name: Verify exact packaged Gradle/JUnit cooperative finish demo
+        run: node scripts/verify-cooperative-finish-demo.mjs

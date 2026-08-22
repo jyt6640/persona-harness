@@ -9,18 +9,20 @@ version/package chronology, use
 [`docs/releases/README.md`](../../releases/README.md) and
 [`docs/releases/package-index.md`](../../releases/package-index.md).
 
-## Current 0.8.23 Package Authority
+## Current 0.8.24 Package Authority
 
-The current unpublished package authority is 0.8.23. Its root package,
-lockfile, private shared-skills package, and v0823 acceptance record must agree
-exactly. The published 0.8.22 release is immutable historical evidence only
+The current unpublished package authority is 0.8.24. Its root package,
+lockfile, private shared-skills package, and v0824 acceptance record must agree
+exactly. The published 0.8.23 release is immutable historical evidence only
 and must not be retagged, rerun, or published.
 
-The package tarball contains exactly one root README candidate, `README.md`,
-so npm presents the current English first screen and 30-second demo
-deterministically. Korean, Japanese, and Simplified Chinese source documents
-remain under `docs/current/` and are linked from the English README through
-their GitHub source URLs.
+The package keeps one root README candidate, `README.md`, for a deterministic
+English npm landing page. Its source checkout also has an exact packed-package
+cooperative demo: a disposable Java/Spring fixture starts at the bounded
+workflow block, records actual Java 21 / Gradle 9.4 / JUnit evidence, and
+reaches only a local cooperative PASS. Required Verify repository executes the
+same contract; runtime injection remains default-off and the demo grants no
+trusted external authority.
 The package-visible read-only `ph authority verify` surface accepts canonical
 `sha256:<64hex>` or an exact raw SHA-256 hex digest, normalizing either form
 before the same no-follow archive boundary. It never fetches,

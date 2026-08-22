@@ -71,6 +71,28 @@ npx ph workflow closure next --json
 `workflow closure next --json` is diagnostic state, not a `finish --json`
 result. `workflow finish` has no `--json` option.
 
+## Full Cooperative Verification Demo
+
+Repository maintainers and reviewers can exercise the longer exact-package
+contract from a Persona Harness checkout:
+
+```bash
+npm ci
+node scripts/verify-cooperative-finish-demo.mjs
+```
+
+It requires Node 20.19+, JDK 21, and Gradle 9.4.0. The required repository
+verification job runs this exact command. It creates a disposable Java/Spring
+Gradle fixture, packs and installs the current package tarball, demonstrates
+the initial `workflow-state-uninitialized` block, then records real
+Gradle/JUnit evidence and reaches `Finish status: PASS` with
+`--assurance cooperative`.
+
+This is a maintainer/reviewer test contract, not an end-user startup command.
+It keeps runtime injection default-off, does not call an external authority,
+and does not grant trusted external authority. Add `-- --keep` only when the
+temporary fixture needs manual inspection.
+
 ## Boundaries
 
 This walkthrough demonstrates only the observed setup, blocked-finish, and
