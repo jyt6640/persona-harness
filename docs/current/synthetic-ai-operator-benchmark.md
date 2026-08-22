@@ -5,6 +5,10 @@
 This is a repeatable model-run benchmark for workflow reliability and
 failure-mode discovery. It is not a study of people.
 
+The evaluator is repository-owned experiment tooling, not an installed package
+command. Run it from the recorded repository revision; the evaluator records
+that Git commit in each result set.
+
 Each benchmark has ten `synthetic-ai` cases: five `plain` and five `ph-on`.
 The execution model receives a frozen public problem set. A local answer key
 keeps condition assignment and expected stack shape outside both the execution
