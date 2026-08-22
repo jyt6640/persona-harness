@@ -8,9 +8,9 @@ const root = process.cwd()
 describe("public platform support matrix", () => {
   it.each([
     "README.md",
-    "README.ko.md",
-    "README.ja.md",
-    "README.zh-cn.md",
+    "docs/current/README.ko.md",
+    "docs/current/README.ja.md",
+    "docs/current/README.zh-cn.md",
     "docs/START-HERE.md",
     "docs/current/java-backend-mvp-install-guide.md",
   ])("states the published Sigstore Node floor in %s", (relativePath) => {

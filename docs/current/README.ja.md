@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="img/Persona-Harness-Logo.png" alt="Persona Harness ロゴ" width="180">
+<img src="../../img/Persona-Harness-Logo.png" alt="Persona Harness ロゴ" width="180">
 
 # Persona Harness
 
@@ -11,11 +11,11 @@
 [![npm version](https://img.shields.io/npm/v/persona-harness?color=369eff&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
 [![npm downloads](https://img.shields.io/npm/dt/persona-harness?color=ff6b35&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
 [![node](https://img.shields.io/badge/node-%5E20.17.0%20%7C%7C%20%3E%3D22.9.0-c4f042?labelColor=black&style=flat-square)](https://nodejs.org)
-[![License](https://img.shields.io/badge/license-Apache--2.0-white?labelColor=black&style=flat-square)](./LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-white?labelColor=black&style=flat-square)](../../LICENSE)
 
-[English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
+[English](https://github.com/jyt6640/persona-harness/blob/main/README.md) | [한국어](https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.ko.md) | [日本語](https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.ja.md) | [简体中文](https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.zh-cn.md)
 
-**[Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)**
+**[Start Here](../START-HERE.md) · [Quick Demo](../QUICK-DEMO.md) · [Measured Claims](../MEASURED-CLAIMS.md)**
 
 </div>
 
@@ -24,7 +24,7 @@
 > AI エージェントは「完了しました！」と言いたがります — Persona Harness はそれを証明させます。必要な report、PH が生成した evidence、実際のテスト結果がディスク上に存在するまで完了主張をブロックするローカル CLI 完了ゲートです。
 
 > [!IMPORTANT]
-> **Alpha, gate-first, 測定ベース。** ライブの registry チャネル、タグ、GitHub リリース、audit lifecycle の事実は governed registry と audit record に保持されます。source documentation は自身の preparation boundary だけを記録します。runtime injection は **default-off / opt-in** です。[`docs/current/p3-integrity-roadmap.md`](docs/current/p3-integrity-roadmap.md)、[`docs/MEASURED-CLAIMS.md`](docs/MEASURED-CLAIMS.md)、[`injection-value-status.json`](docs/current/injection-value-status.json) を参照してください。
+> **Alpha, gate-first, 測定ベース。** ライブの registry チャネル、タグ、GitHub リリース、audit lifecycle の事実は governed registry と audit record に保持されます。source documentation は自身の preparation boundary だけを記録します。runtime injection は **default-off / opt-in** です。[`docs/current/p3-integrity-roadmap.md`](p3-integrity-roadmap.md)、[`docs/MEASURED-CLAIMS.md`](../MEASURED-CLAIMS.md)、[`injection-value-status.json`](injection-value-status.json) を参照してください。
 
 ## 測定された動作 (Measured Behavior)
 
@@ -34,7 +34,7 @@
 - **Green-only 完了**（TDD rail on）→ ブロック **5/5**（off では許可 5/5）。
 - **runtime injection**、10 ペアの OpenCode run → 成功率は同じ（両方 10/10）だが PH ON は全 10 ペアでコスト増 → **default-off** を維持。
 
-限定されたローカル fixture での completion-integrity 測定です — トークン節約・アプリ品質・プロダクト効能の主張では*ありません*。完全な境界と根拠: **[docs/MEASURED-CLAIMS.md](docs/MEASURED-CLAIMS.md)**。
+限定されたローカル fixture での completion-integrity 測定です — トークン節約・アプリ品質・プロダクト効能の主張では*ありません*。完全な境界と根拠: **[docs/MEASURED-CLAIMS.md](../MEASURED-CLAIMS.md)**。
 
 ## これは何か
 
@@ -46,7 +46,7 @@ AI エージェントが行う Java/Spring バックエンド作業のための 
 - 何を読み、実行し、完了したかをローカル evidence として記録
 - **必要な report/evidence がなければ完了をブロック**
 
-コード品質保証、トークン節約プロダクト、broad linter、生成アプリが production-ready である証明では**ありません**。完了ゲートより広いすべての主張は、先に測定によって獲得しなければなりません — [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md) を参照。
+コード品質保証、トークン節約プロダクト、broad linter、生成アプリが production-ready である証明では**ありません**。完了ゲートより広いすべての主張は、先に測定によって獲得しなければなりません — [MEASURED-CLAIMS](../MEASURED-CLAIMS.md) を参照。
 
 ## インストール
 
@@ -96,7 +96,7 @@ PH-run verification を有効にしますが、`runtimeInjection`、`systemConst
 > [!NOTE]
 > `workflow finish` が失敗した場合、エージェントは完了を主張する前に報告された blocker を修正しなければなりません。**その失敗はバグではなく、プロダクトが機能している証拠です。**
 
-サンプル Todo API とアイデア優先フローを含む完全なガイド: **[Quick Demo](docs/QUICK-DEMO.md)**。
+サンプル Todo API とアイデア優先フローを含む完全なガイド: **[Quick Demo](../QUICK-DEMO.md)**。
 
 ## TDD Rail (opt-in)
 
@@ -142,22 +142,22 @@ preview wrapper は外部ツールがない場合、成功を偽装せず **unav
 
 ## 境界と安全
 
-Evidence は一つの質問にのみ答えます — *「エージェントは期待された rail を見て従ったか？」* — それ以上ではありません。PH はアプリ品質認証、トークン節約、Clean Code 保証、broad AST/linter 強制、full TDD フレームワーク、closure 保証、OpenCode なしの完全な workflow を**約束しません**。正規のリストは [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md) にあります。
+Evidence は一つの質問にのみ答えます — *「エージェントは期待された rail を見て従ったか？」* — それ以上ではありません。PH はアプリ品質認証、トークン節約、Clean Code 保証、broad AST/linter 強制、full TDD フレームワーク、closure 保証、OpenCode なしの完全な workflow を**約束しません**。正規のリストは [MEASURED-CLAIMS](../MEASURED-CLAIMS.md) にあります。
 
 > [!WARNING]
-> `ph bearshell` は**サンドボックスではありません**。実行時間と出力サイズを制限しますが、コマンドはあなたのマシン上であなたの権限で実行されます。[SECURITY](SECURITY.md) を参照。
+> `ph bearshell` は**サンドボックスではありません**。実行時間と出力サイズを制限しますが、コマンドはあなたのマシン上であなたの権限で実行されます。[SECURITY](../../SECURITY.md) を参照。
 
 ## ドキュメント
 
-- **新規ユーザー** → [Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)
-- **インストール & バックエンド形状** → [MVP インストールガイド](docs/current/java-backend-mvp-install-guide.md)
-- **コントリビューター** → [CONTRIBUTING](CONTRIBUTING.md) · [ROADMAP](ROADMAP.md) · [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
-- **リリース & 測定** → [リリース運用](docs/current/release/README.md) · [バージョン別リリース文書](docs/releases/README.md) · [パッケージインデックス](docs/releases/package-index.md) · [Changelog](CHANGELOG.md)
+- **新規ユーザー** → [Start Here](../START-HERE.md) · [Quick Demo](../QUICK-DEMO.md) · [Measured Claims](../MEASURED-CLAIMS.md)
+- **インストール & バックエンド形状** → [MVP インストールガイド](java-backend-mvp-install-guide.md)
+- **コントリビューター** → [CONTRIBUTING](../../CONTRIBUTING.md) · [ROADMAP](../../ROADMAP.md) · [CODE_OF_CONDUCT](../../CODE_OF_CONDUCT.md)
+- **リリース & 測定** → [リリース運用](release/README.md) · [バージョン別リリース文書](../releases/README.md) · [パッケージインデックス](../releases/package-index.md) · [Changelog](../../CHANGELOG.md)
 
 ## コントリビュート
 
-コントリビュートを歓迎します — ネガティブな測定結果も含めて。PH は証拠が裏付けるものだけを主張し、主張を広げる PR はその測定を伴わなければなりません。[CONTRIBUTING.md](CONTRIBUTING.md) から読んでください。
+コントリビュートを歓迎します — ネガティブな測定結果も含めて。PH は証拠が裏付けるものだけを主張し、主張を広げる PR はその測定を伴わなければなりません。[CONTRIBUTING.md](../../CONTRIBUTING.md) から読んでください。
 
 ## ライセンス
 
-Apache-2.0。[LICENSE](LICENSE) を参照してください。
+Apache-2.0。[LICENSE](../../LICENSE) を参照してください。
