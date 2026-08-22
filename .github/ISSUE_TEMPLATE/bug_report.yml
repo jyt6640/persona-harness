@@ -7,9 +7,14 @@ body:
   - type: markdown
     attributes:
       value: |
-        Report the concrete behavior that failed. Persona Harness is evaluated by
-        commands, exit codes, and files on disk, so redact secrets and include
-        the smallest reproducible evidence.
+        This is a public issue form. Do not use this form to report a
+        vulnerability. Do not include credentials, tokens, private keys, exploit
+        details, or private code. Use the private reporting route in
+        https://github.com/jyt6640/persona-harness/blob/main/SECURITY.md.
+
+        For ordinary bugs, report the concrete behavior that failed. Persona
+        Harness is evaluated by commands, exit codes, and files on disk, so
+        redact secrets and include the smallest reproducible evidence.
   - type: input
     id: surface
     attributes:
