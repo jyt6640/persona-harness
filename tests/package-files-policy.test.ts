@@ -54,6 +54,29 @@ type SharedSkillCatalog = {
 const packageRoot = process.cwd()
 
 describe("package files policy", () => {
+  it("declares one npm landing README while keeping repository locale links usable", () => {
+    const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
+    const rootReadme = readFileSync(path.join(packageRoot, "README.md"), "utf8")
+    const declaredRootReadmes = packageJson.files.filter((filePath) => /^README(?:\.[a-z-]+)?\.md$/u.test(filePath))
+    const repositoryRootReadmes = readdirSync(packageRoot, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && /^README(?:\.[a-z-]+)?\.md$/u.test(entry.name))
+      .map((entry) => entry.name)
+      .sort()
+    const repositoryReadmes = extractMarkdownLinks(rootReadme)
+      .map((link) => link.href)
+      .filter((href) => /^https:\/\/github\.com\/jyt6640\/persona-harness\/blob\/main\/(?:README\.md|docs\/current\/README\.(?:ja|ko|zh-cn)\.md)$/u.test(href))
+      .sort()
+
+    expect(declaredRootReadmes).toEqual(["README.md"])
+    expect(repositoryRootReadmes).toEqual(["README.md"])
+    expect(repositoryReadmes).toEqual([
+      "https://github.com/jyt6640/persona-harness/blob/main/README.md",
+      "https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.ja.md",
+      "https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.ko.md",
+      "https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.zh-cn.md",
+    ])
+  })
+
   it("ships the Persona catalog and only its declared shared-skill contract", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const catalogPath = "packages/shared-skills/catalog.json"
@@ -528,6 +551,8 @@ describe("package files policy", () => {
       "scripts/consumer-authority-v0821-acceptance-schema.mjs",
       "scripts/consumer-authority-v0822-acceptance-schema.d.mts",
       "scripts/consumer-authority-v0822-acceptance-schema.mjs",
+      "scripts/consumer-authority-v0823-acceptance-schema.d.mts",
+      "scripts/consumer-authority-v0823-acceptance-schema.mjs",
       "scripts/consumer-authority-final-observer-v4-cleanliness.d.mts",
       "scripts/consumer-authority-final-observer-v4-cleanliness.mjs",
       "scripts/consumer-authority-observer-gh-tool.d.mts",
@@ -628,6 +653,7 @@ describe("package files policy", () => {
       "docs/current/release/consumer-authority-v0820-acceptance.json",
       "docs/current/release/consumer-authority-v0821-acceptance.json",
       "docs/current/release/consumer-authority-v0822-acceptance.json",
+      "docs/current/release/consumer-authority-v0823-acceptance.json",
     ]
 
     for (const filePath of [...packagedScripts, ...runtimePaths]) {
@@ -818,7 +844,7 @@ function readPackageJson(filePath: string): PackageJson {
   return parsed
 }
 
-function extractDirectRelativeMarkdownLinks(markdown: string): readonly MarkdownLink[] {
+function extractMarkdownLinks(markdown: string): readonly MarkdownLink[] {
   const links: MarkdownLink[] = []
   const linkPattern = /\[([^\]]+)\]\(([^)]+)\)/g
 
@@ -826,11 +852,14 @@ function extractDirectRelativeMarkdownLinks(markdown: string): readonly Markdown
     const label = match[1]
     const href = match[2]
     if (label === undefined || href === undefined) continue
-    if (href.startsWith("#") || href.includes("://")) continue
     links.push({ href, label })
   }
 
   return links
+}
+
+function extractDirectRelativeMarkdownLinks(markdown: string): readonly MarkdownLink[] {
+  return extractMarkdownLinks(markdown).filter((link) => !link.href.startsWith("#") && !link.href.includes("://"))
 }
 
 function isCoveredByPackageFiles(filePath: string, files: readonly string[]): boolean {

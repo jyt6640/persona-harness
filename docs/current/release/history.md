@@ -9,12 +9,18 @@ version/package chronology, use
 [`docs/releases/README.md`](../../releases/README.md) and
 [`docs/releases/package-index.md`](../../releases/package-index.md).
 
-## Current 0.8.22 Package Authority
+## Current 0.8.23 Package Authority
 
-The current unpublished package authority is 0.8.22. Its root package,
-lockfile, private shared-skills package, and v0822 acceptance record must agree
-exactly. The published 0.8.21 release is immutable historical evidence only
+The current unpublished package authority is 0.8.23. Its root package,
+lockfile, private shared-skills package, and v0823 acceptance record must agree
+exactly. The published 0.8.22 release is immutable historical evidence only
 and must not be retagged, rerun, or published.
+
+The package tarball contains exactly one root README candidate, `README.md`,
+so npm presents the current English first screen and 30-second demo
+deterministically. Korean, Japanese, and Simplified Chinese source documents
+remain under `docs/current/` and are linked from the English README through
+their GitHub source URLs.
 The package-visible read-only `ph authority verify` surface accepts canonical
 `sha256:<64hex>` or an exact raw SHA-256 hex digest, normalizing either form
 before the same no-follow archive boundary. It never fetches,

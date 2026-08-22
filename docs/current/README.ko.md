@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="img/Persona-Harness-Logo.png" alt="Persona Harness 로고" width="180">
+<img src="../../img/Persona-Harness-Logo.png" alt="Persona Harness 로고" width="180">
 
 # Persona Harness
 
@@ -11,11 +11,11 @@
 [![npm version](https://img.shields.io/npm/v/persona-harness?color=369eff&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
 [![npm downloads](https://img.shields.io/npm/dt/persona-harness?color=ff6b35&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
 [![node](https://img.shields.io/badge/node-%5E20.17.0%20%7C%7C%20%3E%3D22.9.0-c4f042?labelColor=black&style=flat-square)](https://nodejs.org)
-[![License](https://img.shields.io/badge/license-Apache--2.0-white?labelColor=black&style=flat-square)](./LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-white?labelColor=black&style=flat-square)](../../LICENSE)
 
-[English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
+[English](https://github.com/jyt6640/persona-harness/blob/main/README.md) | [한국어](https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.ko.md) | [日本語](https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.ja.md) | [简体中文](https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.zh-cn.md)
 
-**[Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)**
+**[Start Here](../START-HERE.md) · [Quick Demo](../QUICK-DEMO.md) · [Measured Claims](../MEASURED-CLAIMS.md)**
 
 </div>
 
@@ -24,7 +24,7 @@
 > AI 에이전트는 "다 됐습니다!"라고 말하기를 좋아합니다 — Persona Harness는 그것을 증명하게 만듭니다. 필요한 report, PH가 생성한 evidence, 실제 테스트 결과가 디스크에 존재하기 전까지 완료 주장을 차단하는 로컬 CLI 완료 게이트입니다.
 
 > [!IMPORTANT]
-> **Alpha, gate-first, 측정 기반.** 라이브 registry 채널, 태그, GitHub 릴리스와 audit lifecycle fact는 governed registry와 audit record에 유지됩니다. source 문서는 자신의 preparation boundary만 기록합니다. runtime injection은 **default-off / opt-in**입니다. [`docs/current/p3-integrity-roadmap.md`](docs/current/p3-integrity-roadmap.md), [`docs/MEASURED-CLAIMS.md`](docs/MEASURED-CLAIMS.md), [`injection-value-status.json`](docs/current/injection-value-status.json)을 참고하세요.
+> **Alpha, gate-first, 측정 기반.** 라이브 registry 채널, 태그, GitHub 릴리스와 audit lifecycle fact는 governed registry와 audit record에 유지됩니다. source 문서는 자신의 preparation boundary만 기록합니다. runtime injection은 **default-off / opt-in**입니다. [`docs/current/p3-integrity-roadmap.md`](p3-integrity-roadmap.md), [`docs/MEASURED-CLAIMS.md`](../MEASURED-CLAIMS.md), [`injection-value-status.json`](injection-value-status.json)을 참고하세요.
 
 ## 측정된 동작 (Measured Behavior)
 
@@ -34,7 +34,7 @@
 - **Green-only 완료**(TDD rail on) → 차단 **5/5** (off일 때는 허용 5/5).
 - **runtime injection**, 10쌍 OpenCode run → 성공률 동일(둘 다 10/10)이지만 PH ON이 10쌍 전부 비용 증가 → **default-off** 유지.
 
-제한된 로컬 fixture에서의 completion-integrity 측정입니다 — 토큰 절약/앱 품질/제품 효능 주장이 *아닙니다*. 전체 경계와 근거: **[docs/MEASURED-CLAIMS.md](docs/MEASURED-CLAIMS.md)**.
+제한된 로컬 fixture에서의 completion-integrity 측정입니다 — 토큰 절약/앱 품질/제품 효능 주장이 *아닙니다*. 전체 경계와 근거: **[docs/MEASURED-CLAIMS.md](../MEASURED-CLAIMS.md)**.
 
 ## 이게 뭔가요
 
@@ -46,7 +46,7 @@ AI 에이전트가 수행하는 Java/Spring 백엔드 작업을 위한 workflow 
 - 무엇을 읽고 실행하고 완료했는지 로컬 evidence로 기록
 - **필요한 report/evidence가 없으면 완료를 차단**
 
-코드 품질 보장, 토큰 절약 제품, broad linter, generated app이 production-ready라는 증명이 **아닙니다**. 완료 게이트보다 넓은 모든 주장은 먼저 측정으로 획득해야 합니다 — [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md) 참고.
+코드 품질 보장, 토큰 절약 제품, broad linter, generated app이 production-ready라는 증명이 **아닙니다**. 완료 게이트보다 넓은 모든 주장은 먼저 측정으로 획득해야 합니다 — [MEASURED-CLAIMS](../MEASURED-CLAIMS.md) 참고.
 
 ## 설치
 
@@ -96,7 +96,7 @@ verification을 켜되 `runtimeInjection`, `systemConstitution`,
 > [!NOTE]
 > `workflow finish`가 실패하면 에이전트는 완료를 주장하기 전에 보고된 blocker를 고쳐야 합니다. **그 실패는 버그가 아니라 제품이 작동하는 것입니다.**
 
-샘플 Todo API와 아이디어-우선 흐름을 포함한 전체 안내: **[Quick Demo](docs/QUICK-DEMO.md)**.
+샘플 Todo API와 아이디어-우선 흐름을 포함한 전체 안내: **[Quick Demo](../QUICK-DEMO.md)**.
 
 ## TDD Rail (opt-in)
 
@@ -142,22 +142,22 @@ preview wrapper는 외부 도구가 없으면 성공을 위조하지 않고 **un
 
 ## 경계와 안전
 
-Evidence는 하나의 질문에만 답합니다 — *"에이전트가 기대된 rail을 보고 따랐는가?"* — 그 이상은 아닙니다. PH는 앱 품질 인증, 토큰 절약, Clean Code 보장, broad AST/linter 강제, full TDD 프레임워크, closure 보장, OpenCode 없는 완전한 workflow를 **약속하지 않습니다**. 정본 목록은 [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md)에 있습니다.
+Evidence는 하나의 질문에만 답합니다 — *"에이전트가 기대된 rail을 보고 따랐는가?"* — 그 이상은 아닙니다. PH는 앱 품질 인증, 토큰 절약, Clean Code 보장, broad AST/linter 강제, full TDD 프레임워크, closure 보장, OpenCode 없는 완전한 workflow를 **약속하지 않습니다**. 정본 목록은 [MEASURED-CLAIMS](../MEASURED-CLAIMS.md)에 있습니다.
 
 > [!WARNING]
-> `ph bearshell`은 **샌드박스가 아닙니다**. 실행 시간과 출력 크기를 제한하지만, 명령은 여전히 당신의 머신에서 당신의 권한으로 실행됩니다. [SECURITY](SECURITY.md) 참고.
+> `ph bearshell`은 **샌드박스가 아닙니다**. 실행 시간과 출력 크기를 제한하지만, 명령은 여전히 당신의 머신에서 당신의 권한으로 실행됩니다. [SECURITY](../../SECURITY.md) 참고.
 
 ## 문서
 
-- **새 사용자** → [Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)
-- **설치 & 백엔드 형태** → [MVP 설치 가이드](docs/current/java-backend-mvp-install-guide.md)
-- **기여자** → [CONTRIBUTING](CONTRIBUTING.md) · [ROADMAP](ROADMAP.md) · [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
-- **릴리스 & 측정** → [릴리스 운영](docs/current/release/README.md) · [버전별 릴리스 문서](docs/releases/README.md) · [패키지 인덱스](docs/releases/package-index.md) · [Changelog](CHANGELOG.md)
+- **새 사용자** → [Start Here](../START-HERE.md) · [Quick Demo](../QUICK-DEMO.md) · [Measured Claims](../MEASURED-CLAIMS.md)
+- **설치 & 백엔드 형태** → [MVP 설치 가이드](java-backend-mvp-install-guide.md)
+- **기여자** → [CONTRIBUTING](../../CONTRIBUTING.md) · [ROADMAP](../../ROADMAP.md) · [CODE_OF_CONDUCT](../../CODE_OF_CONDUCT.md)
+- **릴리스 & 측정** → [릴리스 운영](release/README.md) · [버전별 릴리스 문서](../releases/README.md) · [패키지 인덱스](../releases/package-index.md) · [Changelog](../../CHANGELOG.md)
 
 ## 기여
 
-기여를 환영합니다 — 부정적 측정 결과도 포함해서요. PH는 증거가 뒷받침하는 것만 주장하며, 주장을 넓히는 PR은 그 측정을 함께 가져와야 합니다. [CONTRIBUTING.md](CONTRIBUTING.md)부터 읽어주세요.
+기여를 환영합니다 — 부정적 측정 결과도 포함해서요. PH는 증거가 뒷받침하는 것만 주장하며, 주장을 넓히는 PR은 그 측정을 함께 가져와야 합니다. [CONTRIBUTING.md](../../CONTRIBUTING.md)부터 읽어주세요.
 
 ## 라이선스
 
-Apache-2.0. [LICENSE](LICENSE)를 보세요.
+Apache-2.0. [LICENSE](../../LICENSE)를 보세요.

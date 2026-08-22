@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="img/Persona-Harness-Logo.png" alt="Persona Harness 标志" width="180">
+<img src="../../img/Persona-Harness-Logo.png" alt="Persona Harness 标志" width="180">
 
 # Persona Harness
 
@@ -11,11 +11,11 @@
 [![npm version](https://img.shields.io/npm/v/persona-harness?color=369eff&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
 [![npm downloads](https://img.shields.io/npm/dt/persona-harness?color=ff6b35&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
 [![node](https://img.shields.io/badge/node-%5E20.17.0%20%7C%7C%20%3E%3D22.9.0-c4f042?labelColor=black&style=flat-square)](https://nodejs.org)
-[![License](https://img.shields.io/badge/license-Apache--2.0-white?labelColor=black&style=flat-square)](./LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-white?labelColor=black&style=flat-square)](../../LICENSE)
 
-[English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-cn.md)
+[English](https://github.com/jyt6640/persona-harness/blob/main/README.md) | [한국어](https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.ko.md) | [日本語](https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.ja.md) | [简体中文](https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.zh-cn.md)
 
-**[Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)**
+**[Start Here](../START-HERE.md) · [Quick Demo](../QUICK-DEMO.md) · [Measured Claims](../MEASURED-CLAIMS.md)**
 
 </div>
 
@@ -24,7 +24,7 @@
 > AI 智能体总喜欢说"完成了！"—— Persona Harness 让它们拿出证明。这是一个本地 CLI 完成门禁：在所需 report、由 PH 生成的 evidence、真实测试结果落盘之前，阻止任何完成声明。
 
 > [!IMPORTANT]
-> **Alpha，gate-first，基于测量。** 实时 registry 渠道、标签、GitHub 发布和 audit lifecycle 事实保存在 governed registry 与 audit record 中；source documentation 只记录自己的 preparation boundary。runtime injection 保持 **default-off / opt-in**。见 [`docs/current/p3-integrity-roadmap.md`](docs/current/p3-integrity-roadmap.md)、[`docs/MEASURED-CLAIMS.md`](docs/MEASURED-CLAIMS.md) 和 [`injection-value-status.json`](docs/current/injection-value-status.json)。
+> **Alpha，gate-first，基于测量。** 实时 registry 渠道、标签、GitHub 发布和 audit lifecycle 事实保存在 governed registry 与 audit record 中；source documentation 只记录自己的 preparation boundary。runtime injection 保持 **default-off / opt-in**。见 [`docs/current/p3-integrity-roadmap.md`](p3-integrity-roadmap.md)、[`docs/MEASURED-CLAIMS.md`](../MEASURED-CLAIMS.md) 和 [`injection-value-status.json`](injection-value-status.json)。
 
 ## 已测量的行为 (Measured Behavior)
 
@@ -34,7 +34,7 @@
 - **Green-only 完成**（TDD rail 开启）→ 拦截 **5/5**（关闭时放行 5/5）。
 - **runtime injection**，10 组配对 OpenCode run → 成功率相同（都 10/10），但 PH ON 在全部 10 组都增加成本 → 保持 **default-off**。
 
-这些是在受限本地 fixture 上的 completion-integrity 测量 —— *不是* token 节省、应用质量或产品效能的主张。完整边界与依据：**[docs/MEASURED-CLAIMS.md](docs/MEASURED-CLAIMS.md)**。
+这些是在受限本地 fixture 上的 completion-integrity 测量 —— *不是* token 节省、应用质量或产品效能的主张。完整边界与依据：**[docs/MEASURED-CLAIMS.md](../MEASURED-CLAIMS.md)**。
 
 ## 这是什么
 
@@ -46,7 +46,7 @@
 - 以本地 evidence 记录读取、执行、完成了什么
 - **缺少必需的 report/evidence 时阻止完成**
 
-它**不是**代码质量保证、token 节省产品、broad linter，也不是生成应用达到 production-ready 的证明。任何比完成门禁更宽的主张都必须先通过测量获得 —— 见 [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md)。
+它**不是**代码质量保证、token 节省产品、broad linter，也不是生成应用达到 production-ready 的证明。任何比完成门禁更宽的主张都必须先通过测量获得 —— 见 [MEASURED-CLAIMS](../MEASURED-CLAIMS.md)。
 
 ## 安装
 
@@ -95,7 +95,7 @@ Ralph loop 为关闭状态。
 > [!NOTE]
 > 如果 `workflow finish` 失败，智能体必须先修复报告的 blocker，才能声明完成。**这个失败不是 bug，而是产品在正常工作。**
 
-包含示例 Todo API 和想法优先流程的完整指南：**[Quick Demo](docs/QUICK-DEMO.md)**。
+包含示例 Todo API 和想法优先流程的完整指南：**[Quick Demo](../QUICK-DEMO.md)**。
 
 ## TDD Rail（opt-in）
 
@@ -141,22 +141,22 @@ preview wrapper 在外部工具缺失时报告 **unavailable** 状态，而不�
 
 ## 边界与安全
 
-Evidence 只回答一个问题 —— *"智能体是否看到并遵循了预期的 rail？"* —— 仅此而已。PH **不**承诺应用质量认证、token 节省、Clean Code 保证、broad AST/linter 强制、full TDD 框架、closure 保证，或没有 OpenCode 的完整 workflow。规范列表见 [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md)。
+Evidence 只回答一个问题 —— *"智能体是否看到并遵循了预期的 rail？"* —— 仅此而已。PH **不**承诺应用质量认证、token 节省、Clean Code 保证、broad AST/linter 强制、full TDD 框架、closure 保证，或没有 OpenCode 的完整 workflow。规范列表见 [MEASURED-CLAIMS](../MEASURED-CLAIMS.md)。
 
 > [!WARNING]
-> `ph bearshell` **不是沙箱**。它限制运行时间和输出大小，但命令仍以你的权限在你的机器上执行。见 [SECURITY](SECURITY.md)。
+> `ph bearshell` **不是沙箱**。它限制运行时间和输出大小，但命令仍以你的权限在你的机器上执行。见 [SECURITY](../../SECURITY.md)。
 
 ## 文档
 
-- **新用户** → [Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)
-- **安装 & 后端形态** → [MVP 安装指南](docs/current/java-backend-mvp-install-guide.md)
-- **贡献者** → [CONTRIBUTING](CONTRIBUTING.md) · [ROADMAP](ROADMAP.md) · [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
-- **发布 & 测量** → [发布运营](docs/current/release/README.md) · [版本化发布文档](docs/releases/README.md) · [包索引](docs/releases/package-index.md) · [Changelog](CHANGELOG.md)
+- **新用户** → [Start Here](../START-HERE.md) · [Quick Demo](../QUICK-DEMO.md) · [Measured Claims](../MEASURED-CLAIMS.md)
+- **安装 & 后端形态** → [MVP 安装指南](java-backend-mvp-install-guide.md)
+- **贡献者** → [CONTRIBUTING](../../CONTRIBUTING.md) · [ROADMAP](../../ROADMAP.md) · [CODE_OF_CONDUCT](../../CODE_OF_CONDUCT.md)
+- **发布 & 测量** → [发布运营](release/README.md) · [版本化发布文档](../releases/README.md) · [包索引](../releases/package-index.md) · [Changelog](../../CHANGELOG.md)
 
 ## 贡献
 
-欢迎贡献 —— 包括负面的测量结果。PH 只主张有证据支撑的东西，扩大主张的 PR 必须附带相应的测量。请从 [CONTRIBUTING.md](CONTRIBUTING.md) 开始。
+欢迎贡献 —— 包括负面的测量结果。PH 只主张有证据支撑的东西，扩大主张的 PR 必须附带相应的测量。请从 [CONTRIBUTING.md](../../CONTRIBUTING.md) 开始。
 
 ## 许可证
 
-Apache-2.0。见 [LICENSE](LICENSE)。
+Apache-2.0。见 [LICENSE](../../LICENSE)。
