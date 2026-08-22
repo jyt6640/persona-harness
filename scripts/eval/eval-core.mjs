@@ -420,14 +420,15 @@ export function runShell(command, cwd, timeoutMs) {
 }
 
 export function runShellAsync(command, cwd, timeoutMs, options = {}) {
-  const cleanupProcessGroup = options.cleanupProcessGroup === true && process.platform !== "win32"
+  const cleanupProcessTree = options.cleanupProcessGroup === true
+  const detachedProcessGroup = cleanupProcessTree && process.platform !== "win32"
   return new Promise((resolvePromise) => {
     const startedMs = Date.now()
     const child = spawn(command, {
       cwd,
       shell: true,
       stdio: ["ignore", "pipe", "pipe"],
-      detached: cleanupProcessGroup,
+      detached: detachedProcessGroup,
     })
     let stdout = ""
     let stderr = ""
@@ -435,7 +436,7 @@ export function runShellAsync(command, cwd, timeoutMs, options = {}) {
     let timedOut = false
     const timer = setTimeout(() => {
       timedOut = true
-      terminateChildProcess(child, cleanupProcessGroup, "SIGTERM")
+      terminateChildProcess(child, cleanupProcessTree, detachedProcessGroup, "SIGTERM")
     }, timeoutMs)
     child.stdout.setEncoding("utf8")
     child.stderr.setEncoding("utf8")
@@ -451,8 +452,8 @@ export function runShellAsync(command, cwd, timeoutMs, options = {}) {
     child.on("close", (status, signal) => {
       clearTimeout(timer)
       const endedMs = Date.now()
-      if (cleanupProcessGroup) {
-        terminateChildProcess(child, cleanupProcessGroup, "SIGTERM")
+      if (cleanupProcessTree) {
+        terminateChildProcess(child, cleanupProcessTree, detachedProcessGroup, "SIGTERM")
       }
       resolvePromise({
         command,
@@ -469,9 +470,16 @@ export function runShellAsync(command, cwd, timeoutMs, options = {}) {
   })
 }
 
-function terminateChildProcess(child, cleanupProcessGroup, signal) {
+function terminateChildProcess(child, cleanupProcessTree, detachedProcessGroup, signal) {
   try {
-    if (cleanupProcessGroup) {
+    if (cleanupProcessTree && process.platform === "win32" && child.pid) {
+      const result = spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
+        stdio: "ignore",
+        windowsHide: true,
+      })
+      if (!result.error && result.status === 0) return
+    }
+    if (detachedProcessGroup) {
       process.kill(-child.pid, signal)
       return
     }

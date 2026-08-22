@@ -646,6 +646,36 @@ describe("ON/OFF eval runner core", () => {
     }
   })
 
+  it.runIf(process.platform === "win32")("terminates timed-out Windows shell process trees", async () => {
+    const projectDir = tempDir("persona-eval-windows-timeout-")
+    const descendantPidPath = join(projectDir, "descendant.pid")
+    const descendantScript = [
+      "const { writeFileSync } = require('node:fs')",
+      `writeFileSync(${JSON.stringify(descendantPidPath)}, String(process.pid))`,
+      "setInterval(() => {}, 1000)",
+    ].join("; ")
+    const launcherScript = [
+      "const { spawn } = require('node:child_process')",
+      `spawn(process.execPath, ['-e', ${JSON.stringify(descendantScript)}], { stdio: 'inherit' })`,
+      "setInterval(() => {}, 1000)",
+    ].join("; ")
+
+    const execution = await runShellAsync(
+      `${process.execPath} -e ${JSON.stringify(launcherScript)}`,
+      projectDir,
+      1_000,
+      { cleanupProcessGroup: true },
+    )
+
+    expect(execution).toEqual(expect.objectContaining({ timedOut: true }))
+    expect(execution.elapsedMs).toBeLessThan(5_000)
+    expect(existsSync(descendantPidPath)).toBe(true)
+    const descendantPid = Number.parseInt(readFileSync(descendantPidPath, "utf8"), 10)
+    expect(Number.isInteger(descendantPid)).toBe(true)
+    await new Promise<void>((resolvePromise) => setTimeout(resolvePromise, 100))
+    expect(isProcessAlive(descendantPid)).toBe(false)
+  }, 10_000)
+
   it("cleans up timed-out opencode process groups before grading", () => {
     const outputRoot = tempDir("persona-eval-opencode-cleanup-")
     const pidFile = join(outputRoot, "provider-child.pid")
