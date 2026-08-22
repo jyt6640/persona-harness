@@ -12,18 +12,26 @@ function readRepositoryFile(path: string) {
 }
 
 describe("public release truth", () => {
-  it("separates the current source authority from the published 0.8.24 stable record", () => {
-    const releaseNotes = readRepositoryFile("docs/current/release/v0.8.25-release-notes.md")
+  it("keeps live release lookup out of package-visible current documents", () => {
+    const releaseNotes = readRepositoryFile("docs/current/release/v0.8.26-release-notes.md")
+    const releaseOperations = readRepositoryFile("docs/current/release/README.md")
     const releaseHistory = readRepositoryFile("docs/current/release/history.md")
     const changelog = readRepositoryFile("CHANGELOG.md")
     const packageIndex = readRepositoryFile("docs/releases/package-index.md")
+    const releaseDocs = readRepositoryFile("docs/releases/README.md")
 
-    expect(releaseNotes).not.toMatch(/\\bunpublished\\b/i)
-    expect(releaseNotes).not.toMatch(/\\bsource candidate\\b/i)
-    expect(releaseHistory).toContain("| npm `latest` | `0.8.24` |")
-    expect(releaseHistory).toContain("| GitHub latest release | `v0.8.24` |")
-    expect(changelog).toMatch(/^## \[0\.8\.24\] - 2026-08-22$/m)
-    expect(packageIndex).toContain("| `0.8.24` | 2026-08-22 | published stable `latest`")
+    expect(releaseNotes).not.toMatch(/\bunpublished\b/i)
+    expect(releaseNotes).not.toMatch(/\bsource candidate\b/i)
+    for (const document of [releaseOperations, releaseHistory, packageIndex]) {
+      expect(document).toContain("https://www.npmjs.com/package/persona-harness?activeTab=versions")
+      expect(document).toContain("https://github.com/jyt6640/persona-harness/releases")
+    }
+    expect(releaseOperations).not.toMatch(/\| npm `latest` \| `\d/)
+    expect(releaseHistory).not.toMatch(/\| npm `latest` \| `\d/)
+    expect(packageIndex.split("## Reading Rules", 1)[0]).not.toMatch(/npm `latest`: `\d/)
+    expect(changelog).toMatch(/^## \[0\.8\.25\] - 2026-08-22$/m)
+    expect(packageIndex).toContain("| `0.8.25` | 2026-08-22 | published stable release")
+    expect(releaseDocs).toContain("live lookup links")
   })
 
   it("keeps the historical stable release notes renderable as a final GitHub Release body", () => {

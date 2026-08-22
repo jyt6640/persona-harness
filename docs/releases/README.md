@@ -8,12 +8,10 @@ state or release authorization.
 
 - [Package/version index](package-index.md) is the chronological version map.
 - [Release operations](../current/release/README.md) is the current operator
-  entrypoint, including the recorded channel snapshot and immutable-tag policy.
-- [`v0.8.24` release notes](../current/release/v0.8.24-release-notes.md)
-  record the latest published stable release facts.
-- [`v0.8.25` release notes](../current/release/v0.8.25-release-notes.md)
-  are the current source release input; they do not replace the published
-  `0.8.24` record before a later governed release completes.
+  entrypoint, including live lookup links and immutable-tag policy.
+- Versioned release notes record each release's own immutable facts. They do
+  not establish the current npm dist-tag or GitHub Release after later
+  publication.
 - Historical prerelease channels remain in the
   [package/version index](package-index.md).
 

@@ -9,23 +9,20 @@ version/package chronology, use
 [`docs/releases/README.md`](../../releases/README.md) and
 [`docs/releases/package-index.md`](../../releases/package-index.md).
 
-## Current Source Authority And Published Release State
+## Current Source Authority And Live Release Lookup
 
-The current source package authority is 0.8.25. Its root package, lockfile,
-private shared-skills package, and v0825 acceptance record must agree exactly.
-Published 0.8.24 is immutable historical evidence and cannot authorize a later
+The current source package authority is 0.8.26. Its root package, lockfile,
+private shared-skills package, and v0826 acceptance record must agree exactly.
+Published 0.8.25 is immutable historical evidence and cannot authorize a later
 package, tag, release, or npm publication.
 
-At the recorded 2026-08-22 release state:
-
-| Channel or record | Value | Source |
-| --- | --- | --- |
-| npm `latest` | `0.8.24` | [`v0.8.24` release notes](v0.8.24-release-notes.md) |
-| GitHub latest release | `v0.8.24` | [GitHub releases](https://github.com/jyt6640/persona-harness/releases) |
-
-Those are recorded published facts, not a standing authorization to publish a
-later source package. Read live registry and protected workflow state again
-before a new release decision.
+For the current live npm dist-tags, read
+[the npm version page](https://www.npmjs.com/package/persona-harness?activeTab=versions).
+For the current GitHub release, read
+[GitHub Releases](https://github.com/jyt6640/persona-harness/releases). This
+history preserves immutable version evidence; it does not embed a live channel
+snapshot. Read the live registry and protected workflow state again before a
+new release decision.
 
 The package keeps one root README candidate, `README.md`, for a deterministic
 English npm landing page. Its source checkout also has an exact packed-package

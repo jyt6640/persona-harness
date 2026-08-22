@@ -16,19 +16,20 @@ find the record; it is not a ledger of every historical release decision.
 - [Release operations history](history.md) retains old readiness decisions,
   beta evidence, and the full release-note index without making them current.
 
-## Recorded Release State
+## Live Release State
 
-At the recorded 2026-08-22 release state:
+The package version in this checkout is a source input. npm dist-tags and
+GitHub Releases can change only later in the governed lifecycle, so
+package-visible current docs do not freeze a live channel snapshot.
 
-| Channel or record | Value | Source |
-| --- | --- | --- |
-| npm `latest` | `0.8.24` | [`v0.8.24` release notes](v0.8.24-release-notes.md) |
-| GitHub latest release | `v0.8.24` | [GitHub releases](https://github.com/jyt6640/persona-harness/releases) |
-| Historical prerelease channels | recorded separately | [Package/version index](../../releases/package-index.md) |
+- Read [live npm versions and dist-tags](https://www.npmjs.com/package/persona-harness?activeTab=versions).
+- Read [live GitHub Releases](https://github.com/jyt6640/persona-harness/releases).
+- Read immutable historical version facts in the
+  [package/version index](../../releases/package-index.md).
 
-These are recorded facts, not a standing authorization to publish, promote a
-channel, consume Finish authority, or create a release. Before a release
-decision, read the live registry and the protected workflow state again.
+Those sources are not a standing authorization to publish, promote a channel,
+consume Finish authority, or create a release. Before a release decision, read
+the live registry and the protected workflow state again.
 
 ## Current Workflow Lifecycle Boundary
 

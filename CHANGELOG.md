@@ -8,6 +8,9 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+- Replace static live-release snapshots in package-visible current documents
+  with npm and GitHub lookup links, so a newly published package cannot become
+  stale at the instant its governed publish completes.
 - Add a release-truth contract: stable GitHub Release generation rejects
   source-candidate language, distinguishes the GitHub Release from the later
   npm/provenance completion step, and keeps public maintainer command scopes
@@ -15,6 +18,12 @@ preparation alone does not establish stable support or channel state.
 - Keep process-only evaluation cleanup in the normal CI lane while reserving
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
+
+## [0.8.25] - 2026-08-22
+
+- Publish the release-truth contract through protected integration, immutable
+  tag, stable GitHub Release, npm `latest`, canonical tar reconciliation, and
+  provenance readback.
 
 ## [0.8.24] - 2026-08-22
 
