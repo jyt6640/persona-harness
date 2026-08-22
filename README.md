@@ -149,7 +149,7 @@ address hostile same-user filesystem path replacement.
 > [!IMPORTANT]
 > `workflow finish` cannot reach a trusted PASS from a purely local checkout. Clearing every content gate still leaves `trusted-authority-required`, because only a verified external attestation from an enrolled repository grants finish authority. Enrol one with `npx ph authority`, and run `npx ph doctor` to see the current `Finish authority` and `Consumer authority` state before you rely on the gate.
 
-Three-beat setup, gate, and goal-entry walkthrough: **[Quick Demo](docs/QUICK-DEMO.md)**.
+Three-beat setup, gate, and goal-entry walkthrough: **[Quick Demo](docs/QUICK-DEMO.md)**. Repository maintainers and reviewers can run the separate exact-package Gradle/JUnit contract: **[Full cooperative verification demo](docs/QUICK-DEMO.md#full-cooperative-verification-demo)**.
 
 ## TDD Rail (opt-in)
 

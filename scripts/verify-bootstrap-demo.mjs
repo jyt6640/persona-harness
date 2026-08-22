@@ -84,6 +84,7 @@ try {
   const installedPackageDir = join(demoProjectDir, "node_modules", "persona-harness")
   const binPath = join(demoProjectDir, "node_modules", ".bin", "persona-harness")
   run(binPath, ["init"], { cwd: demoProjectDir })
+  run(binPath, ["bootstrap", "backend", "--runtime-injection-preview", "--no-developer-mcp"], { cwd: demoProjectDir })
 
   if (existsSync(join(demoProjectDir, ".persona", "evidence"))) {
     throw new Error("Init created evidence before any hook ran")
@@ -91,12 +92,12 @@ try {
 
   const installedEntry = join(installedPackageDir, "dist", "index.js")
   const pluginModule = await import(pathToFileURL(installedEntry).href)
-  const plugin = pluginModule.default
-  if (plugin?.id !== "persona-harness" || typeof plugin.server !== "function") {
-    throw new Error("Installed package default export is not the persona-harness OpenCode plugin module")
+  const plugin = pluginModule.PersonaHarnessPlugin
+  if (typeof plugin !== "function") {
+    throw new Error("Installed package does not expose the PersonaHarnessPlugin host entrypoint")
   }
 
-  const hooks = await plugin.server({ directory: demoProjectDir })
+  const hooks = await plugin({ directory: demoProjectDir })
   const toolAfterHook = hooks["tool.execute.after"]
   const messagesTransformHook = hooks["experimental.chat.messages.transform"]
   if (typeof toolAfterHook !== "function" || typeof messagesTransformHook !== "function") {
@@ -115,7 +116,7 @@ try {
     toolOutput,
   )
   assertIncludes("tool output", toolOutput.output, "[Persona Harness Injection]")
-  assertIncludes("tool output", toolOutput.output, "파일 역할: project-bootstrap")
+  assertIncludes("tool output", toolOutput.output, "File role: project-bootstrap")
   assertIncludes("tool output", toolOutput.output, "backend/java-backend-bootstrap.md")
 
   const messagesOutput = {

@@ -302,9 +302,18 @@ npm run demo:java-mvp
 
 `npm run demo:init`은 package artifact를 임시 clean project에 설치하고 `persona-harness init`을 실행해 `.persona/rules`, `.persona/harness.jsonc`, `.opencode/opencode.json`이 안전하게 만들어지는지 확인한다. 이때 `.persona/evidence`가 생기면 실패한다.
 
-`npm run demo:bootstrap`은 init 이후 `README.md` target으로 설치된 plugin hook을 직접 호출해 `project-bootstrap` injection과 runtime evidence 생성을 확인한다.
+`npm run demo:bootstrap`은 init 이후 `README.md` target으로 설치된 named `PersonaHarnessPlugin` hook을 직접 호출해 `project-bootstrap` injection과 runtime evidence 생성을 확인한다. disposable fixture에서만 `ph bootstrap backend --runtime-injection-preview --no-developer-mcp`를 명시적으로 적용하며, 기본 `runtimeInjection`은 그대로 off다.
 
-`npm run demo:java-mvp`는 package artifact가 실제 설치 환경에서도 plugin hook, injection, model input transform, evidence 생성 경로를 재현하는지 확인한다. 내부적으로 빌드, `npm pack`, 임시 프로젝트 설치, `persona-harness init`, 설치된 `dist/index.js` OpenCode plugin hook 실행, Java Controller injection, model input transform, `.persona/evidence/phase0` evidence 생성을 검증한다.
+`npm run demo:java-mvp`는 package artifact가 실제 설치 환경에서도 plugin hook, injection, model input transform, evidence 생성 경로를 재현하는지 확인한다. 내부적으로 빌드, `npm pack`, 임시 프로젝트 설치, `persona-harness init`, 설치된 `dist/index.js` OpenCode plugin hook 실행, Java Controller injection, model input transform, `.persona/evidence/phase0` evidence 생성을 검증한다. 이 preview opt-in도 disposable fixture 안에 한정된다.
+
+실제 Gradle/JUnit과 workflow Finish의 BLOCK-to-PASS 경계는 repository maintainer/reviewer용 별도 명령이다. Node 20.19+, JDK 21, Gradle 9.4.0 환경에서 실행한다.
+
+```bash
+npm ci
+node scripts/verify-cooperative-finish-demo.mjs
+```
+
+이 명령은 exact packed package를 Java/Spring fixture에 설치하고 `workflow-state-uninitialized` BLOCK을 먼저 확인한 뒤, 실제 Gradle/JUnit evidence와 `--assurance cooperative`의 local `Finish status: PASS`를 검증한다. required repository CI도 같은 명령을 실행하며 trusted external authority나 생성된 application quality는 주장하지 않는다.
 
 ### B. Clean Java/Spring Project Local Install
 
@@ -559,6 +568,7 @@ npm run build
 npm run demo:init
 npm run demo:bootstrap
 npm run demo:java-mvp
+node scripts/verify-cooperative-finish-demo.mjs
 npm test
 npm run typecheck
 npm run build
@@ -588,7 +598,15 @@ npm run demo:bootstrap
 npm run demo:java-mvp
 ```
 
-이 명령들은 현재 저장소를 빌드한 뒤 `npm pack`으로 tarball을 만들고, 임시 프로젝트에 `persona-harness` 패키지를 설치한다. `demo:init`은 `persona-harness init` 표면을 검증하고, `demo:bootstrap`은 README bootstrap hook surface를 검증하며, `demo:java-mvp`는 Java Controller target에 대한 Phase 0 hook을 직접 호출한다.
+이 명령들은 현재 저장소를 빌드한 뒤 `npm pack`으로 tarball을 만들고, 임시 프로젝트에 `persona-harness` 패키지를 설치한다. `demo:init`은 `persona-harness init` 표면을 검증하고, `demo:bootstrap`은 disposable preview opt-in으로 README bootstrap hook surface를 검증하며, `demo:java-mvp`는 같은 disposable preview opt-in으로 Java Controller target에 대한 Phase 0 hook을 직접 호출한다.
+
+Node 20.19+, JDK 21, Gradle 9.4.0이 있는 repository maintainer/reviewer는 다음 full contract도 실행할 수 있다.
+
+```bash
+node scripts/verify-cooperative-finish-demo.mjs
+```
+
+이 명령은 initial `workflow-state-uninitialized` BLOCK, exact packed package, 실제 Gradle/JUnit evidence, `--assurance cooperative` local PASS를 검증한다. trusted external authority나 application quality를 증명하지 않으며 required repository CI가 동일 명령을 실행한다.
 
 검증하는 것:
 
