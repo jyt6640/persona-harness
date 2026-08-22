@@ -217,6 +217,7 @@ export function runShellAsync(
   elapsedMs: number
 }>
 export function formatCommand(template: string, values: Record<string, unknown>): string
+export function quoteShell(value: string): string
 export function parseJUnitXmlText(xmlText: string): { tests: number; failures: number; errors: number; skipped: number }
 export function collectJUnitResults(workspaceDir: string): Record<string, unknown>
 export function detectGeneratedToolchain(workspaceDir: string): GeneratedToolchain

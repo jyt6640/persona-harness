@@ -22,6 +22,7 @@ import {
   parseArgs,
   parseBackendShapeWarnCount,
   parseCommandOutcome,
+  quoteShell,
   formatCommand,
   parseJUnitXmlText,
   preflight,
@@ -645,6 +646,61 @@ describe("ON/OFF eval runner core", () => {
       }
     }
   })
+
+  it.runIf(process.platform === "win32")("terminates timed-out Windows shell process trees", async () => {
+    const projectDir = tempDir("persona-eval-windows-timeout-")
+    const descendantPidPath = join(projectDir, "descendant.pid")
+    const launcherPidPath = join(projectDir, "launcher.pid")
+    const descendantScriptPath = join(projectDir, "descendant.cjs")
+    const launcherScriptPath = join(projectDir, "launcher.cjs")
+    writeFileSync(descendantScriptPath, [
+      "const { writeFileSync } = require('node:fs')",
+      "writeFileSync(process.argv[2], String(process.pid))",
+      "setInterval(() => {}, 1000)",
+    ].join("\n"))
+    writeFileSync(launcherScriptPath, [
+      "const { writeFileSync } = require('node:fs')",
+      "const { spawn } = require('node:child_process')",
+      "writeFileSync(process.argv[4], String(process.pid))",
+      "spawn(process.execPath, [process.argv[2], process.argv[3]], { stdio: 'inherit' })",
+      "setInterval(() => {}, 1000)",
+    ].join("\n"))
+
+    try {
+      const execution = await Promise.race([
+        runShellAsync(
+          [
+            quoteShell(process.execPath),
+            quoteShell(launcherScriptPath),
+            quoteShell(descendantScriptPath),
+            quoteShell(descendantPidPath),
+            quoteShell(launcherPidPath),
+          ].join(" "),
+          projectDir,
+          1_000,
+          { cleanupProcessGroup: true },
+        ),
+        new Promise<null>((resolvePromise) => setTimeout(() => resolvePromise(null), 4_000)),
+      ])
+
+      expect(execution).not.toBeNull()
+      if (execution === null) return
+      expect(execution).toEqual(expect.objectContaining({ timedOut: true }))
+      expect(execution.elapsedMs).toBeLessThan(5_000)
+      expect(existsSync(descendantPidPath)).toBe(true)
+      const descendantPid = Number.parseInt(readFileSync(descendantPidPath, "utf8"), 10)
+      expect(Number.isInteger(descendantPid)).toBe(true)
+      await new Promise<void>((resolvePromise) => setTimeout(resolvePromise, 100))
+      expect(isProcessAlive(descendantPid)).toBe(false)
+    } finally {
+      for (const pidPath of [launcherPidPath, descendantPidPath]) {
+        if (!existsSync(pidPath)) continue
+        const pid = Number.parseInt(readFileSync(pidPath, "utf8"), 10)
+        if (!Number.isInteger(pid) || !isProcessAlive(pid)) continue
+        spawnSync("taskkill", ["/PID", String(pid), "/T", "/F"], { stdio: "ignore", windowsHide: true })
+      }
+    }
+  }, 10_000)
 
   it("cleans up timed-out opencode process groups before grading", () => {
     const outputRoot = tempDir("persona-eval-opencode-cleanup-")
