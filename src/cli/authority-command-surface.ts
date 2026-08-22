@@ -59,7 +59,7 @@ export function authorityUsage(invocationName = "ph"): string {
     "    --source-head <sha> --artifact-digest <sha256> [--json]",
     "                                         Fetch one explicit original artifact without consuming it.",
     "  verify [owner/repository] --archive <path> --artifact-id <id> --run-id <id>",
-    "    --source-head <sha> --artifact-digest <sha256> [--json]",
+    "    --source-head <sha> --artifact-digest <sha256:<digest>|64hex> [--json]",
     "                                         Verify one supplied original archive without storing or consuming authority.",
   ].join("\n")
 }
@@ -157,7 +157,7 @@ export function parseVerifyArgs(args: readonly string[]): AuthorityVerifyArgs | 
     }
   }
   if (artifactPath === undefined) return undefined
-  const tuple = parseArtifactTuple(artifactId, artifactDigest, runId, sourceHead)
+  const tuple = parseArtifactTuple(artifactId, normalizeVerifyArtifactDigest(artifactDigest), runId, sourceHead)
   return tuple === undefined
     ? { artifactPath, json, repositorySlug }
     : { artifactPath, artifactTuple: tuple, json, repositorySlug }
@@ -189,6 +189,11 @@ function parseArtifactTuple(
         sourceHead: sourceHead.toLowerCase(),
       }
     : undefined
+}
+
+function normalizeVerifyArtifactDigest(value: string | undefined): string | undefined {
+  if (value === undefined || /^sha256:/iu.test(value)) return value
+  return /^[a-f0-9]{64}$/iu.test(value) ? `sha256:${value}` : value
 }
 
 export function parseEnrollmentArgs(args: readonly string[]): {

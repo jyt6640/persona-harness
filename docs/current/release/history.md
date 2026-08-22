@@ -9,13 +9,15 @@ version/package chronology, use
 [`docs/releases/README.md`](../../releases/README.md) and
 [`docs/releases/package-index.md`](../../releases/package-index.md).
 
-## Current 0.8.21 Package Authority
+## Current 0.8.22 Package Authority
 
-The current unpublished package authority is 0.8.21. Its root package,
-lockfile, private shared-skills package, and v0821 acceptance record must agree
-exactly. The published 0.8.20 release is immutable historical evidence only
+The current unpublished package authority is 0.8.22. Its root package,
+lockfile, private shared-skills package, and v0822 acceptance record must agree
+exactly. The published 0.8.21 release is immutable historical evidence only
 and must not be retagged, rerun, or published.
-The package-visible read-only `ph authority verify` surface never fetches,
+The package-visible read-only `ph authority verify` surface accepts canonical
+`sha256:<64hex>` or an exact raw SHA-256 hex digest, normalizing either form
+before the same no-follow archive boundary. It never fetches,
 persists, consumes, finishes, or replays authority. Its `.2` result exposes a
 finite `sourceReason` only alongside `source-mismatch`; unavailable Sigstore
 trust remains a fixed blocked result rather than a trust claim.

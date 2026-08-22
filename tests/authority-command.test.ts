@@ -409,6 +409,7 @@ describe("consumer authority command boundary", () => {
     ["partial tuple", ["fetch", "github", "--artifact-id", "11", "--json"]],
     ["zero artifact id", ["fetch", "github", "--artifact-id", "0", "--run-id", "1001", "--source-head", "a".repeat(40), "--artifact-digest", `sha256:${"a".repeat(64)}`, "--json"]],
     ["malformed digest", ["fetch", "github", "--artifact-id", "11", "--run-id", "1001", "--source-head", "a".repeat(40), "--artifact-digest", "sha256:invalid", "--json"]],
+    ["raw digest", ["fetch", "github", "--artifact-id", "11", "--run-id", "1001", "--source-head", "a".repeat(40), "--artifact-digest", "a".repeat(64), "--json"]],
     ["malformed source head", ["fetch", "github", "--artifact-id", "11", "--run-id", "1001", "--source-head", "not-a-commit", "--artifact-digest", `sha256:${"a".repeat(64)}`, "--json"]],
   ] as const)("blocks a %s selector before enrollment or fetching", (_label, args) => {
     const projectDir = project()
@@ -695,11 +696,12 @@ describe("consumer authority command boundary", () => {
   })
 
   it.each([
-    "dns-unavailable",
-    "network-unavailable",
-    "trust-root-unavailable",
-    "verification-timeout",
-  ] as const)("maps %s to a blocked nonreflective result", (state) => {
+    ["canonical", "dns-unavailable", (digest: string) => digest],
+    ["canonical", "network-unavailable", (digest: string) => digest],
+    ["canonical", "trust-root-unavailable", (digest: string) => digest],
+    ["canonical", "verification-timeout", (digest: string) => digest],
+    ["raw SHA-256", "trust-root-unavailable", (digest: string) => digest.slice("sha256:".length)],
+  ] as const)("maps a %s digest with %s to a blocked nonreflective result", (_format, state, formatDigest) => {
     const gitProject = gitBackedProject()
     const projectDir = gitProject.path
     const sourceHead = gitProject.head
@@ -730,7 +732,7 @@ describe("consumer authority command boundary", () => {
       "--source-head",
       sourceHead,
       "--artifact-digest",
-      artifactDigest,
+      formatDigest(artifactDigest),
       "--json",
     ], {
       artifactInspector: () => ({
@@ -760,6 +762,7 @@ describe("consumer authority command boundary", () => {
 
   it.each([
     ["partial tuple", ["--artifact-id", "11"], "selection-required"],
+    ["short raw digest", ["--artifact-id", "11", "--run-id", "1001", "--source-head", "a".repeat(40), "--artifact-digest", "a".repeat(63)], "selection-required"],
     ["digest mismatch", ["--artifact-id", "11", "--run-id", "1001", "--source-head", "a".repeat(40), "--artifact-digest", `sha256:${"a".repeat(64)}`], "archive-digest-mismatch"],
   ] as const)("blocks a %s before verifier or store", (_label, tupleArgs, expectedReason) => {
     const projectDir = project()

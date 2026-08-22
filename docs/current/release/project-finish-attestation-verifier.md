@@ -92,7 +92,7 @@ caller that already holds one original archive:
 ```text
 ph authority verify [owner/repository] --archive <original-archive> \
   --artifact-id <id> --run-id <run-id> --source-head <commit> \
-  --artifact-digest sha256:<digest> --json
+  --artifact-digest <sha256:<digest>|64hex> --json
 ```
 
 The command requires all four tuple fields, the current enrolled source and
@@ -101,6 +101,10 @@ reusable-workflow binding, and installed package provenance with
 and checks its digest before invoking the existing verifier. It never reads a
 GitHub credential, fetches an artifact, writes the authority store, consumes
 authority, runs Finish, or performs replay.
+
+The digest is canonicalized to lowercase `sha256:<64hex>`. Callers may supply
+that canonical form or an exact raw 64-character SHA-256 hex digest; every
+other form remains blocked before archive verification.
 
 Its public result is `consumer-authority-verify.2` with fixed fields for
 eligibility, consumption state, bounded reason, schema, source-fallback state,

@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readV0821AcceptanceManifest } from "./consumer-authority-v0821-acceptance-schema.mjs"
+import { readV0822AcceptanceManifest } from "./consumer-authority-v0822-acceptance-schema.mjs"
 import {
   observerGhStageCodeForPreflight,
   observerGhStageCodeForPrivateCopy,
@@ -717,6 +717,28 @@ async function assertPackagedAuthorityVerifyBoundary(packageRoot, label) {
       || `${success.stdout}${success.stderr}`.includes(canonicalArchivePath)
     ) {
       throw new Error(`${label} installed authority verify success boundary failed`)
+    }
+
+    const rawDigest = command.runAuthorityCommand(baseArgs.map((argument) => argument === artifactDigest
+      ? artifactDigest.slice("sha256:".length)
+      : argument), {
+      artifactInspector: () => assessment,
+      packageRoot,
+      projectDir,
+      storeRoot: successStore,
+    })
+    const rawDigestPayload = JSON.parse(rawDigest.stdout)
+    if (
+      rawDigest.status !== 0
+      || rawDigestPayload?.authorityEligible !== true
+      || rawDigestPayload?.consumptionState !== "unconsumed"
+      || rawDigestPayload?.reason !== "none"
+      || rawDigestPayload?.schemaVersion !== "consumer-authority-verify.2"
+      || rawDigestPayload?.sourceFallback !== false
+      || rawDigestPayload?.state !== "trusted"
+      || artifactStore.readAuthorityArtifact(enrollment.repositoryId, { storeRoot: successStore }).state !== "missing"
+    ) {
+      throw new Error(`${label} installed authority verify raw digest boundary failed`)
     }
 
     for (const state of ["dns-unavailable", "network-unavailable", "trust-root-unavailable", "verification-timeout"]) {
@@ -3320,7 +3342,7 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
 }
 
 function readGaPreAuthorityReadiness(packageRoot) {
-  const manifest = readV0821AcceptanceManifest(packageRoot)
+  const manifest = readV0822AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -3329,7 +3351,7 @@ function readGaPreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readV0821AcceptanceManifest(packageRoot)
+    readV0822AcceptanceManifest(packageRoot)
   } catch {
     throw new Error(`${label} current observer handoff contract is invalid`)
   }
@@ -3471,7 +3493,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readV0821AcceptanceManifest(packageRoot)
+  const manifest = readV0822AcceptanceManifest(packageRoot)
   let packageMetadata
   try {
     packageMetadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
@@ -3557,6 +3579,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
     "consumer-authority-v0819-acceptance-schema.mjs",
     "consumer-authority-v0820-acceptance-schema.mjs",
     "consumer-authority-v0821-acceptance-schema.mjs",
+    "consumer-authority-v0822-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
@@ -3847,6 +3870,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     "consumer-authority-v0819-acceptance-schema.mjs",
     "consumer-authority-v0820-acceptance-schema.mjs",
     "consumer-authority-v0821-acceptance-schema.mjs",
+    "consumer-authority-v0822-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
@@ -3891,7 +3915,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readV0821AcceptanceManifest(packageRoot)
+  const manifest = readV0822AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),
