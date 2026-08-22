@@ -249,6 +249,89 @@ describe("ON/OFF eval runner core", () => {
     expect(runResult?.metrics.externalFailureModeLabels).toEqual(expect.any(Array))
   }, 30000)
 
+  it("uses a sealed synthetic run plan to inject an operator instruction into the model prompt", async () => {
+    const outputRoot = tempDir("persona-eval-synthetic-run-plan-")
+    const runPlanPath = join(outputRoot, "run-plan.json")
+    writeFileSync(
+      runPlanPath,
+      JSON.stringify({
+        schemaVersion: "persona-onoff-eval-run-plan.1",
+        runs: [
+          {
+            caseId: "synthetic-ai-01",
+            fixtureId: "backend-api-no-stack",
+            conditionId: "plain",
+            repetition: 1,
+            operatorProfile: "requirements-first",
+            operatorInstruction: "Prioritize acceptance criteria before implementation details.",
+          },
+        ],
+      }),
+    )
+    const options = parseArgs([
+      "--run-plan",
+      runPlanPath,
+      "--model",
+      "test-model",
+      "--opencode-command",
+      `${process.execPath} -e "require('node:fs').writeFileSync('operator-prompt.txt', process.argv[1])" {message}`,
+      "--output-root",
+      outputRoot,
+    ])
+
+    const result = await runEval(options)
+
+    expect(result.ok).toBe(true)
+    expect(result.plan?.runs).toEqual([
+      expect.objectContaining({
+        caseId: "synthetic-ai-01",
+        operatorProfile: "requirements-first",
+      }),
+    ])
+    const run = result.results?.runs[0]
+    expect(readFileSync(join(String(run?.workspaceDir), "operator-prompt.txt"), "utf8")).toContain(
+      "Prioritize acceptance criteria before implementation details.",
+    )
+    expect(run?.syntheticCase).toEqual({
+      caseId: "synthetic-ai-01",
+      operatorProfile: "requirements-first",
+      instructionSha256: expect.any(String),
+    })
+  }, 30000)
+
+  it("redacts conditions and instructions from a sealed run-plan dry run", () => {
+    const root = tempDir("persona-eval-sealed-plan-dry-run-")
+    const planPath = join(root, "run-plan.json")
+    writeFileSync(
+      planPath,
+      JSON.stringify({
+        schemaVersion: "persona-onoff-eval-run-plan.1",
+        runs: [
+          {
+            caseId: "synthetic-ai-01",
+            fixtureId: "backend-api-no-stack",
+            conditionId: "ph-on",
+            repetition: 1,
+            operatorProfile: "requirements-first",
+            operatorInstruction: "Prioritize acceptance criteria before implementation details.",
+          },
+        ],
+      }),
+    )
+
+    const command = spawnSync(
+      process.execPath,
+      ["scripts/eval/run-onoff-eval.mjs", "--run-plan", planPath, "--model", "test-model", "--dry-run", "--json"],
+      { cwd: process.cwd(), encoding: "utf8" },
+    )
+
+    expect(command.status).toBe(0)
+    expect(command.stdout).toContain("synthetic-ai-01")
+    expect(command.stdout).not.toContain("conditionId")
+    expect(command.stdout).not.toContain("ph-on")
+    expect(command.stdout).not.toContain("acceptance criteria")
+  })
+
   it("detects ambient Persona Harness files above repo-local output roots during preflight", () => {
     const projectDir = tempDir("persona-eval-ambient-")
     writeFileSync(join(projectDir, "AGENTS.md"), "# Ambient root rule\n")

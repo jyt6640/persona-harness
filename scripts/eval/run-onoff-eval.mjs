@@ -11,6 +11,7 @@ Options:
   --condition <id>           plain | claude | agents | ph-on | all (default: all)
   --runs <n>                 Repetitions per fixture/condition (default: 5)
   --concurrency <n>          Max concurrently executing runs (default: 1)
+  --run-plan <path>          Local synthetic run plan; overrides fixture/condition/runs selection
   --model <id>               Required model id for actual/preflight runs
   --model-version <label>    Model version label (default: OPENCODE_MODEL_VERSION or unknown)
   --temperature <value>      Temperature pin (default: OPENCODE_TEMPERATURE or unknown)
@@ -71,21 +72,31 @@ async function main() {
 }
 
 function printPlan(options, plan) {
+  const sealedRunPlan = Boolean(options.runPlanPath)
   const payload = {
-    fixture: options.fixture,
-    condition: options.condition,
-    runs: options.runs,
+    planSource: sealedRunPlan ? "local-sealed-run-plan" : "generated",
+    fixture: sealedRunPlan ? null : options.fixture,
+    condition: sealedRunPlan ? null : options.condition,
+    runs: sealedRunPlan ? null : options.runs,
     concurrency: options.concurrency,
     outputRoot: options.outputRoot,
     totalRuns: plan.runs.length,
-    selectedRuns: plan.runs,
+    selectedRuns: sealedRunPlan ? plan.runs.map(redactSealedRun) : plan.runs,
   }
   if (options.json) console.log(JSON.stringify(payload, null, 2))
   else {
     console.log(`Eval dry-run: ${plan.runs.length} run(s) selected`)
     for (const run of plan.runs) {
-      console.log(`- ${run.fixtureId} / ${run.conditionId} / r${run.repetition}`)
+      console.log(sealedRunPlan ? `- ${run.caseId} / ${run.fixtureId} / ${run.operatorProfile}` : `- ${run.fixtureId} / ${run.conditionId} / r${run.repetition}`)
     }
+  }
+}
+
+function redactSealedRun(run) {
+  return {
+    caseId: run.caseId,
+    fixtureId: run.fixtureId,
+    operatorProfile: run.operatorProfile,
   }
 }
 
