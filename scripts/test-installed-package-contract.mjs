@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readV0826AcceptanceManifest } from "./consumer-authority-v0826-acceptance-schema.mjs"
+import { readV0827AcceptanceManifest } from "./consumer-authority-v0827-acceptance-schema.mjs"
 import {
   observerGhStageCodeForPreflight,
   observerGhStageCodeForPrivateCopy,
@@ -3342,7 +3342,7 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
 }
 
 function readGaPreAuthorityReadiness(packageRoot) {
-  const manifest = readV0826AcceptanceManifest(packageRoot)
+  const manifest = readV0827AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -3351,7 +3351,7 @@ function readGaPreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readV0826AcceptanceManifest(packageRoot)
+    readV0827AcceptanceManifest(packageRoot)
   } catch {
     throw new Error(`${label} current observer handoff contract is invalid`)
   }
@@ -3493,7 +3493,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readV0826AcceptanceManifest(packageRoot)
+  const manifest = readV0827AcceptanceManifest(packageRoot)
   let packageMetadata
   try {
     packageMetadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
@@ -3582,6 +3582,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
     "consumer-authority-v0822-acceptance-schema.mjs",
     "consumer-authority-v0823-acceptance-schema.mjs",
     "consumer-authority-v0826-acceptance-schema.mjs",
+    "consumer-authority-v0827-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
@@ -3875,6 +3876,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     "consumer-authority-v0822-acceptance-schema.mjs",
     "consumer-authority-v0823-acceptance-schema.mjs",
     "consumer-authority-v0826-acceptance-schema.mjs",
+    "consumer-authority-v0827-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
@@ -3919,7 +3921,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readV0826AcceptanceManifest(packageRoot)
+  const manifest = readV0827AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),

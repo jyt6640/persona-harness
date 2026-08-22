@@ -1,0 +1,906 @@
+{
+  "schemaVersion": "source-provenance-audit.1",
+  "auditDate": "2026-08-22",
+  "comparison": {
+    "candidateBase": "699eac5fdeda5dd17393bdd5493118b9fb8543c5",
+    "method": "exact-git-blob-same-path",
+    "candidatePathCount": 143,
+    "rawMatchPairCount": 154,
+    "crossPathLicenseOnlyPairCount": 11
+  },
+  "upstream": {
+    "repository": "https://github.com/code-yeongyu/oh-my-openagent",
+    "commit": "bddfeb521545489860030acf19e82ac47f6db15d",
+    "tree": "c63f034fd3734858118c96f0e485e8db1502dcf7",
+    "license": "Sustainable Use License 1.0"
+  },
+  "exactSamePathMatches": [
+    {
+      "blobSha": "e3f15e9f60ece76488e76c517e854a1dc4912faf",
+      "disposition": "retained-under-mit",
+      "path": "packages/shared-skills/skills/ast-grep/.gitignore",
+      "upstreamPath": "packages/shared-skills/skills/ast-grep/.gitignore"
+    },
+    {
+      "blobSha": "09aac3c3b7f6e26e8520b362eb048d4d8f9165c3",
+      "disposition": "retained-under-mit",
+      "path": "packages/shared-skills/skills/ast-grep/LICENSE",
+      "upstreamPath": "packages/shared-skills/skills/ast-grep/LICENSE"
+    },
+    {
+      "blobSha": "e3e76c7f532099041d3ed5d4b2c208850ea61e63",
+      "disposition": "retained-under-mit",
+      "path": "packages/shared-skills/skills/ast-grep/README.md",
+      "upstreamPath": "packages/shared-skills/skills/ast-grep/README.md"
+    },
+    {
+      "blobSha": "d887e1fe23d8985975c84102c8e1ad02faf6c4f1",
+      "disposition": "retained-under-mit",
+      "path": "packages/shared-skills/skills/ast-grep/references/cli.md",
+      "upstreamPath": "packages/shared-skills/skills/ast-grep/references/cli.md"
+    },
+    {
+      "blobSha": "6c0b5bbb3ccc1d2cf93618dd2411b118f1733163",
+      "disposition": "retained-under-mit",
+      "path": "packages/shared-skills/skills/ast-grep/references/patterns.md",
+      "upstreamPath": "packages/shared-skills/skills/ast-grep/references/patterns.md"
+    },
+    {
+      "blobSha": "16a635603dcbcd9c94e22c3dbc71c1da9eed694e",
+      "disposition": "retained-under-mit",
+      "path": "packages/shared-skills/skills/ast-grep/references/pitfalls.md",
+      "upstreamPath": "packages/shared-skills/skills/ast-grep/references/pitfalls.md"
+    },
+    {
+      "blobSha": "b5add7510fe6c836641060a869fa7f350b632bf2",
+      "disposition": "retained-under-mit",
+      "path": "packages/shared-skills/skills/ast-grep/references/recipes.md",
+      "upstreamPath": "packages/shared-skills/skills/ast-grep/references/recipes.md"
+    },
+    {
+      "blobSha": "489716e9f7ed9d3fa0623e333c4e890cf1baf961",
+      "disposition": "retained-under-mit",
+      "path": "packages/shared-skills/skills/ast-grep/references/sgconfig.md",
+      "upstreamPath": "packages/shared-skills/skills/ast-grep/references/sgconfig.md"
+    },
+    {
+      "blobSha": "7ced6fd06bb0162145f9af431f7b3a24e70eb76b",
+      "disposition": "retained-under-mit",
+      "path": "packages/shared-skills/skills/ast-grep/references/yaml-rules.md",
+      "upstreamPath": "packages/shared-skills/skills/ast-grep/references/yaml-rules.md"
+    },
+    {
+      "blobSha": "b473e79303d4f376fa6ebbca36714b0d2addc3c8",
+      "disposition": "retained-under-mit",
+      "path": "packages/shared-skills/skills/ast-grep/scripts/ast_grep_helper.py",
+      "upstreamPath": "packages/shared-skills/skills/ast-grep/scripts/ast_grep_helper.py"
+    },
+    {
+      "blobSha": "b051d1ce04ee92cae34d5ece0247de3fa7bb6fe6",
+      "disposition": "retained-under-mit",
+      "path": "packages/shared-skills/skills/ast-grep/tests/smoke.ps1",
+      "upstreamPath": "packages/shared-skills/skills/ast-grep/tests/smoke.ps1"
+    },
+    {
+      "blobSha": "14fd08cfd66681e7d34c1086bd07e5bc75aaf41a",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/methodology/00-setup.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/methodology/00-setup.md"
+    },
+    {
+      "blobSha": "5a01c301e55536768c785fc618877b1844643f6f",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/methodology/02-investigate.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/methodology/02-investigate.md"
+    },
+    {
+      "blobSha": "d233fe5322f44a1c8e10fc6069d7ea36c7b8a441",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/methodology/04-oracle-triple.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/methodology/04-oracle-triple.md"
+    },
+    {
+      "blobSha": "187e9a9573a941bb079db7c8cd66e78c9171d5b4",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/methodology/05-escalate.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/methodology/05-escalate.md"
+    },
+    {
+      "blobSha": "d900e40e94b27ea110a321af2ab426bef29a1c2c",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/methodology/08-qa.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/methodology/08-qa.md"
+    },
+    {
+      "blobSha": "ab87f1c8c62c1f1db792495db1133c946ce29391",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/methodology/09-cleanup.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/methodology/09-cleanup.md"
+    },
+    {
+      "blobSha": "986a3220c0ccb21b6d75dba5d9febe615a0d944b",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/methodology/partial-runtime-evidence.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/methodology/partial-runtime-evidence.md"
+    },
+    {
+      "blobSha": "a64c80736c0d8e0c4ea1c7243e0565a2ad673459",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/runtimes/bundled-js-binary.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/runtimes/bundled-js-binary.md"
+    },
+    {
+      "blobSha": "afed82edac0e6e2c6dc7af6e7f877584d14b81a9",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/runtimes/go.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/runtimes/go.md"
+    },
+    {
+      "blobSha": "b7c303a91d37d9338c360298801295bd7cbbc152",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/runtimes/native-binary.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/runtimes/native-binary.md"
+    },
+    {
+      "blobSha": "aac7fb179c3f35fd57ab7bf2c7b0a0698ac00318",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/runtimes/node.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/runtimes/node.md"
+    },
+    {
+      "blobSha": "e16a9ad08a5f0fc4cb5741de1334974feb77f925",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/runtimes/python.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/runtimes/python.md"
+    },
+    {
+      "blobSha": "94829024a9101378cd387c3609d64070a0944dcb",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/runtimes/rust.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/runtimes/rust.md"
+    },
+    {
+      "blobSha": "045cda0330a99b0a0cbf71060d5cef3341d7d94e",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/tools/ghidra.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/tools/ghidra.md"
+    },
+    {
+      "blobSha": "7d63671565d52447548366928964ce38e332610c",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/tools/playwright-cli.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/tools/playwright-cli.md"
+    },
+    {
+      "blobSha": "8a28ae3ffc484e6d9e165d41c3c9ad2d25d8fb4f",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/tools/pwndbg.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/tools/pwndbg.md"
+    },
+    {
+      "blobSha": "e4b1e2dc1a051e1adfd8cd9e59eb031ec3498ad3",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/debugging/references/tools/pwntools.md",
+      "upstreamPath": "packages/shared-skills/skills/debugging/references/tools/pwntools.md"
+    },
+    {
+      "blobSha": "eb79c35bd865477e525b18e56f35d56fbe0f7110",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/frontend/LICENSE-Apache-2.0.txt",
+      "upstreamPath": "packages/shared-skills/skills/frontend/LICENSE-Apache-2.0.txt"
+    },
+    {
+      "blobSha": "0fd936787871a2bc5a4ef98ff9299400b35ac1c7",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/frontend/references/design/react-dev-tooling-skill.md",
+      "upstreamPath": "packages/shared-skills/skills/frontend/references/design/react-dev-tooling-skill.md"
+    },
+    {
+      "blobSha": "0f135b90aa9386659c706f7c86104c8989e4009a",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/frontend/references/perfection/react-perf-tooling.md",
+      "upstreamPath": "packages/shared-skills/skills/frontend/references/perfection/react-perf-tooling.md"
+    },
+    {
+      "blobSha": "31cf9dcf813b2caf4c2e40a6c96aeae9bb5be624",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/frontend/references/perfection/README.md",
+      "upstreamPath": "packages/shared-skills/skills/frontend/references/perfection/README.md"
+    },
+    {
+      "blobSha": "ca63e62f57441c9c00c6603c6518583902ec4788",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/frontend/scripts/perfection/lighthouse-audit.py",
+      "upstreamPath": "packages/shared-skills/skills/frontend/scripts/perfection/lighthouse-audit.py"
+    },
+    {
+      "blobSha": "a690467c53529a87e9858cb272086857fce39556",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/git-master/agents/openai.yaml",
+      "upstreamPath": "packages/shared-skills/skills/git-master/agents/openai.yaml"
+    },
+    {
+      "blobSha": "80f07bbc78726d1ca4c551db83de168ecf7e8cb4",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/bash/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/bash/README.md"
+    },
+    {
+      "blobSha": "17abb3117bff7b50bddca3fa3cf2db26f34d57e4",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/c-cpp/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/c-cpp/README.md"
+    },
+    {
+      "blobSha": "b59b2bd80b9ef1b43593671b523bc99dd1fc0122",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/csharp/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/csharp/README.md"
+    },
+    {
+      "blobSha": "63757d57494be61afc656e161210b4c03477980a",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/dart/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/dart/README.md"
+    },
+    {
+      "blobSha": "b85de4a909808a4e2d4bc8d328f9e787374bee5d",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/elixir/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/elixir/README.md"
+    },
+    {
+      "blobSha": "f25dd0fb26b6831c241e5e3cf97f457646802b9c",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/go/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/go/README.md"
+    },
+    {
+      "blobSha": "4cbcc30403114a7c4e04589135144cb752d46b89",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/haskell/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/haskell/README.md"
+    },
+    {
+      "blobSha": "0cb34f8ed619b87cd0a313075dc3d0457f28262a",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/java/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/java/README.md"
+    },
+    {
+      "blobSha": "9fc80cfe5c28e811b5377ecd78d102879182b974",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/julia/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/julia/README.md"
+    },
+    {
+      "blobSha": "83761e604d2ecbe556690637bd7693438f64c873",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/kotlin/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/kotlin/README.md"
+    },
+    {
+      "blobSha": "1edb98b9d02dc678fcadf0a00d529c28211abff2",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/lua/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/lua/README.md"
+    },
+    {
+      "blobSha": "23ae22cefe43b799b78b5f3c709c5fb524955a75",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/php/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/php/README.md"
+    },
+    {
+      "blobSha": "774e7deebaadf6b1df205339f3a68b310f0dec64",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/python/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/python/README.md"
+    },
+    {
+      "blobSha": "f377216e179f213ad894f544ea32f6191728e1f5",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/ruby/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/ruby/README.md"
+    },
+    {
+      "blobSha": "beb35dc306725325ea5b217adac3f781fd76fdbd",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/rust/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/rust/README.md"
+    },
+    {
+      "blobSha": "0f626b4ae087cd9b9456bbed3a67140b534b784a",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/swift/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/swift/README.md"
+    },
+    {
+      "blobSha": "0149161927d07dfb125044489f1ee05654c3a547",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/terraform/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/terraform/README.md"
+    },
+    {
+      "blobSha": "7b89b97253da103faa6bb2d7ff41ce6794f8313a",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/typescript/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/typescript/README.md"
+    },
+    {
+      "blobSha": "cd7636a440594ffd6e337aa768c75240f0c5b8cd",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/yaml/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/yaml/README.md"
+    },
+    {
+      "blobSha": "98c70ba606636a0cb10394b43e454d969f5eec1e",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/references/zig/README.md",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/references/zig/README.md"
+    },
+    {
+      "blobSha": "ef9cf645e2dc088269290c7102c9b6a6b3fdb6b8",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/scripts/detect-lsp.ts",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/scripts/detect-lsp.ts"
+    },
+    {
+      "blobSha": "f3c159d4d0e914e8540aebe324da851d5c9a05a3",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/scripts/lsp-server-table.ts",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/scripts/lsp-server-table.ts"
+    },
+    {
+      "blobSha": "413534c5142de5f1099f8693b6926edc377f5cd8",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/scripts/tsconfig.json",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/scripts/tsconfig.json"
+    },
+    {
+      "blobSha": "375bcfedcaaed6ff7551d64bde58ca714f5612b1",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/lsp-setup/scripts/verify-lsp.ts",
+      "upstreamPath": "packages/shared-skills/skills/lsp-setup/scripts/verify-lsp.ts"
+    },
+    {
+      "blobSha": "a9ffd89c6ec8c99b28d0e173076d0eef3202e0b2",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/backend-stack.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/backend-stack.md"
+    },
+    {
+      "blobSha": "ff44dbc323469058235a948c9fbf3ae2d8fd2a39",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/bootstrap.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/bootstrap.md"
+    },
+    {
+      "blobSha": "45eae702063e9747c4e08864106611a65ddf78f9",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/bubbletea-v2.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/bubbletea-v2.md"
+    },
+    {
+      "blobSha": "a73805f7f3fd45ef98560119dccbd35c54bdd7da",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/cobra-stack.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/cobra-stack.md"
+    },
+    {
+      "blobSha": "86008bf90bccc38f363616944ddc337fed88a33a",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/concurrency.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/concurrency.md"
+    },
+    {
+      "blobSha": "c903d6ba815a26cae0c8cde7703be055c04681ae",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/data-modeling.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/data-modeling.md"
+    },
+    {
+      "blobSha": "6922862d79a0aece7a47ac04eed31e308d165365",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/error-handling.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/error-handling.md"
+    },
+    {
+      "blobSha": "c63d1e27c32f7f87fcddced5f2bf368aa8770bca",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/golangci-strict.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/golangci-strict.md"
+    },
+    {
+      "blobSha": "6443f675a3e1ee4f2dc572755a1223e782f3e3f7",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/grpc-connect.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/grpc-connect.md"
+    },
+    {
+      "blobSha": "30e47b88d98fa1bc9f992da49c81c5d19eb0bc6c",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/libraries.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/libraries.md"
+    },
+    {
+      "blobSha": "58a6f014fbde98ece1216eb0e51f9f369ba26715",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/one-liners.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/one-liners.md"
+    },
+    {
+      "blobSha": "41257132efa35817e065372ab916a18fb2eae3c7",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/README.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/README.md"
+    },
+    {
+      "blobSha": "6b6dbecdbe1762e564c5ed95924e8ba232360594",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/sqlc-pgx.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/sqlc-pgx.md"
+    },
+    {
+      "blobSha": "469f5a46604f70cf14f81193e48d5a2af96ad039",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/testing.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/testing.md"
+    },
+    {
+      "blobSha": "e65b20d5f594c35b9917753df38ab77d9561d3f9",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/go/type-patterns.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/go/type-patterns.md"
+    },
+    {
+      "blobSha": "b0ac4fd47d71702e1d88476cbe294fcf9d48c39d",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/async-anyio.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/async-anyio.md"
+    },
+    {
+      "blobSha": "48b46f8ebe073974011ecb9e2e776e54c525b22e",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/data-modeling.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/data-modeling.md"
+    },
+    {
+      "blobSha": "299b30cd1fa261cf7fecd2140bfeede60d204b96",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/data-processing.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/data-processing.md"
+    },
+    {
+      "blobSha": "44f58befd875758c59fbf17508729652e0e83ecc",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/error-handling.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/error-handling.md"
+    },
+    {
+      "blobSha": "d5180614f2736f416de833d7ea09c314339f7a9e",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/fastapi-stack.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/fastapi-stack.md"
+    },
+    {
+      "blobSha": "0f5efcbae6722392fa40715cd926eef0dfaf994b",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/httpx2-optimization.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/httpx2-optimization.md"
+    },
+    {
+      "blobSha": "f2e5e803e9dbab8e06d0c7be2501f944f0360be2",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/libraries.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/libraries.md"
+    },
+    {
+      "blobSha": "de1ddbc2ea26da5afd235d275429b9140f232422",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/one-liners.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/one-liners.md"
+    },
+    {
+      "blobSha": "9c3ca0c65890b01c799e70cce1a0f59503172d27",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/orjson-stack.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/orjson-stack.md"
+    },
+    {
+      "blobSha": "fdd38cb710a3c7553eabb18d1aa796900cdf4884",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/pydantic-ai.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/pydantic-ai.md"
+    },
+    {
+      "blobSha": "7bbf9660199fde95328799f0538619f4402b2802",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/pyproject-strict.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/pyproject-strict.md"
+    },
+    {
+      "blobSha": "0b3ebf6409218b256bfdcd1fc037eeb6a0c1d650",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/README.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/README.md"
+    },
+    {
+      "blobSha": "27f027de23ba24b1ae8af2ecb378f08317103453",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/textual-tui.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/textual-tui.md"
+    },
+    {
+      "blobSha": "2811813d0338c0ebdeaacb10d76d7154f0990fce",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/python/type-patterns.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/python/type-patterns.md"
+    },
+    {
+      "blobSha": "8ba81e741d3987c2688427ebb8555daf2792bf7c",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust-ub/miri-sanitizers-loom.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust-ub/miri-sanitizers-loom.md"
+    },
+    {
+      "blobSha": "55920b5aea7aa276cd87c64c64fbf5a73672692f",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust-ub/README.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust-ub/README.md"
+    },
+    {
+      "blobSha": "b5b642832486e93e5da3ca8572d59e8e2db467a3",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust-ub/ub-taxonomy.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust-ub/ub-taxonomy.md"
+    },
+    {
+      "blobSha": "fe657045035dfac9a24be7531da51e78d31eb93b",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust/async-tokio.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust/async-tokio.md"
+    },
+    {
+      "blobSha": "bf732a8b0bfc771f3f0a3083014d838845888527",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust/axum-stack.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust/axum-stack.md"
+    },
+    {
+      "blobSha": "ce1dd2a3baeab6d72955bb574b6bae28c834bfe1",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust/cargo-strict.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust/cargo-strict.md"
+    },
+    {
+      "blobSha": "70fa652334c4c1d65c318c054ddd8f2a3dcc3c52",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust/clap-stack.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust/clap-stack.md"
+    },
+    {
+      "blobSha": "475412f7516feb6302a7535324541d7d38e63c75",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust/concurrency.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust/concurrency.md"
+    },
+    {
+      "blobSha": "4124b9d6ac1b8325e984c0e994469b3aad7aac50",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust/libraries.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust/libraries.md"
+    },
+    {
+      "blobSha": "c2edd4bad8189d5fa793d77d9e3e65164c8360e7",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust/one-liners.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust/one-liners.md"
+    },
+    {
+      "blobSha": "4d7f095329bc61bc61e708fbaa10139c1354c446",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust/proptest-insta.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust/proptest-insta.md"
+    },
+    {
+      "blobSha": "d43a7559535eb8ff877a3ab63e485f38a93c7fc3",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust/README.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust/README.md"
+    },
+    {
+      "blobSha": "8780774bd66d663e58366fb201bffaaca648cbfc",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust/type-state.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust/type-state.md"
+    },
+    {
+      "blobSha": "67eb2ffba1c807c538a9262806e25798eb2b6347",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust/unsafe-discipline.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust/unsafe-discipline.md"
+    },
+    {
+      "blobSha": "876ffa5860cae67a66578ad3d14e2ab4395777e5",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/rust/zero-cost-safety.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/rust/zero-cost-safety.md"
+    },
+    {
+      "blobSha": "325abe0b8f46a3fd85d89eac349bd45672ca6f50",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/typescript/backend-hono.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/typescript/backend-hono.md"
+    },
+    {
+      "blobSha": "f0981b79504bd9bdfd4acb0ec785c818b79742b0",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/typescript/bootstrap.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/typescript/bootstrap.md"
+    },
+    {
+      "blobSha": "9e697311d95cb246cb0afba91ee9dea07eedcd22",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/typescript/data-modeling.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/typescript/data-modeling.md"
+    },
+    {
+      "blobSha": "81d0661cd089367182fc40be5b6306aec56774de",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/typescript/error-handling.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/typescript/error-handling.md"
+    },
+    {
+      "blobSha": "f7c9bd1e0910a0127254ab7c5a189357216361cc",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/typescript/README.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/typescript/README.md"
+    },
+    {
+      "blobSha": "eb755d25e44d593be9fa6a30dd67ab9548458051",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/typescript/tsconfig-strict.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/typescript/tsconfig-strict.md"
+    },
+    {
+      "blobSha": "7b8e11b42ecffd93fdb1dcaffc8dc2f4d60c109a",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/references/typescript/type-patterns.md",
+      "upstreamPath": "packages/shared-skills/skills/programming/references/typescript/type-patterns.md"
+    },
+    {
+      "blobSha": "7455dc426e6a06de335ffe3f61e4e9d8da2ab487",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/go/check-no-excuse-rules.sh",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/go/check-no-excuse-rules.sh"
+    },
+    {
+      "blobSha": "6a5f9462881faa85bbcbed4f85c2d7ddda1e5597",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/go/new-project.py",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/go/new-project.py"
+    },
+    {
+      "blobSha": "7b48535085a9a954af6a8b4834df58dd0c99f6df",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/go/templates/.editorconfig",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/go/templates/.editorconfig"
+    },
+    {
+      "blobSha": "4eee6949bc1c901f22caef07c6c01f6cc6609c67",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/go/templates/.golangci.yml",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/go/templates/.golangci.yml"
+    },
+    {
+      "blobSha": "3f23b41818fe34ddf24afb08025b6a1962a77142",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/go/templates/AGENTS.md.tmpl",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/go/templates/AGENTS.md.tmpl"
+    },
+    {
+      "blobSha": "3cdf9011f7d75833b0b01fce357a90b257a7651d",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/go/templates/ci.yml",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/go/templates/ci.yml"
+    },
+    {
+      "blobSha": "f104c9e7d33ede0aad41efe11433b27df5c306c1",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/go/templates/config.go",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/go/templates/config.go"
+    },
+    {
+      "blobSha": "d009c99b2761aba65774d810348e56bbbc4f6b6e",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/go/templates/gitignore",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/go/templates/gitignore"
+    },
+    {
+      "blobSha": "460befb1f0a33199bf1bc0c2b4043ea4a5fc80c8",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/go/templates/main.go.tmpl",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/go/templates/main.go.tmpl"
+    },
+    {
+      "blobSha": "fce8b6f65b71390268202bb30b652290b9daf997",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/go/templates/README.md.tmpl",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/go/templates/README.md.tmpl"
+    },
+    {
+      "blobSha": "fe9d88dc50f2ee2779e4f7331d448d75370aad12",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/go/templates/run.go",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/go/templates/run.go"
+    },
+    {
+      "blobSha": "daa1d59b2a1631f2e56e03e3011082a349edcc19",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/go/templates/Taskfile.yml",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/go/templates/Taskfile.yml"
+    },
+    {
+      "blobSha": "4270ef321d4303ce90ed5afefe2460944458e9b6",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/python/check-no-excuse-rules.py",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/python/check-no-excuse-rules.py"
+    },
+    {
+      "blobSha": "da0f74d3ae0836aa27ffad47674af50e75841822",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/python/new-project.py",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/python/new-project.py"
+    },
+    {
+      "blobSha": "3e997368066984839730f53d13e884f95f3d2dbe",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/python/new-script.py",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/python/new-script.py"
+    },
+    {
+      "blobSha": "2c2c5413bad8aba807578540ab4b1204890f891b",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/rust/check-no-excuse-rules.py",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/rust/check-no-excuse-rules.py"
+    },
+    {
+      "blobSha": "d4fa8e917b1d419591e7e8537b80f11016c8027c",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/rust/check-no-excuse-rules.sh",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/rust/check-no-excuse-rules.sh"
+    },
+    {
+      "blobSha": "2445f80550b22bd4abcde14887959eb75c46d4ad",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/rust/new-project.py",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/rust/new-project.py"
+    },
+    {
+      "blobSha": "9bb2a3e762af88206286635a4cc79612fb3b6eef",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/programming/scripts/typescript/new-project.ts",
+      "upstreamPath": "packages/shared-skills/skills/programming/scripts/typescript/new-project.ts"
+    },
+    {
+      "blobSha": "61dd3bb12d1beceeb5d8df4947deb7e918a928b7",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/ulw-plan/agents/openai.yaml",
+      "upstreamPath": "packages/shared-skills/skills/ulw-plan/agents/openai.yaml"
+    },
+    {
+      "blobSha": "f3763a57c9db9f1209c1295a4e1b01f942f6d72d",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/ansi.test.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/ansi.test.ts"
+    },
+    {
+      "blobSha": "1b587788142662496c90e888ca41b457c9217923",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/ansi.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/ansi.ts"
+    },
+    {
+      "blobSha": "dd302c48c1064bf6dc4f6e1dbc07b04084b9542c",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/cli.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/cli.ts"
+    },
+    {
+      "blobSha": "cf342acc392110aa174d852ec81318fa32e2d25e",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/east-asian-width.test.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/east-asian-width.test.ts"
+    },
+    {
+      "blobSha": "f16edf5e715139359dd2f1b60f675363b971419d",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/east-asian-width.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/east-asian-width.ts"
+    },
+    {
+      "blobSha": "0735df52ed7f0d0185e98a8cb95309704f21d9c6",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/image-diff.test.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/image-diff.test.ts"
+    },
+    {
+      "blobSha": "c0ccf8d5ea6c7252ca2c83a0b77fb7b17159e44c",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/image-diff.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/image-diff.ts"
+    },
+    {
+      "blobSha": "7b79e70f9883ede23ee37ede70b053b51e17059e",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/png-crc.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/png-crc.ts"
+    },
+    {
+      "blobSha": "733ca37385c1bfb0ff8d689e1ddf65b7d5b5fde9",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/png-decode.test.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/png-decode.test.ts"
+    },
+    {
+      "blobSha": "f64a402611c885a2020bd80b94248de3c63718a4",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/png-decode.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/png-decode.ts"
+    },
+    {
+      "blobSha": "d41e6ad2aa9211fbec3260a2ae6f671aa5a736b5",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/png-synth.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/png-synth.ts"
+    },
+    {
+      "blobSha": "77ca8f3bb6a1639d697840a106300a808377c4f6",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/tui-grid.test.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/tui-grid.test.ts"
+    },
+    {
+      "blobSha": "a8a9cfa094b67b93784f31eddb2730f21cdc30f4",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/tui-grid.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/tui-grid.ts"
+    },
+    {
+      "blobSha": "3c2c8145649d07845cb2d7681c2055bc16a3b4f4",
+      "disposition": "removed-before-candidate",
+      "path": "packages/shared-skills/skills/visual-qa/scripts/types.ts",
+      "upstreamPath": "packages/shared-skills/skills/visual-qa/scripts/types.ts"
+    }
+  ],
+  "removedSubtrees": [
+    "packages/shared-skills/skills/advanced",
+    "packages/shared-skills/skills/debugging",
+    "packages/shared-skills/skills/git-master",
+    "packages/shared-skills/skills/init-deep",
+    "packages/shared-skills/skills/remove-ai-slops",
+    "packages/shared-skills/skills/review-work",
+    "packages/shared-skills/skills/start-work",
+    "packages/shared-skills/skills/ultraresearch",
+    "packages/shared-skills/skills/ulw-plan",
+    "packages/shared-skills/skills/lsp-setup/references",
+    "packages/shared-skills/skills/lsp-setup/scripts",
+    "packages/shared-skills/skills/visual-qa/references",
+    "packages/shared-skills/skills/visual-qa/scripts",
+    "packages/shared-skills/skills/programming/references/go",
+    "packages/shared-skills/skills/programming/references/python",
+    "packages/shared-skills/skills/programming/references/rust",
+    "packages/shared-skills/skills/programming/references/rust-ub",
+    "packages/shared-skills/skills/programming/references/typescript",
+    "packages/shared-skills/skills/programming/scripts/go",
+    "packages/shared-skills/skills/programming/scripts/python",
+    "packages/shared-skills/skills/programming/scripts/rust",
+    "packages/shared-skills/skills/programming/scripts/typescript",
+    "packages/shared-skills/skills/programming/agents",
+    "packages/shared-skills/skills/frontend/ATTRIBUTION.md",
+    "packages/shared-skills/skills/frontend/LICENSE-Apache-2.0.txt",
+    "packages/shared-skills/skills/frontend/references",
+    "packages/shared-skills/skills/frontend/scripts"
+  ]
+}

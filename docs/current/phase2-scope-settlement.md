@@ -17,22 +17,13 @@ Current automatic shared-skill routing is limited to:
 - React/frontend TypeScript targets select `programming`; `frontend` is an explicit optional overlay, not an automatic selection.
 - Infrastructure-looking targets do not select an active skill today and fall through to `shared-skill` role with no rules.
 
-Current vendored-but-inactive skills include:
+The current shared-skill catalog contains concise Persona-owned entries. Its
+only retained third-party source component is the optional `ast-grep` material,
+which carries an explicit MIT source marker and license. The former dormant OMO
+reference trees are removed from source under the
+[`2026-08-22-source-provenance-audit`](../evidence-reviews/2026-08-22-source-provenance-audit.md).
 
-- `debugging`
-- `visual-qa`
-- `ast-grep`
-- `git-master`
-- `refactor`
-- `review-work`
-- `start-work`
-- `ulw-plan`
-- `ultraresearch`
-- `init-deep`
-- `remove-ai-slops`
-- `lsp-setup`
-
-`lcx-report-bug`, `lcx-contribute-bug-fix`, and `lcx-doctor` are intentionally removed.
+`lcx-report-bug`, `lcx-contribute-bug-fix`, and `lcx-doctor` remain intentionally removed.
 
 ## Decision
 
@@ -54,7 +45,8 @@ TypeScript/frontend routing is experimental. It may remain as a smoke path, but 
 
 Infrastructure and generic `shared-skill` roles are parking surfaces only. They should not be treated as MVP domains until there are real rules, tests, and product decisions behind them.
 
-Vendored OMO skills are reference material unless explicitly activated by a future scope decision.
+Future third-party skill material requires an explicit compatible license,
+required notices, and a future scope decision before it enters source.
 
 ## Active vs Inactive Surface
 
@@ -66,13 +58,14 @@ Vendored OMO skills are reference material unless explicitly activated by a futu
 | React/frontend `frontend` optional overlay | experimental | explicit selection only; not frontend MVP |
 | `infra` file role | parking | no active rules or skill |
 | `shared-skill` file role | parking | fallback role only |
-| `ast-grep` vendored skill | inactive reference | no AST/linter/enforcement gate |
-| `debugging`, `visual-qa`, `review-work` vendored skills | inactive reference | no runtime gate |
+| MIT `ast-grep` optional extension | explicit optional overlay | no AST/linter/enforcement gate |
+| Persona `debug`, `visual-qa`, `refactor`, and `git` catalog entries | advisory catalog guidance | no runtime gate |
+| Former dormant OMO source trees | removed | no source, runtime, or package contract |
 | Java no-excuse fixtures under shared skills | inactive reference/test asset | no Persona Harness enforcement |
 
 ## Non-Goals
 
-- Do not remove vendored skills in this loop.
+- Do not reintroduce dormant reference trees without a compatible license and scope decision.
 - Do not add frontend, infra, or shared-skill rules.
 - Do not implement a shared-skill loader.
 - Do not wire `ast-grep` into observer, guard, linter, or enforcement paths.
@@ -85,8 +78,8 @@ The previous wording "not wired into the current backend rule MVP" was too broad
 
 More precise wording:
 
-- shared skills are vendored as a reusable package,
-- most vendored skills are inactive references,
+- shared skills are a reusable package with a concise catalog boundary,
+- the sole retained third-party component is explicitly MIT-licensed `ast-grep`,
 - `programming` is currently selected for Java/Gradle and TypeScript targets,
 - `frontend` is available only as an explicit optional overlay and is never selected from a React/frontend target path alone,
 - this limited routing is experimental outside Java backend support and does not make the MVP multi-domain.

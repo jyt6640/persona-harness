@@ -1,6 +1,6 @@
 {
   "name": "@persona-harness/shared-skills",
-  "version": "0.8.26",
+  "version": "0.8.27",
   "type": "module",
   "private": true,
   "description": "Persona-owned portable skill procedures and optional overlays",
@@ -31,7 +31,9 @@
     "skills/git/SKILL.md",
     "skills/frontend/SKILL.md",
     "skills/visual-qa/SKILL.md",
+    "skills/ast-grep/LICENSE",
     "skills/ast-grep/SKILL.md",
+    "skills/ast-grep/SOURCE",
     "skills/lsp-setup/SKILL.md"
   ]
 }
