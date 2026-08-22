@@ -53,7 +53,13 @@ production readiness, token savings, or broad security guarantees.
 **Start with:** [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md) · [Install guide](docs/START-HERE.md)
 
 > [!IMPORTANT]
-> **Alpha, gate-first, measured.** Live registry channels, tags, GitHub releases, and audit lifecycle facts are maintained in governed registry and audit records; source documentation records only its own preparation boundary. Runtime injection remains **default-off / opt-in**. See [`docs/current/p3-integrity-roadmap.md`](docs/current/p3-integrity-roadmap.md), [`docs/MEASURED-CLAIMS.md`](docs/MEASURED-CLAIMS.md), and [`injection-value-status.json`](docs/current/injection-value-status.json).
+> **Alpha, gate-first, measured.** Live registry channels, tags, GitHub releases,
+> and audit lifecycle facts are maintained by governed workflows and release
+> records; source release notes are inputs, not standalone proof. Runtime
+> injection remains **default-off / opt-in**. See
+> [`docs/current/p3-integrity-roadmap.md`](docs/current/p3-integrity-roadmap.md),
+> [`docs/MEASURED-CLAIMS.md`](docs/MEASURED-CLAIMS.md), and
+> [`injection-value-status.json`](docs/current/injection-value-status.json).
 
 ## Measured Behavior
 
@@ -150,6 +156,21 @@ address hostile same-user filesystem path replacement.
 > `workflow finish` cannot reach a trusted PASS from a purely local checkout. Clearing every content gate still leaves `trusted-authority-required`, because only a verified external attestation from an enrolled repository grants finish authority. Enrol one with `npx ph authority`, and run `npx ph doctor` to see the current `Finish authority` and `Consumer authority` state before you rely on the gate.
 
 Three-beat setup, gate, and goal-entry walkthrough: **[Quick Demo](docs/QUICK-DEMO.md)**. Repository maintainers and reviewers can run the separate exact-package Gradle/JUnit contract: **[Full cooperative verification demo](docs/QUICK-DEMO.md#full-cooperative-verification-demo)**.
+
+## Maintainer verification
+
+From a source checkout, the commands have deliberately different scopes:
+
+```bash
+npm test                    # packaged CLI smoke
+npm run test:unit           # full Vitest unit/integration suite
+npm run test:repository     # full repository contract: policy, docs, unit/integration, and clean-package checks
+node scripts/verify-cooperative-finish-demo.mjs # exact packed-package Java/Spring Gradle/JUnit demo
+```
+
+The required `Verify repository` workflow runs the full repository contract and
+the exact cooperative demo. These commands establish their named contracts; they
+do not certify generated application quality or external Finish authority.
 
 ## TDD Rail (opt-in)
 

@@ -10,12 +10,11 @@ Use this index to scan package history. Use the linked release notes,
 
 ## Recorded Channel State
 
-At the 2026-08-09 registry readback:
+At the 2026-08-22 registry readback:
 
-- Current package metadata and npm `latest`: `0.8.1`.
-- npm `next`: `0.8.0-rc.1`.
-- npm `staging`: `0.8.0-beta.34`.
-- GitHub's latest release: `v0.8.1`.
+- npm `latest`: `0.8.24`.
+- GitHub's latest release: `v0.8.24`.
+- Historical prerelease channel records remain in the timeline below.
 
 These are dated readback facts, not a standing promotion or publish approval.
 Read the live registry and protected workflow state again before making a
@@ -121,6 +120,7 @@ historical rows; they are not competing live claims.
 | `0.8.2` | 2026-08-10 | recorded npm `latest` publication | [`release notes`](../current/release/v0.8.2-release-notes.md) | canonical registry bytes are immutable and cannot supply `0.8.3` or later package evidence |
 | `0.8.3` | 2026-08-10 | published stable release; immutable historical record | [`release notes`](../current/release/v0.8.3-release-notes.md) | package bytes and acceptance evidence are fixed to 0.8.3 and cannot be reused for later package-visible corrections |
 | `0.8.4` | 2026-08-11 | unpublished stable source candidate | [`release notes`](../current/release/v0.8.4-release-notes.md) | adds the normalized authority binding-reason contract; requires its own exact package facts and normal package and hosted gates |
+| `0.8.24` | 2026-08-22 | published stable `latest` | [`release notes`](../current/release/v0.8.24-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm `latest`, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
 
 ## Future Migration Notes
 

@@ -18,14 +18,13 @@ find the record; it is not a ledger of every historical release decision.
 
 ## Recorded Release State
 
-At the recorded 2026-08-10 release state:
+At the recorded 2026-08-22 release state:
 
 | Channel or record | Value | Source |
 | --- | --- | --- |
-| npm `latest` | `0.8.2` | [`v0.8.2` release notes](v0.8.2-release-notes.md) |
-| npm `next` | `0.8.0-rc.1` | [`v0.8.0-rc.1` release notes](v0.8.0-rc.1-release-notes.md) |
-| npm `staging` | `0.8.0-beta.34` | [`v0.8.0-beta.34` release notes](v0.8.0-beta.34-release-notes.md) |
-| GitHub latest release | `v0.8.1` | [GitHub releases](https://github.com/jyt6640/persona-harness/releases) |
+| npm `latest` | `0.8.24` | [`v0.8.24` release notes](v0.8.24-release-notes.md) |
+| GitHub latest release | `v0.8.24` | [GitHub releases](https://github.com/jyt6640/persona-harness/releases) |
+| Historical prerelease channels | recorded separately | [Package/version index](../../releases/package-index.md) |
 
 These are recorded facts, not a standing authorization to publish, promote a
 channel, consume Finish authority, or create a release. Before a release

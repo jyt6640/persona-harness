@@ -44,7 +44,7 @@ describe("CI and release workflow policy surface", () => {
     expect(staticFixturePaths).toContain("scripts/release-workflow-checker-inputs.mjs")
     expect(staticFixturePaths).toContain("scripts/consumer-authority-observer-gh-package-record.mjs")
     expect(staticFixturePaths).toContain("package.json")
-    expect(staticFixturePaths).toContain("docs/current/release/consumer-authority-v0824-acceptance.json")
+    expect(staticFixturePaths).toContain("docs/current/release/consumer-authority-v0825-acceptance.json")
     expect(staticFixturePaths).not.toContain(CLEAN_PACKAGE_SOURCE_FIXTURE_ROOT)
     expect(CLEAN_PACKAGE_SOURCE_FIXTURE_PATHS).not.toContain("scripts/check-release-workflows.mjs")
   })
@@ -54,7 +54,7 @@ describe("CI and release workflow policy surface", () => {
     try {
       copyReleaseWorkflowCheckerFixture(fixtureDir)
       copyFileSync(join(process.cwd(), "package.json"), join(fixtureDir, "package.json"))
-      const acceptancePath = "docs/current/release/consumer-authority-v0824-acceptance.json"
+      const acceptancePath = "docs/current/release/consumer-authority-v0825-acceptance.json"
       const acceptanceTarget = join(fixtureDir, acceptancePath)
       mkdirSync(dirname(acceptanceTarget), { recursive: true })
       copyFileSync(join(process.cwd(), acceptancePath), acceptanceTarget)

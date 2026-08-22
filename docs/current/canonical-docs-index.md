@@ -18,7 +18,7 @@ Start with [Current Docs](README.md) unless you need a specific decision.
 | External environment procedure | `docs/current/external-environment-verification.md` | A bounded packaged-install check on a separate machine. |
 | External-attested Finish walkthrough | `docs/current/external-attested-finish-walkthrough.md` | Source-checkout-only enrolled/fetch/Finish/replay procedure and its limits. |
 | Consumer Authority V1 decision | `docs/current/consumer-authority-v1-decision.md` | The explicit cooperative assurance boundary. |
-| Release operations | `docs/current/release/README.md` | Current release checklist, runbooks, tag policy, and recorded state. |
+| Release operations | `docs/current/release/README.md` | Current release checklist, runbooks, tag policy, and the separation of source inputs from recorded published state. |
 | Version/package chronology | `docs/releases/package-index.md` | Durable version history and release-note links. |
 | Advanced repository surfaces | `docs/current/advanced-surface-index.md` | Source-checkout-only dormant, preview, and repository work. |
 | Full retained-file catalog | `docs/current/docs-inventory.md` | Exhaustive classification when the map above is insufficient. |

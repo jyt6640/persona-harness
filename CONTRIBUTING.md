@@ -88,7 +88,9 @@ npm install
 Before opening a PR, all of these must pass:
 
 ```bash
-npm test            # full unit/integration suite
+npm test            # packaged CLI smoke
+npm run test:unit   # full Vitest unit/integration suite
+npm run test:repository # full repository contract: policy, docs, unit/integration, and clean-package checks
 npm run typecheck   # tsc, zero errors
 npm run build       # clean tsc build
 npm run check:docs  # docs taxonomy + claim/acceptance consistency

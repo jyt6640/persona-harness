@@ -215,7 +215,7 @@ describe("persona-harness init", () => {
   it("migrates only a manifest-verified legacy Persona Harness plugin path", () => {
     const projectDir = createTempProject()
     const legacyPackage = createPackageRoot("0.8.17")
-    const nextPackage = createPackageRoot("0.8.24")
+    const nextPackage = createPackageRoot("0.8.25")
     initializePersonaHarness({ projectDir, packageRoot: legacyPackage })
 
     const legacyPluginPath = join(legacyPackage, "dist", "index.js")
@@ -249,7 +249,7 @@ describe("persona-harness init", () => {
   it("fails closed instead of migrating an absolute plugin path after its owned config was modified", () => {
     const projectDir = createTempProject()
     const legacyPackage = createPackageRoot("0.8.17")
-    const nextPackage = createPackageRoot("0.8.24")
+    const nextPackage = createPackageRoot("0.8.25")
     initializePersonaHarness({ projectDir, packageRoot: legacyPackage })
 
     const changedConfig = Buffer.from(

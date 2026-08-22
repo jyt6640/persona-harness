@@ -9,12 +9,13 @@ state or release authorization.
 - [Package/version index](package-index.md) is the chronological version map.
 - [Release operations](../current/release/README.md) is the current operator
   entrypoint, including the recorded channel snapshot and immutable-tag policy.
-- [`v0.8.1` release notes](../current/release/v0.8.1-release-notes.md) record
-  the latest stable release source and GitHub release facts.
-- [`v0.8.0` release notes](../current/release/v0.8.0-release-notes.md) record
-  the preceding stable release.
-- [`v0.8.0-rc.1` release notes](../current/release/v0.8.0-rc.1-release-notes.md)
-  record the current `next` line at the last readback.
+- [`v0.8.24` release notes](../current/release/v0.8.24-release-notes.md)
+  record the latest published stable release facts.
+- [`v0.8.25` release notes](../current/release/v0.8.25-release-notes.md)
+  are the current source release input; they do not replace the published
+  `0.8.24` record before a later governed release completes.
+- Historical prerelease channels remain in the
+  [package/version index](package-index.md).
 
 ## Policy
 
