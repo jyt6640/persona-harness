@@ -9,12 +9,23 @@ version/package chronology, use
 [`docs/releases/README.md`](../../releases/README.md) and
 [`docs/releases/package-index.md`](../../releases/package-index.md).
 
-## Current 0.8.24 Package Authority
+## Current Source Authority And Published Release State
 
-The current unpublished package authority is 0.8.24. Its root package,
-lockfile, private shared-skills package, and v0824 acceptance record must agree
-exactly. The published 0.8.23 release is immutable historical evidence only
-and must not be retagged, rerun, or published.
+The current source package authority is 0.8.25. Its root package, lockfile,
+private shared-skills package, and v0825 acceptance record must agree exactly.
+Published 0.8.24 is immutable historical evidence and cannot authorize a later
+package, tag, release, or npm publication.
+
+At the recorded 2026-08-22 release state:
+
+| Channel or record | Value | Source |
+| --- | --- | --- |
+| npm `latest` | `0.8.24` | [`v0.8.24` release notes](v0.8.24-release-notes.md) |
+| GitHub latest release | `v0.8.24` | [GitHub releases](https://github.com/jyt6640/persona-harness/releases) |
+
+Those are recorded published facts, not a standing authorization to publish a
+later source package. Read live registry and protected workflow state again
+before a new release decision.
 
 The package keeps one root README candidate, `README.md`, for a deterministic
 English npm landing page. Its source checkout also has an exact packed-package

@@ -47,9 +47,12 @@ history but do not become a current product or release claim.
 ## Release And Package Records
 
 The release row above leads to the compact operator entrypoint and durable
-package chronology. Historical Consumer Authority records live under `release/`;
-their past PASS, NO-GO, or staging result does not provide current Finish
-authority, promotion, or channel permission.
+package chronology. The current source release input and the latest published
+release record are intentionally separate: read the release operations table
+and package index for recorded facts, then re-read live registry and protected
+workflow state before a new release decision. Historical Consumer Authority
+records live under `release/`; their past PASS, NO-GO, or staging result does
+not provide current Finish authority, promotion, or channel permission.
 
 ## Deep Reference And History
 

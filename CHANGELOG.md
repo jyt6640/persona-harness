@@ -8,9 +8,23 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+- Add a release-truth contract: stable GitHub Release generation rejects
+  source-candidate language, distinguishes the GitHub Release from the later
+  npm/provenance completion step, and keeps public maintainer command scopes
+  explicit.
 - Keep process-only evaluation cleanup in the normal CI lane while reserving
   the single-worker resource-sensitive lane for fixtures that own mutable
   package, Gradle, staged-consumer, workflow-loop, or producer runtime state.
+
+## [0.8.24] - 2026-08-22
+
+- Publish the exact packed-package Java/Spring Gradle/JUnit cooperative Finish
+  demo as the required `Verify repository` contract.
+- Keep runtime injection default-off; the legacy runtime-hook demos use only an
+  explicit test-local preview opt-in.
+- Record the protected integration, immutable tag, stable GitHub Release, npm
+  `latest` publication, canonical tar reconciliation, and provenance readback
+  as immutable 0.8.24 release facts.
 
 ## [0.8.4] - 2026-08-11
 

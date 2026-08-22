@@ -2,7 +2,7 @@ import { realpathSync } from "node:fs"
 import { dirname } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
-import { readV0824AcceptanceManifest } from "./consumer-authority-v0824-acceptance-schema.mjs"
+import { readV0825AcceptanceManifest } from "./consumer-authority-v0825-acceptance-schema.mjs"
 import { runExternalAttestationGrammarPreflight } from "./consumer-authority-external-attestation-command-plan.mjs"
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
@@ -15,7 +15,7 @@ function main() {
     process.exitCode = 1
     return
   }
-  const manifest = readV0824AcceptanceManifest(packageRoot)
+  const manifest = readV0825AcceptanceManifest(packageRoot)
   const result = runExternalAttestationGrammarPreflight(
     manifest.externalAttestationCommandPlan,
     grammarOnlyTopology(manifest),

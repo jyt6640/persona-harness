@@ -32,7 +32,7 @@ const supportInputs = [
   ["observerGhPackageRecord", "scripts/consumer-authority-observer-gh-package-record.mjs"],
   ["observerGhTool", "scripts/consumer-authority-observer-gh-tool.mjs"],
   ["packageManifest", "package.json"],
-  ["v0824AcceptanceManifest", "docs/current/release/consumer-authority-v0824-acceptance.json"],
+  ["v0825AcceptanceManifest", "docs/current/release/consumer-authority-v0825-acceptance.json"],
 ]
 
 export const RELEASE_WORKFLOW_CHECKER_INPUTS = Object.freeze([

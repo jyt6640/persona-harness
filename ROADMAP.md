@@ -6,8 +6,9 @@ order, not claims.
 
 ## Now
 
-- P3 integrity program first: Stable/GA and npm `latest` movement are NO-GO
-  until P3 closes. See
+- Keep the P3 integrity program active. Stable/GA and npm `latest` movement
+  require the protected tag, Release, publish, registry, and provenance gates;
+  completing those gates does not imply completion-integrity efficacy. See
   [docs/current/p3-integrity-roadmap.md](docs/current/p3-integrity-roadmap.md).
 - Keep measured claims visible and honest, including the 2026-07-12 local
   production-audit negative result.
@@ -41,7 +42,7 @@ These are explicitly out of scope until measurement supports them. See the
 [forbidden claims table](docs/MEASURED-CLAIMS.md#forbidden-claims).
 
 - Runtime injection default-on.
-- Stable/GA or npm `latest` movement before P3 closes.
+- Ungoverned, bypassed, or unverified Stable/GA or npm `latest` movement.
 - Strong completion-integrity or anti-forgery claims before P3 closes.
 - Token-saving claims.
 - Generated app quality certification.
