@@ -29,10 +29,25 @@ fixes. Alpha and older tags do not.
 
 Please do **not** open a public issue for a security problem.
 
-Use GitHub's private vulnerability reporting on this repository
-("Security" tab → "Report a vulnerability"), or email the maintainer at the
-address on the npm package page.
+Use GitHub's private vulnerability reporting form:
+
+https://github.com/jyt6640/persona-harness/security/advisories/new
+
+If that form is unavailable, email `jyt6640@naver.com` only to request a
+private reporting channel. Do not include credentials, tokens, private keys,
+exploit details, or private code in a public issue or email.
 
 Include: affected version, reproduction steps, and impact. You'll get an
 acknowledgement as soon as the maintainer sees it. This is a single-maintainer
 project, so response time is best-effort, not contractual.
+
+## GitHub security-control disclosure
+
+Last owner settings read: 2026-08-22.
+
+- Private vulnerability reporting is enabled.
+- GitHub secret scanning, push protection, Dependabot alerts, and Dependabot
+  security updates are disabled.
+
+No statement in this repository should treat those disabled controls as a
+protection promise. Re-read the owner settings before changing this disclosure.

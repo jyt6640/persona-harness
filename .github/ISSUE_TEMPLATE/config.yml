@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/jyt6640/persona-harness/security/advisories/new
+    about: Do not use a public issue for vulnerabilities or sensitive details.
   - name: Scope and contribution rules
     url: https://github.com/jyt6640/persona-harness/blob/main/CONTRIBUTING.md
     about: Read the contribution boundaries and claim ladder before proposing new behavior.
