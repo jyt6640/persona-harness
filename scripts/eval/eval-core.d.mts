@@ -88,6 +88,7 @@ export type EvalTelemetry = {
     fixtureBytes: number
     promptBytes: number
     baselineFileBytes: number
+    operatorInstructionBytes?: number
   }
   workspace: {
     persona: { fileCount: number; bytes: number }
@@ -108,11 +109,33 @@ export type EvalTelemetry = {
 
 export type EvalResultRun = EvalRun & {
   workspaceDir?: string
+  syntheticCase?: {
+    caseId: string
+    operatorProfile: string
+    instructionSha256: string
+  } | null
   metadata: {
     telemetry: EvalTelemetry
   }
   providerToolCompletion?: ProviderToolCompletion
   finalizationContinuation?: FinalizationContinuation
+}
+
+export type EvalPlanRun = {
+  fixtureId: string
+  conditionId: string
+  repetition: number
+  caseId?: string
+  operatorProfile?: string
+  operatorInstruction?: string
+}
+
+export type EvalPlan = {
+  fixtureIds: string[]
+  conditionIds: string[]
+  fixtureMetadata: Record<string, FixtureMetadata>
+  runPlanDigest?: string
+  runs: EvalPlanRun[]
 }
 
 export type WorkspacePurity = {
@@ -167,12 +190,7 @@ export function aggregateRuns(runs: readonly EvalRun[]): {
   byCondition: Array<Record<string, unknown>>
   singleTurnEligibleByCondition: Array<Record<string, unknown>>
 }
-export function buildPlan(options: Record<string, unknown>): {
-  fixtureIds: string[]
-  conditionIds: string[]
-  fixtureMetadata: Record<string, FixtureMetadata>
-  runs: Array<{ fixtureId: string; conditionId: string; repetition: number }>
-}
+export function buildPlan(options: Record<string, unknown>): EvalPlan
 export function countFailureModes(outcomes: Record<string, unknown>): {
   external: { count: number; labels: string[] }
   operational: { count: number; labels: string[] }
@@ -231,7 +249,7 @@ export function runEval(options: Record<string, unknown>): Promise<{
   preflight: { ok: boolean; errors: string[] }
   resultsPath: string | null
   results: { runs: EvalResultRun[] } | null
-  plan?: unknown
+  plan?: EvalPlan
 }>
 export function findAmbientInfluencePaths(projectDir: string, outputRoot: string): string[]
 export function scanWorkspacePurity(workspaceDir: string, conditionId: string): WorkspacePurity

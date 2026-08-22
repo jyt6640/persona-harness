@@ -68,6 +68,7 @@ Total indexed files: 337
 | `docs/current/evaluation-fixtures/multi-step-backend-small.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/evaluation-fixtures/multi-step-backend.md` | operational stable | - | Operational fixture/template/runbook; stays non-versioned unless a release freezes a copy. |
 | `docs/current/evaluation-methodology.md` | operational stable | - | Stable non-versioned guide or index. |
+| `docs/current/synthetic-ai-operator-benchmark.md` | operational stable | - | Synthetic model-run benchmark protocol; explicitly excludes human feedback, independent-participant, contest, and product-quality claims. |
 | `docs/current/external-review-adoption-status.md` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/evidence-reviews/v0.3.8-alpha.0-clean-workflow-smoke.md` | legacy current evidence review | v0.3.8-alpha.0 | Compatibility location for older evidence review; keep linked rather than moving blindly. |
 | `docs/current/evidence-reviews/v0.3.8-alpha.1-clean-tarball-workflow-smoke.md` | legacy current evidence review | v0.3.8-alpha.1 | Compatibility location for older evidence review; keep linked rather than moving blindly. |

@@ -133,6 +133,7 @@ export function parseArgs(argv) {
     projectDir: process.cwd(),
     capture: false,
     replayDir: "",
+    runPlanPath: "",
   }
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -172,6 +173,7 @@ export function parseArgs(argv) {
     else if (arg === "--dry-run") options.dryRun = true
     else if (arg === "--capture") options.capture = true
     else if (arg === "--replay") options.replayDir = next()
+    else if (arg === "--run-plan") options.runPlanPath = next()
     else if (arg === "--json") options.json = true
     else throw new Error(`Unknown option: ${arg}`)
   }
@@ -219,6 +221,7 @@ export function selectConditions(conditionOption) {
 }
 
 export function buildPlan(options) {
+  if (options.runPlanPath) return buildPlanFromFile(options)
   const fixtureIds = selectFixtures(options.fixture)
   const conditionIds = selectConditions(options.condition)
   const fixtureMetadata = fixtureMetadataForIds(fixtureIds)
@@ -233,6 +236,64 @@ export function buildPlan(options) {
   }
 
   return { fixtureIds, conditionIds, fixtureMetadata, runs }
+}
+
+function buildPlanFromFile(options) {
+  const path = resolve(options.projectDir, options.runPlanPath)
+  let input
+  try {
+    input = JSON.parse(readFileSync(path, "utf8"))
+  } catch {
+    throw new Error("invalid eval run plan")
+  }
+  if (!isRecord(input) || input.schemaVersion !== "persona-onoff-eval-run-plan.1" || !Array.isArray(input.runs) || input.runs.length === 0) {
+    throw new Error("invalid eval run plan")
+  }
+  const runs = input.runs.map((run, index) => normalizePlannedRun(run, index))
+  const caseIds = new Set()
+  const runKeys = new Set()
+  for (const run of runs) {
+    if (caseIds.has(run.caseId)) throw new Error(`duplicate synthetic case id: ${run.caseId}`)
+    const key = `${run.fixtureId}:${run.conditionId}:${run.repetition}`
+    if (runKeys.has(key)) throw new Error(`duplicate eval run plan entry: ${key}`)
+    caseIds.add(run.caseId)
+    runKeys.add(key)
+  }
+  const fixtureIds = [...new Set(runs.map((run) => run.fixtureId))]
+  const conditionIds = [...new Set(runs.map((run) => run.conditionId))]
+  return {
+    fixtureIds,
+    conditionIds,
+    fixtureMetadata: fixtureMetadataForIds(fixtureIds),
+    runPlanDigest: sha256Text(JSON.stringify(input)),
+    runs,
+  }
+}
+
+function normalizePlannedRun(value, index) {
+  if (!isRecord(value)) throw new Error(`invalid eval run plan entry: ${index + 1}`)
+  const fixtureId = requiredPlanText(value.fixtureId, "fixtureId")
+  const conditionId = normalizeConditionId(requiredPlanText(value.conditionId, "conditionId"))
+  if (!Object.hasOwn(FIXTURE_PATHS, fixtureId)) throw new Error(`invalid eval run plan fixture: ${fixtureId}`)
+  if (!Object.hasOwn(CONDITIONS, conditionId)) throw new Error(`invalid eval run plan condition: ${conditionId}`)
+  if (!Number.isInteger(value.repetition) || value.repetition < 1) throw new Error("invalid eval run plan repetition")
+  return {
+    caseId: requiredPlanText(value.caseId, "caseId"),
+    fixtureId,
+    conditionId,
+    repetition: value.repetition,
+    operatorProfile: requiredPlanText(value.operatorProfile, "operatorProfile"),
+    operatorInstruction: requiredPlanText(value.operatorInstruction, "operatorInstruction"),
+  }
+}
+
+function requiredPlanText(value, name) {
+  if (typeof value !== "string" || value.trim() === "") throw new Error(`invalid eval run plan ${name}`)
+  return value
+}
+
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function fixtureMetadataForIds(fixtureIds) {
@@ -1715,6 +1776,7 @@ export async function runEval(options) {
       condition: options.condition,
       runs: options.runs,
       concurrency: options.concurrency,
+      runPlanDigest: plan.runPlanDigest ?? null,
     },
     fixtureMetadata: plan.fixtureMetadata,
     runs,
@@ -1735,13 +1797,14 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
   await writeFile(join(workspaceDir, "README.md"), fixtureText)
 
   const baselineFile = await prepareConditionFiles(workspaceDir, runPlan.conditionId)
-  const prompt = buildPrompt(fixtureText, runPlan.conditionId)
+  const prompt = buildPrompt(fixtureText, runPlan.conditionId, runPlan.operatorInstruction)
   const promptFile = join(workspaceDir, "prompt.txt")
   await writeFile(promptFile, prompt)
   const inputTelemetry = {
     fixtureBytes: byteLength(fixtureText),
     promptBytes: byteLength(prompt),
     baselineFileBytes: baselineFile ? fileSizeOrZero(join(workspaceDir, baselineFile)) : 0,
+    operatorInstructionBytes: runPlan.operatorInstruction ? byteLength(runPlan.operatorInstruction) : 0,
   }
 
   const logsDir = options.capture ? join(rawDir, "raw") : join(outputDir, "logs", runId)
@@ -1759,7 +1822,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
       prompt,
       promptFile,
       workspaceDir,
-      message: "README.md 보고 구현해줘",
+      message: runPlan.operatorInstruction ? prompt : "README.md 보고 구현해줘",
       temperature: options.temperature,
       topP: options.topP,
       seed: options.seed,
@@ -1929,6 +1992,7 @@ async function executeRun(options, outputDir, runPlan, environment, gitCommit) {
     fixtureMetadata: fixtureMetadataFor(runPlan.fixtureId),
     conditionId: runPlan.conditionId,
     repetition: runPlan.repetition,
+    syntheticCase: syntheticCaseMetadata(runPlan),
     startedAt: new Date().toISOString(),
     endedAt: new Date().toISOString(),
     workspaceDir,
@@ -2291,7 +2355,7 @@ async function prepareConditionFiles(workspaceDir, conditionId) {
   return null
 }
 
-function buildPrompt(fixtureText, conditionId) {
+function buildPrompt(fixtureText, conditionId, operatorInstruction = "") {
   const lines = [
     "Implement the following backend fixture in the current working directory.",
     "Return only after you have produced the project files and documented build/test/run commands.",
@@ -2301,7 +2365,17 @@ function buildPrompt(fixtureText, conditionId) {
   if (conditionId === "ph-on") {
     lines.unshift("Use Persona Harness workflow guidance already installed in this project. Do not claim completion until workflow reports are filled.")
   }
+  if (operatorInstruction) lines.unshift(`Synthetic operator focus: ${operatorInstruction}`)
   return `${lines.join("\n")}\n`
+}
+
+function syntheticCaseMetadata(runPlan) {
+  if (!runPlan.caseId) return null
+  return {
+    caseId: runPlan.caseId,
+    operatorProfile: runPlan.operatorProfile,
+    instructionSha256: sha256Text(runPlan.operatorInstruction),
+  }
 }
 
 function writeCommandLog(path, execution) {
