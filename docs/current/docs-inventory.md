@@ -23,12 +23,12 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - historical version-specific record: 28
 - historical release operations: 1
 - legacy current evidence review: 2
-- operational stable: 40
+- operational stable: 41
 - phase archive: 46
 - version-specific release note: 59
 - versioned durable: 26
 
-Total indexed files: 337
+Total indexed files: 338
 
 ## File Inventory
 
@@ -90,6 +90,7 @@ Total indexed files: 337
 | `docs/current/harness-default-audit.md` | current active pointer/status | - | P1 STEP 1 config default/path audit and dead-flag report; no default or runtime behavior change. |
 | `docs/current/injection-value-status.json` | current active pointer/status | - | Current active pointer, checklist, status, or release-operation index. |
 | `docs/current/injection-value-stopping-rule.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
+| `docs/current/independent-spring-pilot-protocol.md` | operational stable | - | Consent-first preregistration, session, aggregate, and bounded-claim protocol for real independent Spring participants; never synthetic or testimonial evidence. |
 | `docs/current/java-backend-actual-quality-shape-review.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/java-backend-bootstrap-injection-design.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/java-backend-bootstrap-open-code-demo.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
