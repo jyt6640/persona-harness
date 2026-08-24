@@ -1,6 +1,6 @@
 {
   "name": "@persona-harness/shared-skills",
-  "version": "0.8.27",
+  "version": "0.8.28",
   "type": "module",
   "private": true,
   "description": "Persona-owned portable skill procedures and optional overlays",

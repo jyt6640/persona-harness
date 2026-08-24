@@ -15,7 +15,10 @@ import {
   LEGACY_FINISH_COMMAND,
   LEGACY_IMPLEMENT_COMMAND,
 } from "./agents-contract.js"
-import { isPersonaHarnessNpmPluginSpecifier } from "./init-source.js"
+import {
+  isPersonaHarnessPluginSpecifier,
+  readOpenCodePluginEntries,
+} from "./opencode-plugin-config.js"
 
 const CURRENT_PLUGIN_PATH = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -94,26 +97,19 @@ function inspectAgents(projectDir: string): DoctorAgentsState {
   return "unrecognized"
 }
 
-function pluginEntries(parsed: unknown): readonly string[] {
+function pluginEntries(parsed: unknown): readonly string[] | undefined {
   if (!isRecord(parsed)) {
-    return []
+    return undefined
   }
-  const plugin = parsed.plugin
-  if (typeof plugin === "string") {
-    return [plugin]
-  }
-  if (!Array.isArray(plugin)) {
-    return []
-  }
-  return plugin.filter((entry): entry is string => typeof entry === "string")
+  const entries = readOpenCodePluginEntries(parsed.plugin)
+  return entries?.map((entry) => entry.specifier)
 }
 
 function isPersonaHarnessPluginEntry(entry: string): boolean {
   const normalized = entry.trim().replace(/\\/gu, "/")
   return (
     normalized === CURRENT_PLUGIN_PATH
-    || normalized === "persona-harness"
-    || isPersonaHarnessNpmPluginSpecifier(normalized)
+    || isPersonaHarnessPluginSpecifier(normalized)
     || normalized === PERSONA_HARNESS_DIST_PATH
     || normalized.endsWith(`/${PERSONA_HARNESS_DIST_PATH}`)
   )
@@ -126,7 +122,11 @@ function inspectProjectPlugin(projectDir: string): DoctorProjectPluginState {
   }
   try {
     const parsed: unknown = JSON.parse(stripJsonComments(readFileSync(configPath, "utf8")))
-    return pluginEntries(parsed).some(isPersonaHarnessPluginEntry)
+    const entries = pluginEntries(parsed)
+    if (entries === undefined) {
+      return "unreadable"
+    }
+    return entries.some(isPersonaHarnessPluginEntry)
       ? "configured"
       : "not observed"
   } catch {

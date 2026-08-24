@@ -28,6 +28,7 @@ import { runGoCommand, type GoStep } from "./go-command.js"
 import { runPhilosophyCommand } from "./philosophy-command.js"
 import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
+import { runProjectAutoUpdateCommand } from "./project-auto-update.js"
 import { decodeCliStdinText, readBoundedCliStdinText } from "./stdin-text.js"
 import { MAX_SUBMITTED_REPORT_BYTES, workflowReportStdinLimitMessage } from "./report-status.js"
 import { personaHarnessVersion } from "./version.js"
@@ -171,6 +172,13 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
       env: options.env,
       sigstoreTrustInspector: options.doctorSigstoreTrustInspector,
     })
+  }
+
+  if (command === "update") {
+    return runProjectAutoUpdateCommand(args.slice(1), {
+      packageRoot: options.packageRoot,
+      projectDir: options.cwd,
+    }, invocationName)
   }
 
   if (command === "authority") {

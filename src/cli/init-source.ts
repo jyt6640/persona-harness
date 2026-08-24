@@ -6,11 +6,23 @@ import { sha256Bytes, sha256Text } from "./init-manifest.js"
 import type { InitPackageBinding } from "./init-manifest.js"
 import type { InitTarget } from "./init-transaction.js"
 import { InitManifestError } from "./init-manifest.js"
+import {
+  activePersonaHarnessPluginIndex,
+  isPersonaHarnessNpmPluginSpecifier,
+  isVersionedNpmPackageVersion,
+  OPENCODE_CONFIG_PATH,
+  PERSONA_HARNESS_PACKAGE_NAME,
+  personaAutoUpdateState,
+  readOpenCodePluginEntries,
+  serializeOpenCodePluginEntries,
+  withPersonaAutoUpdate,
+} from "./opencode-plugin-config.js"
 
-export const OPENCODE_CONFIG_PATH = ".opencode/opencode.json"
-export const PERSONA_HARNESS_PACKAGE_NAME = "persona-harness"
-
-const VERSIONED_NPM_PACKAGE_PATTERN = /^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u
+export {
+  isPersonaHarnessNpmPluginSpecifier,
+  OPENCODE_CONFIG_PATH,
+  PERSONA_HARNESS_PACKAGE_NAME,
+} from "./opencode-plugin-config.js"
 
 const PROJECT_NOISE_IGNORE_ENTRIES = [
   "node_modules/",
@@ -56,34 +68,28 @@ export function readOpencodeConfig(configPath: string): Record<string, unknown> 
   if (isMissing(configPath)) {
     return {}
   }
+  return parseOpencodeConfigBytes(readFileSync(configPath))
+}
 
+export function parseOpencodeConfigBytes(bytes: Uint8Array): Record<string, unknown> {
   let parsed: unknown
   try {
-    parsed = JSON.parse(stripJsonComments(readFileSync(configPath, "utf8")))
+    parsed = JSON.parse(stripJsonComments(Buffer.from(bytes).toString("utf8")))
   } catch {
     throw new InitManifestError(`Failed to parse ${OPENCODE_CONFIG_PATH}; no files were changed.`)
   }
   if (!isRecord(parsed)) {
     throw new InitManifestError(`${OPENCODE_CONFIG_PATH} must contain a JSON object; no files were changed.`)
   }
-  if (
-    parsed.plugin !== undefined
-    && typeof parsed.plugin !== "string"
-    && !Array.isArray(parsed.plugin)
-  ) {
+  if (readOpenCodePluginEntries(parsed.plugin) === undefined) {
     throw new InitManifestError(`${OPENCODE_CONFIG_PATH} has an ambiguous plugin value; no files were changed.`)
   }
   return { ...parsed }
 }
 
-export function isPersonaHarnessNpmPluginSpecifier(entry: string): boolean {
-  const prefix = `${PERSONA_HARNESS_PACKAGE_NAME}@`
-  return entry.startsWith(prefix) && VERSIONED_NPM_PACKAGE_PATTERN.test(entry.slice(prefix.length))
-}
-
 export function versionedNpmPluginSpecifier(packageRoot: string): string {
   const binding = packageBinding(packageRoot, "")
-  if (!VERSIONED_NPM_PACKAGE_PATTERN.test(binding.version)) {
+  if (!isVersionedNpmPackageVersion(binding.version)) {
     throw new InitManifestError("Package binding version cannot form a versioned OpenCode plugin specifier; no files were changed.")
   }
   return `${binding.name}@${binding.version}`
@@ -94,18 +100,26 @@ export function mergePluginPath(
   pluginSpecifier: string,
   legacyOwnedPluginPaths: readonly string[] = [],
 ): Record<string, unknown> {
-  const plugin = config.plugin
-  const existingPlugins =
-    typeof plugin === "string"
-      ? [plugin]
-      : Array.isArray(plugin)
-        ? plugin.filter((entry): entry is string => typeof entry === "string")
-        : []
+  const existingPlugins = readOpenCodePluginEntries(config.plugin)
+  if (existingPlugins === undefined) {
+    throw new InitManifestError(`${OPENCODE_CONFIG_PATH} has an ambiguous plugin value; no files were changed.`)
+  }
   const legacyOwned = new Set(legacyOwnedPluginPaths)
-  const retainedPlugins = existingPlugins.filter((entry) => !legacyOwned.has(entry))
+  const retainedPlugins = existingPlugins.filter((entry) => !legacyOwned.has(entry.specifier))
+  const activePersonaIndex = activePersonaHarnessPluginIndex(retainedPlugins)
+  const activePersona = activePersonaIndex === undefined ? undefined : retainedPlugins[activePersonaIndex]
+  const preserveAutoUpdate = activePersona !== undefined && personaAutoUpdateState(activePersona) === "enabled"
+  const nextPlugins = activePersona?.specifier === pluginSpecifier
+    ? retainedPlugins
+    : [
+        ...retainedPlugins,
+        ...(preserveAutoUpdate
+          ? [withPersonaAutoUpdate({ kind: "plain", specifier: pluginSpecifier }, true)]
+          : [{ kind: "plain" as const, specifier: pluginSpecifier }]),
+      ]
   return {
     ...config,
-    plugin: retainedPlugins.includes(pluginSpecifier) ? retainedPlugins : [...retainedPlugins, pluginSpecifier],
+    plugin: serializeOpenCodePluginEntries(nextPlugins),
   }
 }
 

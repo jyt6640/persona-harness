@@ -27,6 +27,7 @@ import {
 } from "./init-source.js"
 import type { InitTarget } from "./init-transaction.js"
 import { InitManifestError } from "./init-manifest.js"
+import { readOpenCodePluginEntries } from "./opencode-plugin-config.js"
 
 export type PreparedInit = {
   readonly currentManifest: InitManifest | null
@@ -71,9 +72,11 @@ function existingBytes(projectDir: string, relativePath: string): Buffer | null 
 }
 
 function pluginEntries(config: Record<string, unknown>): readonly string[] {
-  const plugin = config.plugin
-  if (typeof plugin === "string") return [plugin]
-  return Array.isArray(plugin) ? plugin.filter((entry): entry is string => typeof entry === "string") : []
+  const entries = readOpenCodePluginEntries(config.plugin)
+  if (entries === undefined) {
+    throw new InitManifestError(".opencode/opencode.json has an ambiguous plugin value; no files were changed.")
+  }
+  return entries.map((entry) => entry.specifier)
 }
 
 function isVerifiedLegacyPluginPath(entry: string, manifest: InitManifest): boolean {
