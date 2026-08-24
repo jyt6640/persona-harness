@@ -2224,10 +2224,11 @@ function assertSourceOwnerDogfoodFeedbackBoundary(sourceCliPath) {
 
 function assertOwnerDogfoodFeedbackBoundary(fixtureRoot, phPath, label) {
   mkdirSync(fixtureRoot, { recursive: true })
-  const stateRoot = join(fixtureRoot, "state")
+  const canonicalFixtureRoot = realpathSync(fixtureRoot)
+  const stateRoot = join(canonicalFixtureRoot, "state")
   const eventPath = join(stateRoot, "events.jsonl")
   const recorded = runNode(
-    fixtureRoot,
+    canonicalFixtureRoot,
     [phPath, "feedback", "dogfood", "source-read-runtime-unavailable"],
     { PH_OWNER_DOGFOOD_FEEDBACK_ROOT: stateRoot },
   )
@@ -2235,7 +2236,7 @@ function assertOwnerDogfoodFeedbackBoundary(fixtureRoot, phPath, label) {
   if (
     recorded.stdout !== "Owner dogfooding feedback recorded. Diagnostic-only.\n"
     || recorded.stderr.length !== 0
-    || recorded.stdout.includes(fixtureRoot)
+    || recorded.stdout.includes(canonicalFixtureRoot)
     || !existsSync(eventPath)
     || lstatSync(eventPath).isSymbolicLink()
     || !lstatSync(eventPath).isFile()
@@ -2253,7 +2254,7 @@ function assertOwnerDogfoodFeedbackBoundary(fixtureRoot, phPath, label) {
   const before = readFileSync(eventPath, "utf8")
   const marker = "ghp_owner_dogfood_feedback_marker"
   const rejected = runNode(
-    fixtureRoot,
+    canonicalFixtureRoot,
     [phPath, "feedback", "dogfood", marker],
     { PH_OWNER_DOGFOOD_FEEDBACK_ROOT: stateRoot },
   )
