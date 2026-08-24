@@ -2223,6 +2223,7 @@ function assertSourceOwnerDogfoodFeedbackBoundary(sourceCliPath) {
 }
 
 function assertOwnerDogfoodFeedbackBoundary(fixtureRoot, phPath, label) {
+  mkdirSync(fixtureRoot, { recursive: true })
   const stateRoot = join(fixtureRoot, "state")
   const eventPath = join(stateRoot, "events.jsonl")
   const recorded = runNode(
