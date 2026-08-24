@@ -227,11 +227,12 @@ Run `npx ph --help` for the full list. The workflow ledger lives under `.persona
 
 `ph feedback dogfood <code>` is intentionally separate from the project
 feedback template. It records only a fixed diagnostic code and timestamp in
-the private owner state file at
-`~/.local/state/persona-harness/owner-dogfood-feedback/events.jsonl`, or an
-absolute `PH_OWNER_DOGFOOD_FEEDBACK_ROOT` override. It does not capture project
-files or conversation text, and it cannot grant workflow, release, authority,
-or external-observation permission.
+`events.jsonl` inside the private owner state directory
+`~/.local/state/persona-harness/owner-dogfood-feedback`. Set
+`PH_OWNER_DOGFOOD_FEEDBACK_ROOT` only to an absolute replacement state
+directory; the command appends `events.jsonl` inside it. It does not capture
+project files or conversation text, and it cannot grant workflow, release,
+authority, or external-observation permission.
 
 ## Advanced surfaces
 

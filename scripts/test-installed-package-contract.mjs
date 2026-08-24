@@ -2265,6 +2265,46 @@ function assertOwnerDogfoodFeedbackBoundary(fixtureRoot, phPath, label) {
   ) {
     throw new Error(`${label} invalid owner dogfood feedback input did not fail closed`)
   }
+
+  const symlinkParent = join(canonicalFixtureRoot, "owner-dogfood-feedback-symlink")
+  const symlinkOutside = join(canonicalFixtureRoot, "owner-dogfood-feedback-symlink-outside")
+  const symlinkRoot = join(symlinkParent, "state")
+  mkdirSync(symlinkParent)
+  mkdirSync(symlinkOutside)
+  symlinkSync(symlinkOutside, symlinkRoot, "dir")
+  const symlinked = runNode(
+    canonicalFixtureRoot,
+    [phPath, "feedback", "dogfood", "unnecessary-interview"],
+    { PH_OWNER_DOGFOOD_FEEDBACK_ROOT: symlinkRoot },
+  )
+  if (
+    symlinked.status === 0
+    || `${symlinked.stdout}${symlinked.stderr}`.includes(symlinkRoot)
+    || existsSync(join(symlinkOutside, "events.jsonl"))
+    || readFileSync(eventPath, "utf8") !== before
+  ) {
+    throw new Error(`${label} owner dogfood feedback state-root symlink did not fail closed`)
+  }
+
+  const malformedRoot = join(canonicalFixtureRoot, "owner-dogfood-feedback-malformed")
+  const malformedEventPath = join(malformedRoot, "events.jsonl")
+  mkdirSync(malformedRoot)
+  chmodSync(malformedRoot, 0o700)
+  writeFileSync(malformedEventPath, "not-json\\n")
+  chmodSync(malformedEventPath, 0o600)
+  const malformed = runNode(
+    canonicalFixtureRoot,
+    [phPath, "feedback", "dogfood", "unnecessary-interview"],
+    { PH_OWNER_DOGFOOD_FEEDBACK_ROOT: malformedRoot },
+  )
+  if (
+    malformed.status === 0
+    || `${malformed.stdout}${malformed.stderr}`.includes(malformedRoot)
+    || readFileSync(malformedEventPath, "utf8") !== "not-json\\n"
+    || readFileSync(eventPath, "utf8") !== before
+  ) {
+    throw new Error(`${label} malformed owner dogfood feedback state did not fail closed`)
+  }
 }
 
 function isOwnerDogfoodFeedbackEvent(value) {

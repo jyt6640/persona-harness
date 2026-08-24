@@ -52,10 +52,12 @@ active exact plugin pin and the matching manifest digest. It never changes the
 current session, rules, profiles, workflow state, or unrelated plugins.
 
 The package also exposes `ph feedback dogfood <code>` for a bounded owner
-dogfooding signal. Its private JSONL store contains only a fixed event code and
-timestamp, rejects unsafe, malformed, or unwritable state without claiming
-persistence, and cannot influence workflow Finish, release, authority, or
-external-observation permission.
+dogfooding signal. It appends to `events.jsonl` inside a private state directory
+(defaulting to `~/.local/state/persona-harness/owner-dogfood-feedback`); an
+absolute `PH_OWNER_DOGFOOD_FEEDBACK_ROOT` replaces that directory. Its JSONL
+store contains only a fixed event code and timestamp, rejects unsafe, malformed,
+or unwritable state without claiming persistence, and cannot influence workflow
+Finish, release, authority, or external-observation permission.
 
 Repairing a manifest-less, recognized portable static baseline preserves the
 caller project's canonical realpath while staging ownership checks run. The

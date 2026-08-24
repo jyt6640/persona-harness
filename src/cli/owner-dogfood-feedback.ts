@@ -25,9 +25,10 @@ export function ownerDogfoodFeedbackUsage(invocationName: string): string {
     "Codes:",
     ...OWNER_DOGFOOD_FEEDBACK_CODES.map((code) => `  ${code}`),
     "",
-    "State root:",
-    "  ~/.local/state/persona-harness/owner-dogfood-feedback/events.jsonl",
-    "  Override only with an absolute PH_OWNER_DOGFOOD_FEEDBACK_ROOT.",
+    "State directory:",
+    "  default: ~/.local/state/persona-harness/owner-dogfood-feedback",
+    "  events.jsonl is appended inside that directory.",
+    "  Override root only with an absolute PH_OWNER_DOGFOOD_FEEDBACK_ROOT directory.",
   ].join("\n")
 }
 

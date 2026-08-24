@@ -26,6 +26,14 @@ afterEach(() => {
 })
 
 describe("owner dogfooding feedback", () => {
+  it("describes the explicit override as a private state directory", () => {
+    const result = runFeedback(["dogfood", "--help"], {})
+
+    expect(result).toMatchObject({ status: 0, stderr: "" })
+    expect(result.stdout).toContain("Override root only with an absolute PH_OWNER_DOGFOOD_FEEDBACK_ROOT directory.")
+    expect(result.stdout).toContain("events.jsonl is appended inside that directory.")
+  })
+
   it("appends bounded diagnostic-only events to the explicit private root", () => {
     const root = temporaryRoot("persona-owner-dogfood-feedback-")
     const first = runFeedback(["dogfood", "source-read-runtime-unavailable"], {
