@@ -8,6 +8,14 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+- Add opt-in project-local updates. `ph update enable --yes` preserves an
+  owned project's other OpenCode plugin entries and schedules a bounded
+  next-session check for a newer stable Persona Harness pin. Invalid ownership,
+  malformed configuration, or unavailable registry data leave project files
+  unchanged.
+
+## [0.8.27] - 2026-08-24
+
 - Record the public technical source-provenance audit, remove dormant
   non-compatible shared-skill source material, and make the retained MIT
   ast-grep attribution visible in the npm package through `NOTICE` and its

@@ -149,6 +149,23 @@ follow that rail and end with `npx ph workflow finish implement`. Its workflow
 conflict preservation applies to cooperative local PH/user writers and does not
 address hostile same-user filesystem path replacement.
 
+### Opt-in project updates
+
+Project-local updates are off by default. In an intact Persona Harness project,
+opt in with:
+
+```bash
+npx ph update enable --yes
+npx ph update status --json
+```
+
+On a later OpenCode session, Persona Harness makes one bounded npm `latest`
+check in the background. If a newer stable version exists, it updates only the
+active exact `persona-harness@<version>` plugin pin and its owned init manifest;
+the already-running session, rules, profile, workflow files, and other plugins
+are left alone. The new pin is picked up by the following session. Disable it
+with `npx ph update disable --yes`.
+
 > [!NOTE]
 > If `workflow finish` fails, the agent must fix the reported blocker before claiming completion. **That failure is the product working, not a bug.**
 

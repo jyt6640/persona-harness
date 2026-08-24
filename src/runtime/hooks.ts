@@ -52,6 +52,10 @@ import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "./targe
 import { selectSharedSkillsForTarget } from "./shared-skill-router.js"
 import { createWriteGuardWarning } from "./write-guard.js"
 import { EntrySteeringTracker } from "./entry-steering-status.js"
+import {
+  createProjectAutoUpdateScheduler,
+  type ProjectAutoUpdateScheduler,
+} from "./project-auto-update.js"
 import type {
   ToolAfterInput,
   ToolAfterOutput,
@@ -67,6 +71,10 @@ import type {
 
 type Phase0HookOptions = {
   client?: IdleContinuationClient & TokenCompactionClient
+  projectAutoUpdate?: {
+    readonly enabled: boolean
+    readonly scheduler?: ProjectAutoUpdateScheduler
+  }
   projectDir?: string
   store?: PendingInjectionStore
 }
@@ -179,6 +187,9 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
     }
   }
   const config = configResult.config
+  const projectAutoUpdate = options.projectAutoUpdate?.enabled === true
+    ? options.projectAutoUpdate.scheduler ?? createProjectAutoUpdateScheduler()
+    : undefined
   const evidencePath = resolveSafeEvidenceRootResult(projectDir, config.evidenceDir)
   if (!evidencePath.ok) {
     return {
@@ -338,6 +349,9 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   return {
     event: async (input: EventInput): Promise<void> => {
       await runHostHookAsync("event", async () => {
+        if (input.event.type === "session.created") {
+          projectAutoUpdate?.schedule(projectDir)
+        }
         if (!config.enabled) {
           return
         }
