@@ -9,6 +9,13 @@ vi.mock("../src/cli/workflow-closure-finish.js", () => ({
   workflowFinishFollowUp: () => null,
 }))
 
+vi.mock("../src/cli/cooperative-finish-context.js", () => ({
+  prepareCooperativeFinishContext: () => ({
+    code: "source-read-runtime-unavailable",
+    kind: "blocked",
+  }),
+}))
+
 vi.mock("../src/cli/workflow-finish-authority.js", async () => {
   const actual = await vi.importActual<typeof import("../src/cli/workflow-finish-authority.js")>(
     "../src/cli/workflow-finish-authority.js",
@@ -42,5 +49,14 @@ describe("workflow finish completion decision", () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("Blocker: trusted-authority-required")
+  })
+
+  it("keeps a cooperative source-read runtime block distinct from missing workflow artifacts", () => {
+    const result = runWorkflowFinishResult("implement", "/fixture", "cooperative")
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Blocker: source-read-runtime-unavailable")
+    expect(result.stderr).toContain("Existing workflow reports and history archives, if any, remain diagnostic-only.")
+    expect(result.stderr).not.toContain("Required fixes:")
   })
 })

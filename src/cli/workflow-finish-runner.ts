@@ -7,7 +7,12 @@ import { readWorkflowClosurePayload } from "./workflow-closure.js"
 import { prepareCooperativeFinishContext } from "./cooperative-finish-context.js"
 import { runCurrentProcessCooperativeFinish } from "./cooperative-finish-authority.js"
 import { DEFAULT_FINISH_ASSURANCE_REQUIREMENT, type FinishAssuranceRequirement } from "./workflow-verification-decision.js"
-import { failedRunnerOutput, passedFinishOutput, type WorkflowRunnerKind } from "./workflow-output.js"
+import {
+  failedRunnerOutput,
+  passedFinishOutput,
+  sourceReadRuntimeUnavailableFinishOutput,
+  type WorkflowRunnerKind,
+} from "./workflow-output.js"
 import { readWorkflowFinishAuthority } from "./workflow-finish-authority.js"
 
 export function runWorkflowFinishResult(
@@ -66,6 +71,9 @@ function runCooperativeFinishResult(
 ): CliRunResult {
   const context = prepareCooperativeFinishContext(projectDir, projectRead?.boundary)
   if (context.kind === "blocked") {
+    if (context.code === "source-read-runtime-unavailable") {
+      return sourceReadRuntimeUnavailableFinishOutput(runnerKind)
+    }
     return failedRunnerOutput("finish", runnerKind, [`Cooperative verification blocked: ${context.code}.`])
   }
   const payload = readWorkflowClosurePayload("next", projectDir, {
@@ -80,5 +88,7 @@ function runCooperativeFinishResult(
   const result = runCurrentProcessCooperativeFinish(projectDir, projectRead?.boundary, context.value)
   return result.kind === "passed"
     ? passedFinishOutput(runnerKind, "cooperative")
-    : failedRunnerOutput("finish", runnerKind, [`Cooperative verification blocked: ${result.code}.`])
+    : result.code === "source-read-runtime-unavailable"
+      ? sourceReadRuntimeUnavailableFinishOutput(runnerKind)
+      : failedRunnerOutput("finish", runnerKind, [`Cooperative verification blocked: ${result.code}.`])
 }

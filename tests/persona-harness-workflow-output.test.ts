@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { failedRunnerOutput } from "../src/cli/workflow-output.js"
+import { failedRunnerOutput, sourceReadRuntimeUnavailableFinishOutput } from "../src/cli/workflow-output.js"
 import type { StructuredWorkflowRequiredFix } from "../src/cli/workflow-required-fix.js"
 
 function structuredFix(overrides: Partial<StructuredWorkflowRequiredFix> = {}): StructuredWorkflowRequiredFix {
@@ -61,5 +61,16 @@ describe("workflow failed finish output", () => {
     expect(result.stderr).not.toContain("- first blocker: fake-rendered-blocker")
     expect(result.stderr).toContain("Required fixes:")
     expect(result.stderr).toContain("- Closure blocker: fake-rendered-blocker")
+  })
+
+  it("keeps source-read runtime blocks distinct from missing workflow artifacts", () => {
+    const result = sourceReadRuntimeUnavailableFinishOutput("implement")
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Blocker: source-read-runtime-unavailable")
+    expect(result.stderr).toContain("Restore the source-read environment before retrying Finish.")
+    expect(result.stderr).toContain("Existing workflow reports and history archives, if any, remain diagnostic-only.")
+    expect(result.stderr).toContain("They do not grant Finish authority")
+    expect(result.stderr).not.toContain("Required fixes:")
   })
 })

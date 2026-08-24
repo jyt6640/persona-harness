@@ -8,6 +8,12 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+- Clarify `ph workflow finish implement` source-read runtime failures with a
+  bounded blocker and next action. Existing workflow reports and history remain
+  diagnostic-only and never grant Finish authority.
+
+## [0.8.30] - 2026-08-25
+
 - Add `ph feedback dogfood <code>` for bounded, append-only owner dogfooding
   events. It records only a fixed diagnostic code and timestamp in a private
   user-state JSONL file; invalid or unsafe state fails closed and the event has
