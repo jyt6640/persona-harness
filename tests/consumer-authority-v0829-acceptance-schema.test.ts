@@ -19,9 +19,15 @@ describe("consumer authority 0.8.29 acceptance schema", () => {
 
     expect(manifest.package).toMatchObject({ channel: "unpublished", scope: "source-candidate", version: "0.8.29" })
     expect(manifest.v0828HistoricalRelease).toMatchObject({ reusableForV0829: false, version: "0.8.28" })
-    expect(manifest.packageBoundary.authoritativeBundleContract.exercisePhaseProtocol.freshTar).toContain(
-      "opencode-shared-skill-catalog",
-    )
+    expect(manifest).toMatchObject({
+      packageBoundary: {
+        authoritativeBundleContract: {
+          exercisePhaseProtocol: {
+            freshTar: expect.arrayContaining(["opencode-shared-skill-catalog"]),
+          },
+        },
+      },
+    })
   })
 
   it("rejects neighboring versions, drift, and reused 0.8.28 authority", () => {
