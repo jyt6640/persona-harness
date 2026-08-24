@@ -202,7 +202,7 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
   }
 
   if (command === "feedback") {
-    return runFeedbackCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+    return runFeedbackCommand(args.slice(1), { env: options.env, projectDir: options.cwd }, invocationName)
   }
 
   if (command === "philosophy") {

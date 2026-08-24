@@ -13,6 +13,7 @@ function englishUsage(invocationName: string): string {
     "  update                       Control opt-in project-local automatic Persona Harness updates.",
     "  observe <path>               Report Java/Spring observer findings for a file or directory.",
     "  authority                    Inspect or enroll bounded external consumer authority.",
+    "  feedback                     Write a project feedback template or capture a bounded owner dogfood event.",
     "  philosophy                   Inspect and resolve the local personalization profile.",
     "",
     "Examples:",
@@ -26,6 +27,7 @@ function englishUsage(invocationName: string): string {
     `  ${invocationName} update enable --yes`,
     `  ${invocationName} observe src/main/java`,
     `  ${invocationName} authority status`,
+    `  ${invocationName} feedback dogfood source-read-runtime-unavailable`,
     `  ${invocationName} philosophy status`,
   ].join("\n")
 }
@@ -43,6 +45,7 @@ function koreanUsage(invocationName: string): string {
     "  update                       프로젝트별 자동 Persona Harness 업데이트를 제어합니다.",
     "  observe <path>               파일 또는 디렉터리의 Java/Spring observer 관측 결과를 보고합니다.",
     "  authority                    제한된 외부 consumer authority 상태를 확인하거나 등록합니다.",
+    "  feedback                     프로젝트 feedback 템플릿 또는 제한된 owner dogfood event를 기록합니다.",
     "  philosophy                   개인화 profile을 확인하고 결정을 append-only로 관리합니다.",
     "",
     "도움말 언어 선택: --lang en 또는 --lang ko",
@@ -58,6 +61,7 @@ function koreanUsage(invocationName: string): string {
     `  ${invocationName} update enable --yes`,
     `  ${invocationName} observe src/main/java`,
     `  ${invocationName} authority status`,
+    `  ${invocationName} feedback dogfood source-read-runtime-unavailable`,
     `  ${invocationName} philosophy status`,
   ].join("\n")
 }

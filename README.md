@@ -217,11 +217,22 @@ npx ph workflow split README.md && npx ph workflow next   # multi-ticket
 npx ph bearshell --shell 'gradle test'                    # bounded execution
 npx ph evidence summary | metrics --json | ab-report --json | pminus-report --json
 npx ph authority status | enroll github <owner/repository> --workflow <path> | fetch github [owner/repository]
+npx ph feedback                                      # project-local tester feedback template
+npx ph feedback dogfood source-read-runtime-unavailable # private bounded owner dogfooding event
 npx ph observe src/main/java                              # Java/Spring observer findings
 npx ph review backend-shape
 ```
 
 Run `npx ph --help` for the full list. The workflow ledger lives under `.persona/workflow/` (`work/`, `history/`, `requirements/`).
+
+`ph feedback dogfood <code>` is intentionally separate from the project
+feedback template. It records only a fixed diagnostic code and timestamp in
+`events.jsonl` inside the private owner state directory
+`~/.local/state/persona-harness/owner-dogfood-feedback`. Set
+`PH_OWNER_DOGFOOD_FEEDBACK_ROOT` only to an absolute replacement state
+directory; the command appends `events.jsonl` inside it. It does not capture
+project files or conversation text, and it cannot grant workflow, release,
+authority, or external-observation permission.
 
 ## Advanced surfaces
 
