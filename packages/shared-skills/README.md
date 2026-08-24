@@ -8,7 +8,8 @@ Core sequence: `deep-interview` -> `technical-intake` -> `plan` -> optional
 `refactor`, and `git` provide bounded supporting guidance. `frontend`,
 `visual-qa`, `ast-grep`, and `lsp-setup` are explicit optional overlays.
 `philosophy-refinement` is a separate explicit-only core procedure; it never
-starts from ordinary chat or code inspection.
+starts from ordinary chat, code inspection, a direct implementation request, or
+one-off code preference.
 `grill-me` is a separate conversation-only decision stress test. It can start
 automatically only when a concrete decision, design, or plan is paired with a
 pressure-test signal such as assumptions, alternatives, risks, or trade-offs.
@@ -21,6 +22,12 @@ Hosts activate one compact catalog reference only; they do not load full bodies
 or the catalog, or advance workflow state automatically. The only bundled
 language reference is Java. Anything outside the catalog is nonoperative source
 history, not a shipped Persona capability.
+
+When loaded as an OpenCode plugin, Persona Harness registers this packaged
+skills directory with OpenCode's native skill loader. The host can therefore
+discover the catalog without a consumer-specific absolute path. Registration is
+not activation: it does not inject every skill body, run a command, or advance
+workflow state.
 
 ## Portable Contract
 

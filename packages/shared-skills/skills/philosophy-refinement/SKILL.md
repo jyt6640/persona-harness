@@ -7,9 +7,10 @@ handoff: null
 
 # Socratic Philosophy Refinement
 
-Start only when the user explicitly critiques a design or implementation, or
-explicitly asks for philosophy refinement. Ordinary chat, code inspection, and
-implicit preference signals do not start this skill.
+Start only when the user explicitly asks to change, review, or persist a
+reusable philosophy. Ordinary chat, code inspection, a direct code-change
+request, design criticism, and implicit preference signals do not start this
+skill.
 
 Ask one question at a time, in this order: the current reason, why the
 alternative is preferred, intended scope, a concrete counterexample or side

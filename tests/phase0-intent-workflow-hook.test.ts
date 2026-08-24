@@ -4,6 +4,7 @@ import { join } from "node:path"
 import type { Part, UserMessage } from "@opencode-ai/sdk"
 import { beforeEach, describe, expect, it } from "vitest"
 
+import { AUTH_DESIGN_DECISION_SLOTS } from "../src/runtime/auth-design-decision.js"
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
 import type { TopLevelIntentKind } from "../src/runtime/top-level-intent-router.js"
 import type { TransformMessagesOutput } from "../src/runtime/types.js"
@@ -119,6 +120,8 @@ describe("intent workflow hook boundary", () => {
     expect(first).toContain("Question:")
     expect(first).toContain("Recommendation:")
     expect(first).toContain("Decision: activate")
+    expect(first).toContain("User-visible skill notice:")
+    expect(first).toContain("naming Persona Harness skill `deep-interview`")
     expect(first).not.toContain("npx ph workflow")
     expect(existsSync(join(fixtureWorkspace, ".persona", "workflow"))).toBe(false)
     expect(existsSync(join(fixtureWorkspace, ".persona", "evidence"))).toBe(false)
@@ -139,6 +142,93 @@ describe("intent workflow hook boundary", () => {
     expect(text).not.toContain("[Persona Harness Requirements Workflow]")
     expect(existsSync(join(fixtureWorkspace, ".persona", "workflow"))).toBe(false)
     expect(existsSync(join(fixtureWorkspace, ".persona", "evidence"))).toBe(false)
+  })
+
+  it("keeps the active auth decision slot when the user asks for an explanation", async () => {
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+
+    await transformWithHooks(hooks, "session-auth-clarification", "Implement OAuth login for the service")
+    await transformWithHooks(hooks, "session-auth-clarification", "provider: GitHub")
+    await transformWithHooks(hooks, "session-auth-clarification", "domain: OAuthAccount")
+
+    const clarification = await transformWithHooks(
+      hooks,
+      "session-auth-clarification",
+      "GitHub OAuth callback의 경로와 처리 책임을 어떻게 정할까? 무슨 말인지 모르겠어. 쉽게 설명해줘.",
+    )
+
+    expect(clarification).toContain("[Persona Harness Auth Design Hold]")
+    expect(clarification).toContain("Current decision slot: callback")
+    expect(clarification).toContain("clarification request, not an architecture decision")
+    expect(clarification).toContain("Do not record an answer, advance to another slot, or ask the next slot")
+    expect(clarification).not.toContain("Next decision slot: state")
+
+    const answer = await transformWithHooks(
+      hooks,
+      "session-auth-clarification",
+      "callback: /login/oauth2/code/github",
+    )
+    expect(answer).toContain("Next decision slot: state")
+  })
+
+  it("stops an active auth hold instead of treating a no-interview request as a decision", async () => {
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-auth-natural-stop"
+
+    await transformWithHooks(hooks, sessionID, "Implement OAuth login for the service")
+    const stopped = await transformWithHooks(hooks, sessionID, "아니 지금 필요없는 인터뷰 하지마")
+
+    expect(stopped).toContain("[Persona Harness Auth Design Hold]")
+    expect(stopped).toContain("State: stopped")
+    expect(stopped).not.toContain("Next decision slot:")
+
+    const nextRequest = await transformWithHooks(hooks, sessionID, "CouponService 만들어줘")
+    expect(nextRequest).not.toContain("[Persona Harness Auth Design Hold]")
+    expect(nextRequest).toContain("[Persona Harness Programming Workflow]")
+  })
+
+  it("stops an active auth hold when the user switches to workflow dogfooding", async () => {
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-auth-dogfooding-switch"
+
+    await transformWithHooks(hooks, sessionID, "Implement OAuth login for the service")
+    const stopped = await transformWithHooks(
+      hooks,
+      sessionID,
+      "workflow finish implement는 source-read-runtime-unavailable 환경 문제로 막혔지만, 구현·리뷰 보고서와 history archive는 모두 기록됐다. 이 문제를 feedback-dogfooding으로 기재하자.",
+    )
+
+    expect(stopped).toContain("[Persona Harness Auth Design Hold]")
+    expect(stopped).toContain("State: stopped")
+    expect(stopped).not.toContain("Next decision slot:")
+
+    const nextRequest = await transformWithHooks(hooks, sessionID, "CouponService 만들어줘")
+    expect(nextRequest).not.toContain("[Persona Harness Auth Design Hold]")
+    expect(nextRequest).toContain("[Persona Harness Programming Workflow]")
+  })
+
+  it("retains approved auth decisions for later OAuth work in the same OpenCode session", async () => {
+    const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
+    const sessionID = "session-auth-approved-context"
+
+    await transformWithHooks(hooks, sessionID, "Implement OAuth login for the service")
+    for (const slot of AUTH_DESIGN_DECISION_SLOTS) {
+      await transformWithHooks(hooks, sessionID, `${slot}: chosen-${slot}`)
+    }
+    const approved = await transformWithHooks(hooks, sessionID, "approve")
+    expect(approved).toContain("State: approved")
+
+    const firstFollowUp = await transformWithHooks(hooks, sessionID, "Implement OAuth login now")
+    expect(firstFollowUp).not.toContain("[Persona Harness Auth Design Hold]")
+    expect(firstFollowUp).toContain("[Persona Harness Programming Workflow]")
+
+    const secondFollowUp = await transformWithHooks(hooks, sessionID, "Implement OAuth callback handling now")
+    expect(secondFollowUp).not.toContain("[Persona Harness Auth Design Hold]")
+    expect(secondFollowUp).toContain("[Persona Harness Programming Workflow]")
+
+    const freshSession = await transformWithHooks(hooks, "session-auth-fresh-context", "Implement OAuth login now")
+    expect(freshSession).toContain("[Persona Harness Auth Design Hold]")
+    expect(freshSession).toContain("Next decision slot: provider")
   })
 
   it("does not enable the auth design hold from entry steering alone", async () => {

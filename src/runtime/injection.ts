@@ -110,6 +110,7 @@ export function createInjectionBlock(
   }))
   const policies = dedupePolicies(loadedRules.flatMap((rule) => rule.policies)).slice(0, config.maxRulesPerInjection)
   const profileOptions = options.effectiveProfile
+  const projectContractTopics = profileOptions?.projectContracts?.map((rule) => rule.topic) ?? []
   const profileContext = profileOptions?.context ?? {
     fileRole,
     skillIds: selectedSharedSkills.map((skill) => skill.name),
@@ -117,6 +118,7 @@ export function createInjectionBlock(
       "safety-no-inference",
       "safety-no-sensitive-persistence",
       fileRole,
+      ...projectContractTopics,
       ...selectedSharedSkills.map((skill) => skill.name),
       ...selectedRuleMetadata.flatMap((rule) => rule.topic === undefined ? [] : [rule.topic]),
     ]),

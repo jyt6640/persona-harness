@@ -8,6 +8,7 @@
   },
   "features": {
     "entrySteering": false,
+    "projectPhilosophyInjection": true,
     "runtimeInjection": false
   },
   "enforce": {

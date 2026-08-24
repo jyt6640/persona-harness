@@ -159,6 +159,14 @@ describe("Phase 0 harness config", () => {
     expect(config.features.runtimeInjection).toBe(true)
   })
 
+  it("defaults project philosophy injection on while allowing an explicit opt-out", () => {
+    const projectDir = createProject()
+    expect(loadHarnessConfig(projectDir).features.projectPhilosophyInjection).toBe(true)
+
+    writeHarnessConfig(projectDir, { features: { projectPhilosophyInjection: false } })
+    expect(loadHarnessConfig(projectDir).features.projectPhilosophyInjection).toBe(false)
+  })
+
   it("uses entry steering opt-in without enabling runtime injection", () => {
     const projectDir = createProject()
     writeHarnessConfig(projectDir, { features: { entrySteering: true } })

@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readV0828AcceptanceManifest } from "./consumer-authority-v0828-acceptance-schema.mjs"
+import { readV0829AcceptanceManifest } from "./consumer-authority-v0829-acceptance-schema.mjs"
 import {
   observerGhStageCodeForPreflight,
   observerGhStageCodeForPrivateCopy,
@@ -144,6 +144,10 @@ async function runInstalledPackageContract(options) {
     installedPackage,
     packed.tarballPath,
     packed.facts.packageContentIdentity,
+  ))
+  await runPhase("opencode-shared-skill-catalog", () => assertPackagedOpenCodeSharedSkillCatalog(
+    installedPackage,
+    "installed package",
   ))
   await runPhase("opencode-interview-observation", () => assertOpenCodeInterviewObservationContract(
     installedPackage,
@@ -1248,6 +1252,71 @@ function assertInstalledPackageContentIdentity(installedPackage, tarballPath, ex
   }
   if (JSON.stringify(observed) !== JSON.stringify(expected)) {
     throw new Error("installed package content identity differs from tarball")
+  }
+}
+
+async function assertPackagedOpenCodeSharedSkillCatalog(packageRoot, label) {
+  const pluginPath = join(packageRoot, "dist", "index.js")
+  const sharedSkillsDirectory = join(packageRoot, "packages", "shared-skills", "skills")
+  if (!existsSync(pluginPath) || lstatSync(pluginPath).isSymbolicLink() || !lstatSync(pluginPath).isFile()) {
+    throw new Error(`${label} OpenCode plugin entrypoint is missing`)
+  }
+  if (
+    !existsSync(sharedSkillsDirectory)
+    || lstatSync(sharedSkillsDirectory).isSymbolicLink()
+    || !lstatSync(sharedSkillsDirectory).isDirectory()
+  ) {
+    throw new Error(`${label} shared-skill catalog is missing`)
+  }
+  const sharedSkillsPath = realpathSync(sharedSkillsDirectory)
+
+  const skillIds = readdirSync(sharedSkillsPath, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort()
+  if (skillIds.length === 0) {
+    throw new Error(`${label} shared-skill catalog is empty`)
+  }
+  for (const skillId of skillIds) {
+    const skillFile = join(sharedSkillsPath, skillId, "SKILL.md")
+    if (!existsSync(skillFile) || lstatSync(skillFile).isSymbolicLink() || !lstatSync(skillFile).isFile()) {
+      throw new Error(`${label} shared-skill catalog contains an invalid skill file`)
+    }
+  }
+
+  const entrypoint = await import(pathToFileURL(pluginPath).href)
+  if (typeof entrypoint.PersonaHarnessPlugin !== "function") {
+    throw new Error(`${label} OpenCode plugin does not expose PersonaHarnessPlugin`)
+  }
+  const hooks = await entrypoint.PersonaHarnessPlugin({ client: {}, directory: packageRoot }, {})
+  if (typeof hooks?.config !== "function") {
+    throw new Error(`${label} OpenCode plugin does not expose a config hook`)
+  }
+
+  const config = {
+    skills: {
+      paths: ["/tmp/custom-skills"],
+      urls: ["https://example.test/skills"],
+    },
+  }
+  await hooks.config(config)
+  if (
+    config.skills.paths.length !== 2
+    || config.skills.paths[0] !== "/tmp/custom-skills"
+    || config.skills.paths[1] !== sharedSkillsPath
+    || JSON.stringify(config.skills.urls) !== JSON.stringify(["https://example.test/skills"])
+  ) {
+    throw new Error(`${label} OpenCode shared-skill catalog registration is invalid`)
+  }
+
+  const arrayConfig = { skills: ["/tmp/future-skills"] }
+  await hooks.config(arrayConfig)
+  if (
+    arrayConfig.skills.length !== 2
+    || arrayConfig.skills[0] !== "/tmp/future-skills"
+    || arrayConfig.skills[1] !== sharedSkillsPath
+  ) {
+    throw new Error(`${label} future OpenCode shared-skill catalog registration is invalid`)
   }
 }
 
@@ -3342,7 +3411,7 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
 }
 
 function readGaPreAuthorityReadiness(packageRoot) {
-  const manifest = readV0828AcceptanceManifest(packageRoot)
+  const manifest = readV0829AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -3351,7 +3420,7 @@ function readGaPreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readV0828AcceptanceManifest(packageRoot)
+    readV0829AcceptanceManifest(packageRoot)
   } catch {
     throw new Error(`${label} current observer handoff contract is invalid`)
   }
@@ -3493,7 +3562,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readV0828AcceptanceManifest(packageRoot)
+  const manifest = readV0829AcceptanceManifest(packageRoot)
   let packageMetadata
   try {
     packageMetadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
@@ -3584,6 +3653,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
     "consumer-authority-v0826-acceptance-schema.mjs",
     "consumer-authority-v0827-acceptance-schema.mjs",
     "consumer-authority-v0828-acceptance-schema.mjs",
+    "consumer-authority-v0829-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
@@ -3879,6 +3949,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     "consumer-authority-v0826-acceptance-schema.mjs",
     "consumer-authority-v0827-acceptance-schema.mjs",
     "consumer-authority-v0828-acceptance-schema.mjs",
+    "consumer-authority-v0829-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
@@ -3923,7 +3994,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readV0828AcceptanceManifest(packageRoot)
+  const manifest = readV0829AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),

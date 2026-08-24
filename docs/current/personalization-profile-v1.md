@@ -40,8 +40,10 @@ rule. `resolve` supports `retain`, a project/task `exception`, `supersede`, and
 deletes history.
 
 `ph philosophy refine --stdin` is the explicit Socratic refinement surface. It
-accepts `personalization-refinement.v1` only after an explicit design or
-implementation critique or an explicit refinement request. The host-neutral
+accepts `personalization-refinement.v1` only when the user explicitly asks to
+change, review, or persist a reusable philosophy. A direct code-change request,
+design criticism, or one-off implementation preference does not start this
+procedure. The host-neutral
 sequence asks for the current rationale, preferred alternative, intended scope,
 counterexample or side effect, and trade-offs one at a time. Incomplete,
 ambiguous, unsafe, or conflicting material stays blocked or pending; it cannot
@@ -68,6 +70,14 @@ sections. The full profile and rule bodies are never injected as a profile
 dump; metadata-safe evidence records only selected IDs, source layers, reasons,
 and digests. `runtimeInjection` remains off by default, and this resolver does
 not start or advance workflow, approval, authority, or file-role behavior.
+
+A ready backend profile may additionally contain one safe
+`philosophy.project` string. `features.projectPhilosophyInjection` defaults to
+`true` and places only that compact project-local convention in the host system
+context, even while broader `runtimeInjection` remains off. It is omitted for
+draft, incomplete, malformed, or unsafe profile content; setting the feature to
+`false` is the explicit opt-out. This narrow injection neither creates personal
+profile state nor starts philosophy refinement or a workflow.
 
 ## Privacy and failure behavior
 

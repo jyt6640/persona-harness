@@ -240,4 +240,19 @@ describe("bootstrap-owned update state", () => {
 
     expect(mergeBootstrapHarnessOptIns(template, current)).toEqual(template)
   })
+
+  it("preserves an explicit project philosophy injection opt-out across init", () => {
+    const template = Buffer.from(`${JSON.stringify({
+      features: { projectPhilosophyInjection: true, runtimeInjection: false },
+    })}\n`)
+    const current = Buffer.from(`${JSON.stringify({
+      features: { projectPhilosophyInjection: false, runtimeInjection: false },
+    })}\n`)
+
+    const merged: unknown = JSON.parse(mergeBootstrapHarnessOptIns(template, current).toString("utf8"))
+
+    expect(merged).toEqual({
+      features: { projectPhilosophyInjection: false, runtimeInjection: false },
+    })
+  })
 })

@@ -86,6 +86,36 @@ function readProjectNote(value: unknown): string | undefined {
   return note.length > 0 ? note : undefined
 }
 
+const UNSAFE_PROJECT_PHILOSOPHY_PATTERN = /(?:https?:\/\/|(?:api[_-]?key|access[_-]?token|password|secret|authorization)\s*[:=]|(?:ignore|disregard|override)\s+(?:(?:all|any)\s+)?(?:(?:previous|prior|earlier)\s+)?(?:instructions?|rules?|system\s+(?:prompt|message))|(?:이전|앞선|모든)\s*(?:지시|명령|규칙)\s*(?:을|를)?\s*무시|시스템\s*(?:프롬프트|메시지)\s*(?:을|를)?\s*(?:무시|덮어))/iu
+
+function normalizeSafeProjectPhilosophy(value: unknown): string | undefined {
+  if (!isRecord(value) || !isRecord(value.philosophy) || typeof value.philosophy.project !== "string") {
+    return undefined
+  }
+
+  const rawPhilosophy = value.philosophy.project
+  if (/[\u0000-\u001f\u007f]/u.test(rawPhilosophy)) {
+    return undefined
+  }
+
+  const philosophy = rawPhilosophy.trim().replace(/\s+/gu, " ")
+  if (philosophy.length === 0 || philosophy.length > 1_000) {
+    return undefined
+  }
+  if (UNSAFE_PROJECT_PHILOSOPHY_PATTERN.test(philosophy)) {
+    return undefined
+  }
+  if (/(?:^|\s)(?:[A-Za-z]:[\\/]|[\\/]{1,2})[^\s]*/u.test(philosophy)) {
+    return undefined
+  }
+  return philosophy
+}
+
+function hasReadyBackendAnswers(value: Record<string, unknown>): boolean {
+  const answers = answeredQuestionMap(readQuestions(value.questions))
+  return value.status === "ready" && SUMMARY_ORDER.every((id) => answers.has(id))
+}
+
 function formatSummaryLines(answers: ReadonlyMap<string, string>, projectNote?: string): readonly string[] {
   const answerLines = SUMMARY_ORDER.flatMap((id) => {
     const answer = answers.get(id)
@@ -139,6 +169,37 @@ export function loadBackendProjectProfileSummary(
   }
 
   return formatSummaryLines(answeredQuestionMap(readQuestions(parsed.questions)), readProjectNote(parsed))
+}
+
+/**
+ * Reads the single project-local implementation convention only when the
+ * backend profile is complete and ready. Invalid or unsafe data is omitted,
+ * rather than reflected into a model-facing prompt.
+ */
+export function loadBackendProjectPhilosophy(
+  projectDir: string,
+  projectBoundary?: ProfileReadBoundary,
+): string | undefined {
+  let text: string | undefined
+  try {
+    text = readProfileText(projectDir, projectBoundary)
+  } catch {
+    return undefined
+  }
+  if (text === undefined) return undefined
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(stripJsonComments(text))
+  } catch (error) {
+    if (error instanceof SyntaxError) return undefined
+    throw error
+  }
+
+  if (!isSupportedBackendProfile(parsed) || !hasReadyBackendAnswers(parsed)) {
+    return undefined
+  }
+  return normalizeSafeProjectPhilosophy(parsed)
 }
 
 export function readBackendProjectProfileState(

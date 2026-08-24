@@ -50,7 +50,7 @@ describe("Persona-owned shared-skill catalog", () => {
     })
     expect(resolvePersonaSharedSkill("philosophy-refinement")).toMatchObject({
       mutability: "explicit-user-action",
-      startPredicate: "The user explicitly critiques a design or implementation or explicitly requests philosophy refinement.",
+      startPredicate: "The user explicitly asks to change, review, or persist a reusable philosophy.",
     })
     expect(resolvePersonaSharedSkill("plan")).toMatchObject({ handoff: "ralplan" })
     expect(resolvePersonaSharedSkill("ralplan")).toMatchObject({ optional: true, handoff: "tdd" })
@@ -181,7 +181,8 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(guide).toContain("## Automatic Activation")
     expect(guide).toContain("explicit `/persona <skill-id>` command")
     expect(guide).toContain("frontend`, `visual-qa`, `ast-grep`, and `lsp-setup` are optional overlays")
-    expect(guide).toContain("does not load the full skill body or catalog")
+    expect(guide).toContain("does not inject the full skill body or catalog into every turn")
+    expect(guide).toContain("OpenCode's native skill loader")
     expect(guide).toMatch(/does\s+not grant them authority/u)
   })
 
@@ -207,6 +208,8 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(route).toContain("[Persona Harness Skill Route]")
     expect(route).toContain("Decision: activate")
     expect(route).toContain("Skill: deep-interview")
+    expect(route).toContain("User-visible skill notice:")
+    expect(route).toContain("naming Persona Harness skill `deep-interview`")
     expect(route).toContain("does not create plans, tickets, branches, files, agents, or workflow state")
     expect(route).not.toContain("npx ph workflow")
     expect(route).not.toContain("# Product Deep Interview")

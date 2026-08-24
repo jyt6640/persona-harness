@@ -26,7 +26,7 @@ export type ProjectProfile = {
   readonly philosophy: {
     readonly company: null
     readonly personal: null
-    readonly project: null
+    readonly project: string | null
     readonly priority: readonly [
       "project-specific",
       "company/team",
