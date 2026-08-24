@@ -19,6 +19,7 @@ import {
 import { formatReviewWorkflowBlock } from "./review-workflow-skill.js"
 import { detectTopLevelIntent, type TopLevelIntent } from "./top-level-intent-router.js"
 import {
+  formatAutomaticDecisionGrillActivationBlock,
   formatExplicitPersonaSkillActivationBlock,
   formatUnavailablePersonaSkillActivationBlock,
 } from "./workflow-skill-loader.js"
@@ -220,6 +221,14 @@ export function maybeInjectIntentWorkflow(
       "[Persona Harness Skill Activation]",
       compliance,
       options,
+    )
+  }
+
+  if (intent?.primary === "decision-grill") {
+    return injectTextIntoLatestUserMessage(
+      output,
+      formatAutomaticDecisionGrillActivationBlock(intent),
+      "[Persona Harness Decision Grill]",
     )
   }
 

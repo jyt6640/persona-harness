@@ -264,6 +264,18 @@ describe("intent workflow hook boundary", () => {
     expectIntentEvidence("programming", "[Persona Harness Programming Workflow]")
   })
 
+  it("routes a concrete decision pressure-test to the automatic Grill Me reference", async () => {
+    const text = await transformPrompt("session-decision-grill", "이 캐시 무효화 설계의 가정과 트레이드오프를 따져봐")
+
+    expect(text).toContain("[Persona Harness Decision Grill]")
+    expect(text).toContain("Decision: activate")
+    expect(text).toContain("Skill: grill-me")
+    expect(text).toContain("Handoff: none")
+    expect(text).not.toContain("npx ph workflow")
+    expect(existsSync(join(fixtureWorkspace, ".persona", "workflow"))).toBe(false)
+    expect(existsSync(join(fixtureWorkspace, ".persona", "evidence"))).toBe(false)
+  })
+
   it("routes README implementation requests to an advisory plan route with profile read guard", async () => {
     const text = await transformPrompt("session-readme", "README.md 구현해줘")
 

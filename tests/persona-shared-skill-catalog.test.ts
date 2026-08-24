@@ -23,6 +23,7 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(PERSONA_CORE_SKILL_IDS).toEqual([
       "deep-interview",
       "philosophy-refinement",
+      "grill-me",
       "technical-intake",
       "plan",
       "ralplan",
@@ -41,6 +42,11 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(resolvePersonaSharedSkill("deep-interview")).toMatchObject({
       mutability: "conversation-only",
       handoff: "technical-intake",
+    })
+    expect(resolvePersonaSharedSkill("grill-me")).toMatchObject({
+      mutability: "conversation-only",
+      optional: true,
+      handoff: null,
     })
     expect(resolvePersonaSharedSkill("philosophy-refinement")).toMatchObject({
       mutability: "explicit-user-action",
@@ -177,6 +183,17 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(guide).toContain("frontend`, `visual-qa`, `ast-grep`, and `lsp-setup` are optional overlays")
     expect(guide).toContain("does not load the full skill body or catalog")
     expect(guide).toMatch(/does\s+not grant them authority/u)
+  })
+
+  it("keeps the decision grill automatic only for concrete pressure-test requests", () => {
+    const guide = readFileSync(join(packageRoot, "docs/current/persona-shared-skills-core.md"), "utf8")
+    const skill = readFileSync(join(packageRoot, personaSharedSkillPath("grill-me")), "utf8")
+
+    expect(guide).toContain("## Decision Grill")
+    expect(guide).toMatch(/concrete\s+decision, design, or plan/u)
+    expect(guide).toContain("does not replace `deep-interview` or `ralplan`")
+    expect(skill).toContain("one question at a time")
+    expect(skill).toContain("Do not create files, plans, tickets, branches, issues, agents, project state,")
   })
 
   it("renders an advisory route instead of injecting a skill body or advancing workflow state", () => {

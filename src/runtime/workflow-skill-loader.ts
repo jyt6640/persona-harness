@@ -134,6 +134,30 @@ export function formatExplicitPersonaSkillActivationBlock(intent: TopLevelIntent
   ].join("\n")
 }
 
+export function formatAutomaticDecisionGrillActivationBlock(intent: TopLevelIntent): string {
+  const activation = intent.activation
+  if (
+    intent.primary !== "decision-grill"
+    || activation === undefined
+    || activation.decision !== "automatic"
+    || activation.skillId !== "grill-me"
+  ) {
+    throw new Error("Automatic decision grill activation requires a decision-grill contract")
+  }
+
+  return [
+    "[Persona Harness Decision Grill]",
+    `Detected intent: ${intent.primary}`,
+    createOpenCodeSkillRoute({
+      decision: "activate",
+      firstAction: activation.firstAction,
+      skillId: activation.skillId,
+      reason: activation.reason,
+    }),
+    "The automatic decision grill is conversational and bounded; it does not create or advance workflow state.",
+  ].join("\n")
+}
+
 export function formatUnavailablePersonaSkillActivationBlock(intent: TopLevelIntent): string {
   if (intent.primary !== "unavailable" || intent.reasonCode === undefined) {
     throw new Error("Unavailable Persona skill activation requires an unavailable route contract")

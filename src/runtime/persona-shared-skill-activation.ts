@@ -23,6 +23,7 @@ export type ExplicitPersonaSkillCommand =
 
 export type AutomaticPersonaSkillIntent =
   | "product-interview"
+  | "decision-grill"
   | "requirements"
   | "debug"
   | "review"
@@ -38,6 +39,7 @@ const CLEAR_DIRECT_IMPLEMENTATION_PATTERN = /(?:\b(?:implement|fix|repair|edit|r
 
 const AUTOMATIC_SKILL_IDS: Readonly<Record<AutomaticPersonaSkillIntent, PersonaSharedSkillId>> = {
   "product-interview": "deep-interview",
+  "decision-grill": "grill-me",
   requirements: "plan",
   debug: "debug",
   review: "review",
@@ -116,6 +118,7 @@ export function activateAutomaticPersonaSkill(
 
 export function primaryIntentForPersonaSkill(skillId: PersonaSharedSkillId): AutomaticPersonaSkillIntent {
   if (skillId === "deep-interview") return "product-interview"
+  if (skillId === "grill-me") return "decision-grill"
   if (skillId === "technical-intake" || skillId === "plan" || skillId === "ralplan" || skillId === "tdd" || skillId === "implementation") {
     return "requirements"
   }
