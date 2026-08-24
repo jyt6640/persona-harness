@@ -27,6 +27,18 @@
       "handoff": null
     },
     {
+      "id": "grill-me",
+      "title": "Decision Grill",
+      "category": "core",
+      "optional": true,
+      "entry": "skills/grill-me/SKILL.md",
+      "startPredicate": "A concrete decision, design, or plan includes a pressure-test signal such as assumptions, alternatives, risks, or trade-offs.",
+      "mutability": "conversation-only",
+      "inputBrief": ["concrete decision, design, or plan", "named assumptions, alternatives, risks, or trade-offs"],
+      "outputBrief": ["one-question challenge sequence", "recommendation and trade-off summary"],
+      "handoff": null
+    },
+    {
       "id": "technical-intake",
       "title": "Technical Intake",
       "category": "core",

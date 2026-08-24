@@ -14,9 +14,10 @@ import {
   isAuthSecurityRequest,
   type AuthDesignDecisionSummary,
 } from "./auth-design-decision.js"
+import { isDecisionGrillStart } from "./decision-grill.js"
 import { isProductDeepInterviewStart } from "./product-deep-interview.js"
 
-export type TopLevelIntentKind = "product-interview" | "requirements" | "debug" | "review" | "refactor" | "git" | "programming" | "design-required" | "unavailable"
+export type TopLevelIntentKind = "product-interview" | "decision-grill" | "requirements" | "debug" | "review" | "refactor" | "git" | "programming" | "design-required" | "unavailable"
 
 export type TopLevelIntent = {
   readonly activation?: PersonaSharedSkillActivation
@@ -147,7 +148,13 @@ export function detectTopLevelIntent(message: string, options: TopLevelIntentOpt
   const hasRefactorIntent = REFACTOR_PATTERN.test(normalized)
   const hasGitIntent = GIT_PATTERN.test(normalized)
   const hasProgrammingIntent = PROGRAMMING_PATTERN.test(normalized)
-  const hasWorkIntent = requirementsIntent !== undefined || hasDebugIntent || hasReviewIntent || hasRefactorIntent || hasProgrammingIntent
+  const hasDecisionGrillIntent = isDecisionGrillStart(normalized)
+  const hasWorkIntent = requirementsIntent !== undefined
+    || hasDebugIntent
+    || hasReviewIntent
+    || hasRefactorIntent
+    || hasProgrammingIntent
+    || hasDecisionGrillIntent
 
   if (hasGitIntent && !hasWorkIntent) {
     return buildIntent("git", normalized, "Git-only operation requested.", requirementsIntent, activateAutomaticPersonaSkill("git", "Git-only operation requested."))
@@ -169,6 +176,10 @@ export function detectTopLevelIntent(message: string, options: TopLevelIntentOpt
   if (productInterviewStart && !isClearDirectImplementationRequest(normalized)) {
     const reason = "Product facts require a one-question interview before technical intake."
     return buildIntent("product-interview", normalized, reason, undefined, activateAutomaticPersonaSkill("product-interview", reason, productMode))
+  }
+  if (hasDecisionGrillIntent && !hasProgrammingIntent && !hasRefactorIntent) {
+    const reason = "Concrete decision pressure-test request detected without a direct code-change request."
+    return buildIntent("decision-grill", normalized, reason, requirementsIntent, activateAutomaticPersonaSkill("decision-grill", reason))
   }
   if (requirementsIntent !== undefined) {
     return buildIntent("requirements", normalized, requirementsIntent.reason, requirementsIntent, activateAutomaticPersonaSkill("requirements", requirementsIntent.reason))

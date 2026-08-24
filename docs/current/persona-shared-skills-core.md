@@ -22,20 +22,35 @@ system, or completion authority.
 `programming`, `debug`, `refactor`, and `git` are bounded supporting skills.
 `frontend`, `visual-qa`, `ast-grep`, and `lsp-setup` are optional overlays:
 they are selected only by an explicit user request and an available host tool.
+`grill-me` is an optional, conversation-only core reference with no handoff.
 
 ## Automatic Activation
 
 The portable router selects at most one compact catalog reference for the
-current turn. It applies this order: an explicit `/persona <skill-id>` command,
-then a clear direct debug, review, refactor, Git, or implementation request,
-then an ambiguous product request. An explicit command never falls back to a
-different skill when it is malformed or unavailable.
+current turn. It applies an explicit `/persona <skill-id>` command first, then
+keeps a clear direct debug, review, refactor, Git, or implementation request on
+its existing route, and protects ambiguous product discovery. An explicit
+command never falls back to a different skill when it is malformed or
+unavailable.
 
 An ambiguous new-product request starts `deep-interview` with one adaptive
 question, recommendation, and tradeoff. An ambiguous brownfield request starts
 the same skill in code-first discovery mode: inspect the relevant existing code
 before asking for facts the code can establish. `skip`, `defer`, and `stop`
 requests suppress a new interview start. Clear direct work bypasses discovery.
+
+## Decision Grill
+
+`grill-me` can activate automatically only when the user names a concrete
+decision, design, or plan and also asks to pressure-test it through assumptions,
+alternatives, risks, trade-offs, or failure modes. It asks one question at a
+time, gives a recommendation with its trade-off, and remains conversational.
+Like every automatic route, it requires `runtimeInjection` and the workflow
+domain to be enabled in the consumer configuration.
+It does not replace `deep-interview` or `ralplan`: product ambiguity still uses
+the interview, and an explicit high-risk delivery-plan review still uses
+`ralplan`. Generic code review, debugging, refactoring, Git work, and direct
+implementation retain their existing routes.
 
 Activation is a compact reference and first safe action, not a loaded skill
 body or catalog dump. The first accepted product brief hands off explicitly to

@@ -42,6 +42,40 @@ describe("detectTopLevelIntent", () => {
     expect(intent?.secondary).toEqual([])
   })
 
+  it("routes concrete design pressure-tests to the automatic decision grill", () => {
+    const korean = detectTopLevelIntent("이 캐시 무효화 설계의 가정과 트레이드오프를 따져봐")
+    const english = detectTopLevelIntent("Pressure-test this rollout plan before we commit to it.")
+
+    expect(korean?.primary).toBe("decision-grill")
+    expect(korean?.activation).toMatchObject({
+      decision: "automatic",
+      skillId: "grill-me",
+      handoff: null,
+    })
+    expect(english?.primary).toBe("decision-grill")
+    expect(english?.activation?.skillId).toBe("grill-me")
+  })
+
+  it("keeps an explicit decision grill command explicit", () => {
+    const intent = detectTopLevelIntent("/persona grill-me challenge this database migration plan")
+
+    expect(intent?.primary).toBe("decision-grill")
+    expect(intent?.activation).toMatchObject({
+      decision: "explicit",
+      skillId: "grill-me",
+    })
+  })
+
+  it("keeps generic review and direct implementation out of the decision grill", () => {
+    const review = detectTopLevelIntent("이 설계를 냉정하게 검토해줘")
+    const implementation = detectTopLevelIntent("이 설계를 구현해줘")
+
+    expect(review?.primary).toBe("review")
+    expect(review?.activation?.skillId).toBe("review")
+    expect(implementation?.primary).toBe("programming")
+    expect(implementation?.activation?.skillId).toBe("programming")
+  })
+
   it("routes refactor requests to refactor with programming as secondary", () => {
     const intent = detectTopLevelIntent("구조 좀 정리하고 리팩터링해줘")
 
