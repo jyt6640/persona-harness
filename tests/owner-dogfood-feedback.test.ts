@@ -49,6 +49,7 @@ describe("owner dogfooding feedback", () => {
     ])
     expect(events.every((event) => typeof event.recordedAt === "string" && Object.keys(event).length === 3)).toBe(true)
     expect(readFileSync(eventPath, "utf8")).not.toContain(process.cwd())
+    expect(existsSync(join(root, ".events.lock"))).toBe(false)
   })
 
   it("uses the documented default state root when no explicit override is set", () => {
@@ -151,6 +152,19 @@ describe("owner dogfooding feedback", () => {
 
     expect(result.status).toBe(1)
     expect(readFileSync(eventPath, "utf8")).toBe(existing)
+  })
+
+  it("fails closed while another event writer owns the private lock", () => {
+    const root = temporaryRoot("persona-owner-dogfood-lock-")
+    writeFileSync(join(root, ".events.lock"), "")
+    chmodSync(join(root, ".events.lock"), 0o600)
+
+    const result = runFeedback(["dogfood", "unnecessary-interview"], {
+      PH_OWNER_DOGFOOD_FEEDBACK_ROOT: root,
+    })
+
+    expect(result.status).toBe(1)
+    expect(existsSync(join(root, "events.jsonl"))).toBe(false)
   })
 
   it("fails closed when the default home is relative", () => {

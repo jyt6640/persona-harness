@@ -4,12 +4,11 @@ import {
   constants,
   fstatSync,
   lstatSync,
-  mkdirSync,
   openSync,
   readFileSync,
   type BigIntStats,
 } from "node:fs"
-import { isAbsolute, join, parse, relative, resolve, sep } from "node:path"
+import { isAbsolute, join, resolve } from "node:path"
 
 export type NoFollowPathIdentity = {
   readonly ctimeNs: string
@@ -24,11 +23,6 @@ export type NoFollowDirectoryCapture =
   | { readonly kind: "absent" }
   | { readonly code: "unsafe" | "unreadable"; readonly kind: "blocked" }
   | { readonly kind: "ready"; readonly value: NoFollowPathIdentity }
-
-export type NoFollowDirectoryReservation = Readonly<{
-  readonly identity: NoFollowPathIdentity
-  readonly path: string
-}>
 
 export type NoFollowRegularFileRead =
   | { readonly kind: "absent" }
@@ -49,44 +43,6 @@ export function captureNoFollowDirectory(path: string): NoFollowDirectoryCapture
   } catch (error) {
     return errno(error) === "ENOENT" ? { kind: "absent" } : { code: "unreadable", kind: "blocked" }
   }
-}
-
-export function createNoFollowDirectoryChain(
-  path: string,
-  mode: number,
-): readonly NoFollowDirectoryReservation[] | undefined {
-  if (!isAbsolute(path) || path.includes("\0")) return undefined
-  const absolutePath = resolve(path)
-  const rootPath = parse(absolutePath).root
-  const root = captureNoFollowDirectory(rootPath)
-  if (root.kind !== "ready") return undefined
-
-  const chain: NoFollowDirectoryReservation[] = [{ identity: root.value, path: rootPath }]
-  let currentPath = rootPath
-  const childPath = relative(rootPath, absolutePath)
-  const segments = childPath.length === 0 ? [] : childPath.split(sep)
-  for (const segment of segments) {
-    if (segment.length === 0 || !hasStableNoFollowDirectoryChain(chain)) return undefined
-    currentPath = join(currentPath, segment)
-    try {
-      mkdirSync(currentPath, { mode })
-    } catch {
-      // The no-follow capture below admits only an existing regular directory.
-    }
-    const directory = captureNoFollowDirectory(currentPath)
-    if (directory.kind !== "ready") return undefined
-    chain.push({ identity: directory.value, path: currentPath })
-  }
-  return hasStableNoFollowDirectoryChain(chain) ? chain : undefined
-}
-
-export function hasStableNoFollowDirectoryChain(
-  chain: readonly NoFollowDirectoryReservation[],
-): boolean {
-  return chain.length > 0 && chain.every((reservation) => {
-    const current = captureNoFollowDirectory(reservation.path)
-    return current.kind === "ready" && sameNoFollowPathLocation(reservation.identity, current.value)
-  })
 }
 
 export function readNoFollowRegularFile(
