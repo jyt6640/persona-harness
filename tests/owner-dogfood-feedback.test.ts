@@ -1,9 +1,11 @@
 import {
+  chmodSync,
   existsSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -117,6 +119,51 @@ describe("owner dogfooding feedback", () => {
     expect(existsSync(join(outside, "events.jsonl"))).toBe(false)
   })
 
+  it("does not follow configured state-root ancestors", () => {
+    const parent = temporaryRoot("persona-owner-dogfood-ancestor-symlink-")
+    const outside = temporaryRoot("persona-owner-dogfood-ancestor-outside-")
+    const linkedAncestor = join(parent, "linked")
+    symlinkSync(outside, linkedAncestor, "dir")
+
+    const result = runFeedback(["dogfood", "unnecessary-interview"], {
+      PH_OWNER_DOGFOOD_FEEDBACK_ROOT: join(linkedAncestor, "feedback"),
+    })
+
+    expect(result.status).toBe(1)
+    expect(existsSync(join(outside, "feedback", "events.jsonl"))).toBe(false)
+  })
+
+  it("does not append beyond the bounded event limit", () => {
+    const root = temporaryRoot("persona-owner-dogfood-event-limit-")
+    const eventPath = join(root, "events.jsonl")
+    const event = `${JSON.stringify({
+      code: "workflow-history-missing",
+      recordedAt: "2026-08-24T00:00:00.000Z",
+      schemaVersion: "owner-dogfood-feedback.1",
+    })}\n`
+    const existing = event.repeat(512)
+    writeFileSync(eventPath, existing)
+    chmodSync(eventPath, 0o600)
+
+    const result = runFeedback(["dogfood", "unnecessary-interview"], {
+      PH_OWNER_DOGFOOD_FEEDBACK_ROOT: root,
+    })
+
+    expect(result.status).toBe(1)
+    expect(readFileSync(eventPath, "utf8")).toBe(existing)
+  })
+
+  it("fails closed when the default home is relative", () => {
+    const relativeHome = "persona-owner-dogfood-relative-home"
+    const escapedRoot = join(process.cwd(), relativeHome)
+    temporaryRoots.push(escapedRoot)
+
+    const result = runFeedback(["dogfood", "unnecessary-interview"], { HOME: relativeHome })
+
+    expect(result.status).toBe(1)
+    expect(existsSync(join(escapedRoot, ".local", "state", "persona-harness", "owner-dogfood-feedback", "events.jsonl"))).toBe(false)
+  })
+
   it("creates private regular state files and does not create project workflow feedback", () => {
     const root = temporaryRoot("persona-owner-dogfood-private-")
     const project = temporaryRoot("persona-owner-dogfood-project-")
@@ -142,7 +189,7 @@ function runFeedback(args: readonly string[], env: Readonly<Record<string, strin
 }
 
 function temporaryRoot(prefix: string): string {
-  const root = mkdtempSync(join(tmpdir(), prefix))
+  const root = realpathSync(mkdtempSync(join(tmpdir(), prefix)))
   temporaryRoots.push(root)
   return root
 }

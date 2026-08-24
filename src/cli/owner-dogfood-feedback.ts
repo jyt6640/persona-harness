@@ -5,7 +5,6 @@ import {
   fstatSync,
   fsyncSync,
   lstatSync,
-  mkdirSync,
   openSync,
   writeSync,
 } from "node:fs"
@@ -13,11 +12,13 @@ import { homedir } from "node:os"
 import { isAbsolute, join, resolve } from "node:path"
 
 import {
-  captureNoFollowDirectory,
+  createNoFollowDirectoryChain,
+  hasStableNoFollowDirectoryChain,
   noFollowPathIdentityFromStat,
   readNoFollowRegularFile,
   sameNoFollowPathIdentity,
   sameNoFollowPathLocation,
+  type NoFollowDirectoryReservation,
   type NoFollowPathIdentity,
 } from "../io/no-follow-file.js"
 import type { CliRunResult } from "./bearshell.js"
@@ -54,8 +55,13 @@ export type OwnerDogfoodFeedbackOptions = Readonly<{
 
 type ExistingEvents =
   | Readonly<{ readonly kind: "absent" }>
-  | Readonly<{ readonly identity: NoFollowPathIdentity; readonly kind: "ready" }>
+  | Readonly<{ readonly count: number; readonly identity: NoFollowPathIdentity; readonly kind: "ready" }>
   | Readonly<{ readonly kind: "blocked" }>
+
+type PreparedPrivateRoot = Readonly<{
+  readonly chain: readonly NoFollowDirectoryReservation[]
+  readonly path: string
+}>
 
 export function ownerDogfoodFeedbackUsage(invocationName: string): string {
   return [
@@ -86,12 +92,13 @@ export function runOwnerDogfoodFeedbackCommand(
     return blockedResult("invalid-observation", invocationName)
   }
   const root = resolveRoot(options)
-  if (root === undefined || !preparePrivateRoot(root)) {
+  const privateRoot = root === undefined ? undefined : preparePrivateRoot(root)
+  if (privateRoot === undefined) {
     return blockedResult("state-unavailable", invocationName)
   }
-  const path = join(root, EVENT_FILE_NAME)
-  const existing = readExistingEvents(root, path)
-  if (existing.kind === "blocked") {
+  const path = join(privateRoot.path, EVENT_FILE_NAME)
+  const existing = readExistingEvents(privateRoot, path)
+  if (existing.kind === "blocked" || (existing.kind === "ready" && existing.count >= MAX_STORED_EVENTS)) {
     return blockedResult("state-unavailable", invocationName)
   }
   const event: OwnerDogfoodFeedbackEvent = {
@@ -100,7 +107,7 @@ export function runOwnerDogfoodFeedbackCommand(
     schemaVersion: EVENT_SCHEMA_VERSION,
   }
   const payload = `${JSON.stringify(event)}\n`
-  if (Buffer.byteLength(payload, "utf8") > MAX_EVENT_BYTES || !appendEvent(root, path, existing, payload)) {
+  if (Buffer.byteLength(payload, "utf8") > MAX_EVENT_BYTES || !appendEvent(privateRoot, path, existing, payload)) {
     return blockedResult("state-unavailable", invocationName)
   }
   return { status: 0, stdout: "Owner dogfooding feedback recorded. Diagnostic-only.\n", stderr: "" }
@@ -116,11 +123,10 @@ function resolveRoot(options: OwnerDogfoodFeedbackOptions): string | undefined {
   const env = options.env ?? process.env
   const override = env.PH_OWNER_DOGFOOD_FEEDBACK_ROOT
   if (override !== undefined) {
-    return isAbsolute(override) && override.trim() === override && override.length > 0 && !override.includes("\0")
-      ? resolve(override)
-      : undefined
+    return isSafeAbsolutePath(override) ? resolve(override) : undefined
   }
   const home = firstNonEmpty(env.HOME) ?? firstNonEmpty(env.USERPROFILE) ?? options.homeDir ?? homedir()
+  if (!isSafeAbsolutePath(home)) return undefined
   return join(resolve(home), ".local", "state", "persona-harness", "owner-dogfood-feedback")
 }
 
@@ -128,37 +134,41 @@ function firstNonEmpty(value: string | undefined): string | undefined {
   return value !== undefined && value.trim().length > 0 ? value : undefined
 }
 
-function preparePrivateRoot(root: string): boolean {
-  try {
-    mkdirSync(root, { mode: 0o700, recursive: true })
-    const directory = captureNoFollowDirectory(root)
-    return directory.kind === "ready" && isPrivateMode(directory.value.mode, "0700")
-  } catch {
-    return false
-  }
+function isSafeAbsolutePath(path: string): boolean {
+  return isAbsolute(path) && path.trim() === path && path.length > 0 && !path.includes("\0")
 }
 
-function readExistingEvents(root: string, path: string): ExistingEvents {
-  const source = readNoFollowRegularFile(path, MAX_STORE_BYTES, root)
+function preparePrivateRoot(path: string): PreparedPrivateRoot | undefined {
+  const chain = createNoFollowDirectoryChain(path, 0o700)
+  if (chain === undefined) return undefined
+  const root = chain.at(-1)
+  return root !== undefined && isPrivateMode(root.identity.mode, "0700") ? { chain, path } : undefined
+}
+
+function readExistingEvents(root: PreparedPrivateRoot, path: string): ExistingEvents {
+  if (!hasStableNoFollowDirectoryChain(root.chain)) return { kind: "blocked" }
+  const source = readNoFollowRegularFile(path, MAX_STORE_BYTES, root.path)
   if (source.kind === "absent") return { kind: "absent" }
   if (source.kind !== "ready") return { kind: "blocked" }
-  if (!isPrivateMode(source.value.identity.mode, "0600") || !validEventLines(source.value.bytes.toString("utf8"))) {
+  const count = countEventLines(source.value.bytes.toString("utf8"))
+  if (!isPrivateMode(source.value.identity.mode, "0600") || count === undefined || !hasStableNoFollowDirectoryChain(root.chain)) {
     return { kind: "blocked" }
   }
-  return { identity: source.value.identity, kind: "ready" }
+  return { count, identity: source.value.identity, kind: "ready" }
 }
 
-function validEventLines(text: string): boolean {
-  if (text.length === 0 || !text.endsWith("\n")) return false
+function countEventLines(text: string): number | undefined {
+  if (text.length === 0 || !text.endsWith("\n")) return undefined
   const lines = text.slice(0, -1).split("\n")
-  if (lines.length > MAX_STORED_EVENTS || lines.some((line) => line.length === 0)) return false
-  return lines.every((line) => {
+  if (lines.length > MAX_STORED_EVENTS || lines.some((line) => line.length === 0)) return undefined
+  const valid = lines.every((line) => {
     try {
       return isOwnerDogfoodFeedbackEvent(JSON.parse(line))
     } catch {
       return false
     }
   })
+  return valid ? lines.length : undefined
 }
 
 function isOwnerDogfoodFeedbackEvent(value: unknown): value is OwnerDogfoodFeedbackEvent {
@@ -171,9 +181,8 @@ function isOwnerDogfoodFeedbackEvent(value: unknown): value is OwnerDogfoodFeedb
     && record.schemaVersion === EVENT_SCHEMA_VERSION
 }
 
-function appendEvent(root: string, path: string, existing: ExistingEvents, payload: string): boolean {
-  const rootBefore = captureNoFollowDirectory(root)
-  if (rootBefore.kind !== "ready" || !isPrivateMode(rootBefore.value.mode, "0700")) return false
+function appendEvent(root: PreparedPrivateRoot, path: string, existing: ExistingEvents, payload: string): boolean {
+  if (!hasStableNoFollowDirectoryChain(root.chain)) return false
   let descriptor: number | undefined
   try {
     const flags = existing.kind === "absent"
@@ -191,12 +200,10 @@ function appendEvent(root: string, path: string, existing: ExistingEvents, paylo
     fsyncSync(descriptor)
     const after = fstatSync(descriptor, { bigint: true })
     const current = lstatSync(path, { bigint: true })
-    const rootAfter = captureNoFollowDirectory(root)
     return after.isFile()
       && current.isFile()
       && !current.isSymbolicLink()
-      && rootAfter.kind === "ready"
-      && sameNoFollowPathLocation(rootBefore.value, rootAfter.value)
+      && hasStableNoFollowDirectoryChain(root.chain)
       && sameNoFollowPathLocation(noFollowPathIdentityFromStat(after), noFollowPathIdentityFromStat(current))
       && isPrivateMode(noFollowPathIdentityFromStat(after).mode, "0600")
   } catch {
