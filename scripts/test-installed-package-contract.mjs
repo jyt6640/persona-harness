@@ -29,7 +29,7 @@ import {
   assertPackRecordBinding,
   assertSourcePackageIdentity,
 } from "./clean-package-boundary-core.mjs"
-import { readV0829AcceptanceManifest } from "./consumer-authority-v0829-acceptance-schema.mjs"
+import { readV0830AcceptanceManifest } from "./consumer-authority-v0830-acceptance-schema.mjs"
 import {
   observerGhStageCodeForPreflight,
   observerGhStageCodeForPrivateCopy,
@@ -185,6 +185,7 @@ async function runInstalledPackageContract(options) {
     assertPackedCooperativeFinishWorks(installedPackage, consumerDirectory)
   }
   await runPhase("evidence-read-write", () => assertPackagedEvidenceReadWriteBoundary(installedPackage, consumerDirectory))
+  await runPhase("owner-dogfood-feedback", () => assertPackagedOwnerDogfoodFeedbackBoundary(installedPackage, consumerDirectory))
   await runPhase("report-stdin", () => assertPackagedBoundedReportStdin(installedPackage, consumerDirectory))
   await runPhase("workflow-lifecycle", () => assertWorkflowLifecycleAbsenceBlocks(
     join(consumerDirectory, "workflow-lifecycle-absence-fixture"),
@@ -231,6 +232,7 @@ async function runSourceCliContract(options) {
     assertSourceCooperativeFinishWorks(phPath)
   }
   await runPhase("evidence-read-write", () => assertSourceEvidenceReadWriteBoundary(phPath))
+  await runPhase("owner-dogfood-feedback", () => assertSourceOwnerDogfoodFeedbackBoundary(phPath))
   await runPhase("report-stdin", () => assertSourceBoundedReportStdin(phPath))
   await runPhase("workflow-lifecycle", () => assertSourceWorkflowLifecycleAbsenceBlocks(phPath))
   await runPhase("bootstrap-workspace-intake", () => assertSourceBootstrapWorkspaceIntake(phPath))
@@ -2200,6 +2202,88 @@ function assertSourceEvidenceReadWriteBoundary(sourceCliPath) {
   )
 }
 
+function assertPackagedOwnerDogfoodFeedbackBoundary(installedPackage, consumerDirectory) {
+  assertOwnerDogfoodFeedbackBoundary(
+    join(consumerDirectory, "owner-dogfood-feedback-fixture"),
+    join(consumerDirectory, "node_modules", ".bin", "ph"),
+    "installed package",
+  )
+}
+
+function assertSourceOwnerDogfoodFeedbackBoundary(sourceCliPath) {
+  const phPath = resolve(repositoryRoot, sourceCliPath)
+  if (!existsSync(phPath)) {
+    throw new Error(`source CLI is missing: ${sourceCliPath}`)
+  }
+  assertOwnerDogfoodFeedbackBoundary(
+    join(temporaryRoot, "source-cli-owner-dogfood-feedback-fixture"),
+    phPath,
+    "source CLI",
+  )
+}
+
+function assertOwnerDogfoodFeedbackBoundary(fixtureRoot, phPath, label) {
+  const stateRoot = join(fixtureRoot, "state")
+  const eventPath = join(stateRoot, "events.jsonl")
+  const recorded = runNode(
+    fixtureRoot,
+    [phPath, "feedback", "dogfood", "source-read-runtime-unavailable"],
+    { PH_OWNER_DOGFOOD_FEEDBACK_ROOT: stateRoot },
+  )
+  requireSuccess(`${label} owner dogfood feedback capture`, recorded)
+  if (
+    recorded.stdout !== "Owner dogfooding feedback recorded. Diagnostic-only.\n"
+    || recorded.stderr.length !== 0
+    || recorded.stdout.includes(fixtureRoot)
+    || !existsSync(eventPath)
+    || lstatSync(eventPath).isSymbolicLink()
+    || !lstatSync(eventPath).isFile()
+  ) {
+    throw new Error(`${label} owner dogfood feedback capture reflected or missed private state`)
+  }
+  const lines = readFileSync(eventPath, "utf8").trim().split("\n")
+  if (
+    lines.length !== 1
+    || !isOwnerDogfoodFeedbackEvent(JSON.parse(lines[0]))
+    || JSON.parse(lines[0]).code !== "source-read-runtime-unavailable"
+  ) {
+    throw new Error(`${label} owner dogfood feedback record is invalid`)
+  }
+  const before = readFileSync(eventPath, "utf8")
+  const marker = "ghp_owner_dogfood_feedback_marker"
+  const rejected = runNode(
+    fixtureRoot,
+    [phPath, "feedback", "dogfood", marker],
+    { PH_OWNER_DOGFOOD_FEEDBACK_ROOT: stateRoot },
+  )
+  if (
+    rejected.status === 0
+    || `${rejected.stdout}${rejected.stderr}`.includes(marker)
+    || readFileSync(eventPath, "utf8") !== before
+  ) {
+    throw new Error(`${label} invalid owner dogfood feedback input did not fail closed`)
+  }
+}
+
+function isOwnerDogfoodFeedbackEvent(value) {
+  return value !== null
+    && typeof value === "object"
+    && !Array.isArray(value)
+    && Object.keys(value).length === 3
+    && value.schemaVersion === "owner-dogfood-feedback.1"
+    && [
+      "bootstrap-workspace-intake-failed",
+      "interview-repeated-question",
+      "project-philosophy-not-injected",
+      "shared-skill-routing-unavailable",
+      "source-read-runtime-unavailable",
+      "unnecessary-interview",
+      "workflow-history-missing",
+    ].includes(value.code)
+    && typeof value.recordedAt === "string"
+    && Number.isFinite(Date.parse(value.recordedAt))
+}
+
 function assertBootstrapWorkspaceIntake(fixtureRoot, phPath, label) {
   assertProjectRootRaceBlocks(join(fixtureRoot, "project-root-race"), phPath, label)
   assertCapturedProjectAgentStageRaceBlocks(join(fixtureRoot, "agent-stage-race"), phPath, label)
@@ -3411,7 +3495,7 @@ function writeModeledProjectFinishWorkerLoader(loaderPath, payload) {
 }
 
 function readGaPreAuthorityReadiness(packageRoot) {
-  const manifest = readV0829AcceptanceManifest(packageRoot)
+  const manifest = readV0830AcceptanceManifest(packageRoot)
   return {
     commands: manifest.preAuthorityReadiness.commands,
     expectedDefaultFinish: manifest.preAuthorityReadiness.expectedDefaultFinish,
@@ -3420,7 +3504,7 @@ function readGaPreAuthorityReadiness(packageRoot) {
 
 function assertPrearmedObserverHandoff(packageRoot, label) {
   try {
-    readV0829AcceptanceManifest(packageRoot)
+    readV0830AcceptanceManifest(packageRoot)
   } catch {
     throw new Error(`${label} current observer handoff contract is invalid`)
   }
@@ -3562,7 +3646,7 @@ async function assertCanonicalPackagePublisherPlan(packageRoot, label) {
     throw new Error(`${label} canonical package publisher is missing from the package`)
   }
   const publisher = await import(pathToFileURL(scriptPath).href)
-  const manifest = readV0829AcceptanceManifest(packageRoot)
+  const manifest = readV0830AcceptanceManifest(packageRoot)
   let packageMetadata
   try {
     packageMetadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
@@ -3654,6 +3738,7 @@ function assertExternalAttestationCommandPlan(packageRoot, cwd, label, observerG
     "consumer-authority-v0827-acceptance-schema.mjs",
     "consumer-authority-v0828-acceptance-schema.mjs",
     "consumer-authority-v0829-acceptance-schema.mjs",
+    "consumer-authority-v0830-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-attestation-command-plan.mjs",
@@ -3950,6 +4035,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     "consumer-authority-v0827-acceptance-schema.mjs",
     "consumer-authority-v0828-acceptance-schema.mjs",
     "consumer-authority-v0829-acceptance-schema.mjs",
+    "consumer-authority-v0830-acceptance-schema.mjs",
     "consumer-authority-v081-acceptance-schema.mjs",
     "consumer-authority-rc1-acceptance-schema.mjs",
     "consumer-authority-external-artifact-transport-plan.mjs",
@@ -3994,7 +4080,7 @@ async function assertExternalArtifactTransportPlan(packageRoot, cwd, label) {
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-observer-boundary.mjs")).href),
     import(pathToFileURL(join(packageRoot, "scripts", "consumer-authority-external-artifact-transport-plan.mjs")).href),
   ])
-  const manifest = readV0829AcceptanceManifest(packageRoot)
+  const manifest = readV0830AcceptanceManifest(packageRoot)
   const archive = authorityArtifactArchive({
     "bundle.json": Buffer.from("{\"modeled\":true}\n", "utf8"),
     "predicate.json": Buffer.from("{\"predicate\":true}\n", "utf8"),

@@ -8,6 +8,13 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+- Add `ph feedback dogfood <code>` for bounded, append-only owner dogfooding
+  events. It records only a fixed diagnostic code and timestamp in a private
+  user-state JSONL file; invalid or unsafe state fails closed and the event has
+  no workflow, release, or authority effect.
+
+## [0.8.29] - 2026-08-24
+
 - Add safe ready-project philosophy guidance to OpenCode without enabling the
   broader runtime injection rail, and register the bundled Persona skill
   catalog with OpenCode's native skill loader.

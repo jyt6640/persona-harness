@@ -11,9 +11,9 @@ version/package chronology, use
 
 ## Current Source Authority And Live Release Lookup
 
-The current source package authority is 0.8.29. Its root package, lockfile,
-private shared-skills package, and v0829 acceptance record must agree exactly.
-Published 0.8.28 is immutable historical evidence and cannot authorize a later
+The current source package authority is 0.8.30. Its root package, lockfile,
+private shared-skills package, and v0830 acceptance record must agree exactly.
+Published 0.8.29 is immutable historical evidence and cannot authorize a later
 package, tag, release, or npm publication.
 
 For the current live npm dist-tags, read
@@ -50,6 +50,12 @@ An owned project can opt into automatic update staging with `ph update enable
 background request and, only for a newer stable version, atomically updates the
 active exact plugin pin and the matching manifest digest. It never changes the
 current session, rules, profiles, workflow state, or unrelated plugins.
+
+The package also exposes `ph feedback dogfood <code>` for a bounded owner
+dogfooding signal. Its private JSONL store contains only a fixed event code and
+timestamp, rejects unsafe, malformed, or unwritable state without claiming
+persistence, and cannot influence workflow Finish, release, authority, or
+external-observation permission.
 
 Repairing a manifest-less, recognized portable static baseline preserves the
 caller project's canonical realpath while staging ownership checks run. The

@@ -39,6 +39,7 @@ type SourceSbom = {
   }[]
   readonly metadata: {
     readonly component: {
+      readonly "bom-ref": string
       readonly name: string
       readonly type: string
       readonly version: string
@@ -92,6 +93,7 @@ describe("source provenance audit", () => {
     expect(sbom.specVersion).toBe("1.5")
     const rootPackage = JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8")) as RootPackage
     expect(sbom.metadata.component).toMatchObject({
+      "bom-ref": `pkg:npm/${rootPackage.name}@${rootPackage.version}`,
       name: rootPackage.name,
       type: "application",
       version: rootPackage.version,

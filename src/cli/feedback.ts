@@ -4,9 +4,10 @@ import process from "node:process"
 
 import { writeFileAtomic } from "../io/atomic-file.js"
 import type { CliRunResult } from "./bearshell.js"
+import { runOwnerDogfoodFeedbackCommand, type OwnerDogfoodFeedbackOptions } from "./owner-dogfood-feedback.js"
 import { readWorkflowStatus } from "./workflow-status.js"
 
-type FeedbackOptions = {
+type FeedbackOptions = OwnerDogfoodFeedbackOptions & {
   readonly projectDir?: string
 }
 
@@ -15,6 +16,7 @@ const FEEDBACK_REPORT_PATH = ".persona/workflow/feedback-report.md"
 function feedbackUsage(invocationName: string): string {
   return [
     `Usage: ${invocationName} feedback`,
+    `       ${invocationName} feedback dogfood <code>`,
     "",
     "Write a tester feedback template to .persona/workflow/feedback-report.md.",
     "",
@@ -25,6 +27,7 @@ function feedbackUsage(invocationName: string): string {
     "",
     "Scope:",
     "- report-only tester feedback template",
+    "- bounded diagnostic-only owner dogfooding event capture",
     "- not generated app product-quality certification",
   ].join("\n")
 }
@@ -72,6 +75,9 @@ function createFeedbackTemplate(projectDir: string): string {
 }
 
 export function runFeedbackCommand(args: readonly string[], options: FeedbackOptions = {}, invocationName = "ph"): CliRunResult {
+  if (args[0] === "dogfood") {
+    return runOwnerDogfoodFeedbackCommand(args.slice(1), options, invocationName)
+  }
   if (args.length === 1 && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
     return { status: 0, stdout: `${feedbackUsage(invocationName)}\n`, stderr: "" }
   }
