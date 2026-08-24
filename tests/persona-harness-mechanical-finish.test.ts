@@ -306,6 +306,34 @@ describe("mechanical workflow finish reachability", () => {
       renameSync(preserved, source)
     }
   })
+
+  it("preserves recorded workflow artifacts while naming a source-read runtime blocker", () => {
+    const projectDir = createTempProject()
+    prepareReverificationFixture(projectDir)
+    const history = runPh(projectDir, ["history", "--id", "source-read-runtime-blocked"])
+    expect(history.status, history.stderr).toBe(0)
+    expect(existsSync(join(projectDir, ".persona", "workflow", "history", "source-read-runtime-blocked", "implementation-report.md"))).toBe(true)
+    expect(existsSync(join(projectDir, ".persona", "workflow", "history", "source-read-runtime-blocked", "review-report.md"))).toBe(true)
+
+    const source = join(projectDir, "src")
+    const preserved = join(projectDir, "src-preserved")
+    const outside = join(projectDir, "outside-source")
+    mkdirSync(outside)
+    renameSync(source, preserved)
+    symlinkSync(outside, source)
+    try {
+      const finish = runPhAtProjectRoot(projectDir, ["workflow", "finish", "implement", "--reverify", "--ci"])
+
+      expect(finish.status).toBe(1)
+      expect(finish.stderr).toContain("Blocker: source-read-runtime-unavailable")
+      expect(finish.stderr).toContain("Existing workflow reports and history archives, if any, remain diagnostic-only.")
+      expect(finish.stderr).toContain("Restore the source-read environment before retrying Finish.")
+      expect(finish.stdout).not.toContain("Finish status: PASS")
+    } finally {
+      unlinkSync(source)
+      renameSync(preserved, source)
+    }
+  })
 })
 
 function prepareReverificationFixture(projectDir: string): readonly string[] {

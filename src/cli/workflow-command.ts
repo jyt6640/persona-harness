@@ -26,6 +26,7 @@ import {
   passedGuardOutput,
   passedImplementOutput,
   passedStartOutput,
+  sourceReadRuntimeUnavailableFinishOutput,
   type WorkflowGuardKind,
   type WorkflowRunnerKind,
   uninitializedHarnessOutput,
@@ -196,7 +197,7 @@ function runWorkflowFinish(
       { boundary, snapshot },
     )
   } catch {
-    return failedRunnerOutput("finish", runnerKind, ["Cooperative verification blocked: source-read-runtime-unavailable."])
+    return sourceReadRuntimeUnavailableFinishOutput(runnerKind)
   } finally {
     boundary?.close()
   }

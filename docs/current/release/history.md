@@ -11,9 +11,9 @@ version/package chronology, use
 
 ## Current Source Authority And Live Release Lookup
 
-The current source package authority is 0.8.30. Its root package, lockfile,
-private shared-skills package, and v0830 acceptance record must agree exactly.
-Published 0.8.29 is immutable historical evidence and cannot authorize a later
+The current source package authority is 0.8.31. Its root package, lockfile,
+private shared-skills package, and v0831 acceptance record must agree exactly.
+Published 0.8.30 is immutable historical evidence and cannot authorize a later
 package, tag, release, or npm publication.
 
 For the current live npm dist-tags, read
@@ -58,6 +58,12 @@ absolute `PH_OWNER_DOGFOOD_FEEDBACK_ROOT` replaces that directory. Its JSONL
 store contains only a fixed event code and timestamp, rejects unsafe, malformed,
 or unwritable state without claiming persistence, and cannot influence workflow
 Finish, release, authority, or external-observation permission.
+
+When `ph workflow finish implement` cannot reserve its source-read runtime, it
+now renders the bounded `source-read-runtime-unavailable` blocker with the
+next environment repair action. Existing implementation/review reports and
+history archives remain diagnostic-only: they are preserved, but do not grant
+Finish authority or justify recreating workflow state.
 
 Repairing a manifest-less, recognized portable static baseline preserves the
 caller project's canonical realpath while staging ownership checks run. The

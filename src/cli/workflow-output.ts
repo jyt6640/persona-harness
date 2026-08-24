@@ -95,6 +95,20 @@ export function failedRunnerOutput(
   }
 }
 
+export function sourceReadRuntimeUnavailableFinishOutput(runnerKind: WorkflowRunnerKind): CliRunResult {
+  return failedRunnerOutput("finish", runnerKind, [], {
+    blockerIds: ["source-read-runtime-unavailable"],
+    followUp: {
+      action: [
+        "Restore the source-read environment before retrying Finish.",
+        "Existing workflow reports and history archives, if any, remain diagnostic-only.",
+        "They do not grant Finish authority; do not recreate them or rerun unrelated workflow steps.",
+      ].join(" "),
+      blockerId: "source-read-runtime-unavailable",
+    },
+  })
+}
+
 function failedFinishRunnerOutput(
   runnerKind: WorkflowRunnerKind,
   options: WorkflowFinishFailureOutputOptions,
