@@ -10,6 +10,7 @@ import {
   readV0829AcceptanceManifest,
 } from "../scripts/consumer-authority-v0829-acceptance-schema.mjs"
 import { parseV0828AcceptanceManifest } from "../scripts/consumer-authority-v0828-acceptance-schema.mjs"
+import { PACKAGE_EXERCISE_PHASES } from "../scripts/clean-package-exercise-phase.mjs"
 
 const repositoryRoot = process.cwd()
 
@@ -23,7 +24,7 @@ describe("consumer authority 0.8.29 acceptance schema", () => {
       packageBoundary: {
         authoritativeBundleContract: {
           exercisePhaseProtocol: {
-            freshTar: expect.arrayContaining(["opencode-shared-skill-catalog"]),
+            freshTar: PACKAGE_EXERCISE_PHASES["fresh-tar"],
           },
         },
       },

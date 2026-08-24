@@ -14,6 +14,7 @@ export const PACKAGE_EXERCISE_PHASES = Object.freeze({
     "fresh-install",
     "package-identity",
     "package-content-identity",
+    "opencode-shared-skill-catalog",
     "opencode-interview-observation",
     "repository-only-files",
     "canonical-publisher",

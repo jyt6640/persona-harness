@@ -73,6 +73,11 @@ function buildExpectedManifest() {
     throw new Error("v0828 acceptance manifest is missing the OpenCode interview phase")
   }
   freshTarPhases.splice(interviewPhaseIndex, 0, "opencode-shared-skill-catalog")
+  const authorityDiscoveryPhaseIndex = freshTarPhases.indexOf("authority-discovery")
+  if (authorityDiscoveryPhaseIndex < 0) {
+    throw new Error("v0828 acceptance manifest is missing the authority discovery phase")
+  }
+  freshTarPhases.splice(authorityDiscoveryPhaseIndex, 0, "authority-verify")
   return manifest
 }
 

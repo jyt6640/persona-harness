@@ -22,6 +22,16 @@ const FRESH_TAR_MARKER = "installed-package-exercise-phase"
 const FRESH_TAR_SUCCESS = "installed-package-exercise-contract: PASS"
 
 describe("clean package exercise phase protocol", () => {
+  it("places the installed OpenCode skill catalog before interview observation", () => {
+    const phases = PACKAGE_EXERCISE_PHASES["fresh-tar"]
+    const contentIdentity = phases.indexOf("package-content-identity")
+    const skillCatalog = phases.indexOf("opencode-shared-skill-catalog")
+    const interviewObservation = phases.indexOf("opencode-interview-observation")
+
+    expect(skillCatalog).toBe(contentIdentity + 1)
+    expect(interviewObservation).toBe(skillCatalog + 1)
+  })
+
   it("keeps installed authority verification in the fresh-tar phase order", () => {
     const phases = PACKAGE_EXERCISE_PHASES["fresh-tar"]
     const artifactTransport = phases.indexOf("artifact-transport")
