@@ -55,6 +55,12 @@ export type HarnessConfig = {
 export type HarnessFeaturesConfig = {
   readonly entrySteering: boolean
   /**
+   * Injects the ready project's single safe philosophy convention into the
+   * host system context. This is deliberately narrower than runtimeInjection:
+   * it does not enable workflow, rule, or tool-output guidance.
+   */
+  readonly projectPhilosophyInjection: boolean
+  /**
    * Injects rule, profile, and policy guidance into tool output. Measured
    * negative in the accepted 10-pair A/B and kept off by default.
    */
@@ -139,6 +145,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
   evidenceDir: ".persona/evidence",
   features: {
     entrySteering: false,
+    projectPhilosophyInjection: true,
     runtimeInjection: false,
     observerFindings: false,
   },
@@ -187,6 +194,7 @@ const FAIL_CLOSED_CONFIG: HarnessConfig = {
   evidenceDir: INVALID_CONFIG_PATH,
   features: {
     entrySteering: false,
+    projectPhilosophyInjection: false,
     runtimeInjection: false,
     observerFindings: false,
   },
@@ -279,6 +287,7 @@ function validConfigShape(value: Record<string, unknown>): boolean {
   if (isRecord(value.features)) {
     if (
       !isBooleanIfPresent(value.features, "entrySteering")
+      || !isBooleanIfPresent(value.features, "projectPhilosophyInjection")
       || !isBooleanIfPresent(value.features, "runtimeInjection")
       || !isBooleanIfPresent(value.features, "observerFindings")
     ) {
@@ -398,6 +407,10 @@ function readFeaturesConfig(value: unknown): HarnessFeaturesConfig {
   }
   return {
     entrySteering: readBoolean(value.entrySteering, DEFAULT_CONFIG.features.entrySteering),
+    projectPhilosophyInjection: readBoolean(
+      value.projectPhilosophyInjection,
+      DEFAULT_CONFIG.features.projectPhilosophyInjection,
+    ),
     runtimeInjection: readBoolean(value.runtimeInjection, DEFAULT_CONFIG.features.runtimeInjection),
     observerFindings: readBoolean(value.observerFindings, DEFAULT_CONFIG.features.observerFindings),
   }
@@ -555,6 +568,10 @@ export function loadHarnessConfig(projectDir: string, projectReadBoundary?: Harn
 
 export function isRuntimeInjectionEnabled(config: HarnessConfig): boolean {
   return config.enabled && config.features.runtimeInjection
+}
+
+export function isProjectPhilosophyInjectionEnabled(config: HarnessConfig): boolean {
+  return config.enabled && config.features.projectPhilosophyInjection
 }
 
 export function isObserverFindingsEnabled(config: HarnessConfig): boolean {

@@ -20,7 +20,7 @@
       "category": "core",
       "optional": false,
       "entry": "skills/philosophy-refinement/SKILL.md",
-      "startPredicate": "The user explicitly critiques a design or implementation or explicitly requests philosophy refinement.",
+      "startPredicate": "The user explicitly asks to change, review, or persist a reusable philosophy.",
       "mutability": "explicit-user-action",
       "inputBrief": ["current rationale", "preferred alternative", "intended scope", "counterexample or side effect", "trade-offs"],
       "outputBrief": ["classified refinement result", "complete structured candidate or unresolved decision"],

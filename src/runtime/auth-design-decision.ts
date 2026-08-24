@@ -30,6 +30,12 @@ export type AuthDesignDecisionRoute =
       readonly block: string
     }
   | {
+      readonly kind: "clarification-required"
+      readonly decision: AuthDesignDecisionSummary
+      readonly nextSlot: AuthDesignDecisionSlot
+      readonly block: string
+    }
+  | {
       readonly kind: "approval-required"
       readonly decision: AuthDesignDecisionSummary
       readonly block: string
@@ -57,9 +63,12 @@ type ParsedSlotValues = {
 }
 
 const AUTH_SECURITY_PATTERN = /(?:auth(?:entication|orization)?|oauth|oidc|sso|jwt|security|secure|permission|login|인증|인가|보안|권한|로그인)/iu
-const APPROVAL_PATTERN = /^(?:approve|승인|진행하자|시작하자|proceed|go\s+ahead)$/iu
+const EXACT_APPROVAL_PATTERN = /^(?:approve|승인|진행하자|시작하자|proceed|go\s+ahead)$/iu
 const STOP_PATTERN = /^(?:stop|pause|그만|중단)$/iu
+const NATURAL_STOP_PATTERN = /(?:(?:do\s+not|don't|stop|skip)\s+(?:the\s+)?(?:interview|questions?|design\s+hold)|(?:interview|questions?|design\s+hold)\s+(?:is\s+)?(?:not\s+(?:needed|now)|stop|skip)|(?:인터뷰|질문|설계\s*홀드?)\s*(?:를|을|은|는)?\s*(?:하지\s*마(?:요|세요)?|말아(?:줘|주세요)?|그만(?:해|하자|해줘|해주세요)?|중단(?:해|하자|해줘|해주세요)?|필요\s*없(?:어|어요|습니다)?))/iu
+const NON_AUTH_TASK_SWITCH_PATTERN = /(?:feedback[-\s]?dogfooding|dogfooding|workflow\s+finish(?:\s+implement)?|source-read-runtime-unavailable|history\s+archive|(?:피드백|이슈)\s*(?:로|을|를|에)?\s*(?:기록|남기|등록|정리)|(?:워크플로|workflow)\s*(?:finish|진단|오류)|(?:구현|리뷰)\s*보고서)/iu
 const DEFER_PATTERN = /^(?:defer|skip|later|보류|넘겨)$/iu
+const CLARIFICATION_PATTERN = /(?:무슨\s*말|뭔\s*말|이해(?:가)?\s*안|모르겠|설명(?:해|해줘|해주세요|좀)|쉽게\s*(?:말|설명)|what\s+(?:does|do)\b.*\bmean|(?:i\s+)?(?:do\s+not|don't)\s+understand|(?:can|could)\s+you\s+explain|please\s+explain)/iu
 
 const SLOT_VALUE_PATTERNS: Readonly<Record<AuthDesignDecisionSlot, RegExp>> = {
   provider: /(?:^|[\s,;])provider\s*[:=]\s*([^\n,;]+)/iu,
@@ -81,8 +90,76 @@ const SLOT_PROMPTS: Readonly<Record<AuthDesignDecisionSlot, string>> = {
   "global-scope": "global-scope",
 }
 
+const SLOT_EXPLANATIONS: Readonly<Record<AuthDesignDecisionSlot, string>> = {
+  provider: "Which external identity service the product will trust for login, such as GitHub only or GitHub plus another provider.",
+  domain: "Which domain concept owns the link between an internal user and an external provider account.",
+  callback: "The callback is the URL GitHub sends the browser to after login. Decide the path and which boundary receives the code and state before handing work to the application layer.",
+  state: "OAuth state is a short-lived value that connects the login start to the callback and helps reject a mismatched return. Decide which component creates it, where it is kept, and which component verifies it.",
+  layer: "Which layer owns each responsibility: the HTTP entry point, the application use case, and the domain rules.",
+  "type-exception": "How provider failures and unexpected responses become domain or application errors without leaking provider details into unrelated layers.",
+  "global-scope": "Which cross-cutting configuration or response conventions belong in a shared global place, instead of inside one OAuth feature.",
+}
+
 export function isAuthSecurityRequest(message: string): boolean {
   return AUTH_SECURITY_PATTERN.test(message.trim())
+}
+
+function isEditDistanceAtMostOne(value: string, expected: string): boolean {
+  if (value === expected) {
+    return true
+  }
+  if (Math.abs(value.length - expected.length) > 1) {
+    return false
+  }
+
+  let valueIndex = 0
+  let expectedIndex = 0
+  let edits = 0
+  while (valueIndex < value.length && expectedIndex < expected.length) {
+    if (value[valueIndex] === expected[expectedIndex]) {
+      valueIndex += 1
+      expectedIndex += 1
+      continue
+    }
+    edits += 1
+    if (edits > 1) {
+      return false
+    }
+    if (value.length > expected.length) {
+      valueIndex += 1
+      continue
+    }
+    if (value.length < expected.length) {
+      expectedIndex += 1
+      continue
+    }
+    valueIndex += 1
+    expectedIndex += 1
+  }
+
+  return edits + (value.length - valueIndex) + (expected.length - expectedIndex) <= 1
+}
+
+function isApprovalCommand(message: string): boolean {
+  if (EXACT_APPROVAL_PATTERN.test(message)) {
+    return true
+  }
+  return /^[a-z]+$/iu.test(message) && isEditDistanceAtMostOne(message.toLowerCase(), "approve")
+}
+
+function isStopCommand(message: string): boolean {
+  return STOP_PATTERN.test(message) || NATURAL_STOP_PATTERN.test(message)
+}
+
+function isNonAuthTaskSwitch(message: string): boolean {
+  return !isAuthSecurityRequest(message) && NON_AUTH_TASK_SWITCH_PATTERN.test(message)
+}
+
+function stoppedRoute(): AuthDesignDecisionRoute {
+  return {
+    kind: "stopped",
+    block: "[Persona Harness Auth Design Hold]\nState: stopped\nNo project, workflow, issue, agent, or file state was changed.\nDo not ask another auth-design question. Address a separate latest user request through its normal route.",
+  }
 }
 
 export function initialAuthDesignDecision(): AuthDesignDecisionSummary {
@@ -201,6 +278,20 @@ function renderDesignRequired(decision: AuthDesignDecisionSummary, nextSlot: Aut
   ].join("\n")
 }
 
+function renderClarificationRequired(decision: AuthDesignDecisionSummary, nextSlot: AuthDesignDecisionSlot): string {
+  return [
+    "[Persona Harness Auth Design Hold]",
+    `State: ${decision.state}`,
+    `Current decision slot: ${SLOT_PROMPTS[nextSlot]}`,
+    "The user's latest message is a clarification request, not an architecture decision.",
+    "First explain only the current question in plain language. Do not choose a design or imply that an example is the user's decision.",
+    `Plain-language meaning: ${SLOT_EXPLANATIONS[nextSlot]}`,
+    "Then ask whether the user wants a recommendation, wants to defer this slot, or wants to give their decision.",
+    "Do not record an answer, advance to another slot, or ask the next slot.",
+    "No plan, ticket, workflow, branch, file, issue, or agent action has been created.",
+  ].join("\n")
+}
+
 function renderApprovalRequired(decision: AuthDesignDecisionSummary): string {
   return [
     "[Persona Harness Auth Design Hold]",
@@ -239,8 +330,11 @@ export class AuthDesignDecisionTracker {
 
     const current = this.sessions.get(sessionId)
     if (current?.approved === true) {
-      this.sessions.delete(sessionId)
-      return { kind: "released" }
+      if (isStopCommand(normalized)) {
+        this.sessions.delete(sessionId)
+        return stoppedRoute()
+      }
+      return isAuthSecurityRequest(normalized) ? { kind: "released" } : undefined
     }
 
     if (current === undefined) {
@@ -257,19 +351,29 @@ export class AuthDesignDecisionTracker {
       return this.renderActive(started)
     }
 
-    if (STOP_PATTERN.test(normalized)) {
+    if (isStopCommand(normalized) || isNonAuthTaskSwitch(normalized)) {
       this.sessions.delete(sessionId)
-      return {
-        kind: "stopped",
-        block: "[Persona Harness Auth Design Hold]\nState: stopped\nNo project, workflow, issue, agent, or file state was changed.",
-      }
+      return stoppedRoute()
     }
 
     if (DEFER_PATTERN.test(normalized)) {
       return this.renderActive(current)
     }
 
-    if (APPROVAL_PATTERN.test(normalized)) {
+    if (CLARIFICATION_PATTERN.test(normalized)) {
+      const decision = createDecision(current.answers, current.conflictedSlots, false)
+      const nextSlot = decision.missingSlots[0]
+      if (nextSlot !== undefined) {
+        return {
+          kind: "clarification-required",
+          decision,
+          nextSlot,
+          block: renderClarificationRequired(decision, nextSlot),
+        }
+      }
+    }
+
+    if (isApprovalCommand(normalized)) {
       const decision = createDecision(current.answers, current.conflictedSlots, false)
       if (decision.missingSlots.length > 0) {
         return this.renderActive(current)

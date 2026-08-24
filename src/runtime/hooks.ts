@@ -7,10 +7,12 @@ import { ContinuationTracker } from "./continuation.js"
 import { isBackendBootstrapTargetFile, isJavaTargetFile } from "./file-role.js"
 import {
   isObserverFindingsEnabled,
+  isProjectPhilosophyInjectionEnabled,
   isRuntimeInjectionEnabled,
   loadHarnessConfigResult,
   resolveSafeEvidenceRootResult,
 } from "../config/harness-config.js"
+import { loadBackendProjectPhilosophy } from "../config/project-profile.js"
 import { createInjectionBlock } from "./injection.js"
 import type { EffectiveProfileInjectionOptions } from "./injection.js"
 import { readPersonalizationStore } from "../cli/personalization-profile-store.js"
@@ -23,6 +25,7 @@ import {
   maybeInjectProductDeepInterview,
 } from "./intent-workflow.js"
 import { injectSystemConstitution } from "./system-constitution.js"
+import { injectProjectPhilosophy } from "./project-philosophy.js"
 import { TokenCompactionTracker } from "./token-compaction.js"
 import type { TokenCompactionClient } from "./token-compaction.js"
 import { TokenTelemetryRecorder } from "./token-telemetry.js"
@@ -154,7 +157,21 @@ async function runHostHookAsync(hookName: string, operation: () => Promise<void>
   }
 }
 
-function loadPersonalizationInjectionProfile(): EffectiveProfileInjectionOptions {
+function loadPersonalizationInjectionProfile(
+  projectDir: string,
+  projectPhilosophyInjectionEnabled: boolean,
+): EffectiveProfileInjectionOptions {
+  const projectPhilosophy = projectPhilosophyInjectionEnabled
+    ? loadBackendProjectPhilosophy(projectDir)
+    : undefined
+  const projectContracts = projectPhilosophy === undefined
+    ? []
+    : [{
+        id: "project-profile-philosophy",
+        rule: projectPhilosophy,
+        status: "active" as const,
+        topic: "project-philosophy",
+      }]
   try {
     const store = readPersonalizationStore()
     return {
@@ -166,9 +183,10 @@ function loadPersonalizationInjectionProfile(): EffectiveProfileInjectionOptions
         status: "active" as const,
         topic: rule.topic,
       })),
+      projectContracts,
     }
   } catch {
-    return { available: false, personalRules: [] }
+    return { available: false, personalRules: [], projectContracts }
   }
 }
 
@@ -209,7 +227,10 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const continuation = new ContinuationTracker({ evidenceDir })
   const entrySteering = new EntrySteeringTracker(projectDir, config)
   const runtimeInjectionEnabled = isRuntimeInjectionEnabled(config)
-  const effectiveProfile = runtimeInjectionEnabled ? loadPersonalizationInjectionProfile() : undefined
+  const projectPhilosophyInjectionEnabled = isProjectPhilosophyInjectionEnabled(config)
+  const effectiveProfile = runtimeInjectionEnabled
+    ? loadPersonalizationInjectionProfile(projectDir, projectPhilosophyInjectionEnabled)
+    : undefined
   const observerFindingsEnabled = isObserverFindingsEnabled(config)
   const idleContinuation = new IdleContinuationTracker({ client: options.client, projectDir })
   const ralphLoop = new RalphLoopContinuationTracker({
@@ -591,6 +612,12 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
       runHostHook("experimental.chat.system.transform", () => {
         if (config.enabled && config.telemetry.tokenUsage) {
           tokenTelemetry.rememberModelLimit(input.sessionID, input.model)
+        }
+        if (projectPhilosophyInjectionEnabled) {
+          const projectPhilosophy = loadBackendProjectPhilosophy(projectDir)
+          if (projectPhilosophy !== undefined) {
+            injectProjectPhilosophy(output, projectPhilosophy)
+          }
         }
         if (runtimeInjectionEnabled && allowsRuntimeInjection(input.sessionID, "system-constitution")) {
           injectSystemConstitution(output, config)

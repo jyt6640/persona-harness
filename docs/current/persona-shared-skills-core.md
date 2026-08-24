@@ -33,6 +33,10 @@ its existing route, and protects ambiguous product discovery. An explicit
 command never falls back to a different skill when it is malformed or
 unavailable.
 
+`philosophy-refinement` is explicit-only: it begins only when the user asks to
+change, review, or persist a reusable philosophy. A direct implementation
+request, design criticism, or one-off code preference stays on its normal route.
+
 An ambiguous new-product request starts `deep-interview` with one adaptive
 question, recommendation, and tradeoff. An ambiguous brownfield request starts
 the same skill in code-first discovery mode: inspect the relevant existing code
@@ -56,6 +60,12 @@ Activation is a compact reference and first safe action, not a loaded skill
 body or catalog dump. The first accepted product brief hands off explicitly to
 `technical-intake`, then `plan`, optional `ralplan`, `tdd`, `implementation`,
 and `review`.
+
+When a compact route selects a Persona skill, it also requires one short
+user-visible notice at the beginning of the next assistant response. The notice
+names the selected skill, whether it was automatic or explicit, and the bounded
+selection reason in the user's language. It is a conversational status line,
+not a claim that the full skill body was injected or a host-native UI toast.
 
 ## Product Discovery
 
@@ -84,14 +94,41 @@ implementation and workflow progression remain disabled.
 If a slot receives conflicting explicit values, it remains unresolved; only a
 dedicated `resolve <slot>: <value>` answer clears that slot. Repeated ordinary
 answers never choose between conflicting values.
+When a user asks what the current slot means or says that they do not
+understand it, that is a clarification request rather than an answer. The hold
+explains only the current slot in plain language and keeps it unresolved; it
+does not advance to another OAuth decision.
+An active hold also recognizes a bounded request to stop the interview, such as
+`아니 지금 필요없는 인터뷰 하지마`; it clears the session without recording a
+decision or asking the next slot. A later unrelated request follows its normal
+route. A clear non-auth workflow diagnostic or dogfooding request also ends an
+unapproved hold instead of being stored as a design answer; arbitrary unrelated
+text does not implicitly cancel it.
+
+After approval, later authentication or security work in the same OpenCode
+session reuses the accepted handoff without reopening the seven slots. Unrelated
+non-auth messages are not intercepted, and a fresh session still starts with a
+new unresolved hold. The approval command remains standalone; an English token
+within one edit of `approve` is accepted for obvious typing mistakes such as
+`approver`, while sentences and unrelated lookalikes remain blocked.
 
 ## Host Boundary
 
 A host adapter may show a compact route to one catalog entry. It advises and
-routes only: it does not load the full skill body or catalog, run commands, or
-automatically create or advance workflow state. Existing `ph` workflow commands
-remain separate user-selected product operations; the shared-skill adapter does
-not grant them authority.
+routes only: it does not inject the full skill body or catalog into every turn,
+run commands, or automatically create or advance workflow state. Existing `ph`
+workflow commands remain separate user-selected product operations; the
+shared-skill adapter does not grant them authority.
+
+On OpenCode, the plugin config hook also registers the package's bundled
+`packages/shared-skills/skills` directory with OpenCode's native skill loader
+through the current OpenCode 1.x `skills.paths` setting. If a compatible newer
+host supplies a `skills` source array instead, that array is preserved and
+extended. This makes the catalog discoverable without writing a
+machine-specific package path into the consumer config. Existing valid skill
+sources are retained; an incompatible setting is left untouched. Registration
+does not activate a skill, inject all skill bodies, or change the routing and
+workflow authority rules above.
 
 ## Portable Host Contract
 

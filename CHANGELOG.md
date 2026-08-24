@@ -8,6 +8,17 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+- Add safe ready-project philosophy guidance to OpenCode without enabling the
+  broader runtime injection rail, and register the bundled Persona skill
+  catalog with OpenCode's native skill loader.
+- Keep OAuth design interviews in place when a user asks for clarification,
+  clear them for a clear stop or non-auth workflow diagnostic, retain approved
+  auth context for later related work, and tolerate a bounded standalone
+  approval typo.
+- Show a compact user-language notice when Persona selects a shared skill.
+
+## [0.8.28] - 2026-08-24
+
 - Add opt-in project-local updates. `ph update enable --yes` preserves an
   owned project's other OpenCode plugin entries and schedules a bounded
   next-session check for a newer stable Persona Harness pin. Invalid ownership,

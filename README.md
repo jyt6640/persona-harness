@@ -87,10 +87,11 @@ A workflow + evidence CLI (`ph`) with an optional OpenCode plugin, for Java/Spri
 - can block completion when required reports or evidence for defined gates are
   missing.
 
-The optional runtime adapter can also route to a portable Persona-owned shared
-skill catalog. Product ideas start with a one-question interview and explicit
-brief approval; adapters advise only and never create workflow state or invoke
-host agents automatically. See [Persona Shared Skills Core](docs/current/persona-shared-skills-core.md).
+The optional runtime adapter also registers the bundled portable Persona-owned
+shared-skill catalog with OpenCode. Product ideas start with a one-question
+interview and explicit brief approval; adapters advise only and never create
+workflow state or invoke host agents automatically. See [Persona Shared Skills
+Core](docs/current/persona-shared-skills-core.md).
 
 It is **not** a code-quality guarantee, a token-saving product, a broad linter,
 proof that generated apps are production-ready, or a strong completion-integrity
@@ -137,9 +138,11 @@ npx ph attach --repair --yes
 
 `attach` refuses unrecognized or corrupt existing Persona Harness files rather
 than overwriting them, and it rejects repair for an already-ready attachment.
-A successful attach enables PH-run verification while keeping
-`runtimeInjection`, `systemConstitution`, `idleContinuation`, and the Ralph
-loop off.
+A successful attach enables PH-run verification and the narrow
+`projectPhilosophyInjection` default: when a ready project profile has one safe
+`philosophy.project` convention, it is available automatically as project-local
+guidance. It does not enable the broader `runtimeInjection`,
+`systemConstitution`, `idleContinuation`, or Ralph loop rails, which remain off.
 
 `ph go` is the host-neutral single entry for one concrete implementation
 requirement after bootstrap and plan acceptance. It captures the requirement,
