@@ -122,6 +122,7 @@ values in their historical rows; they are not competing live claims.
 | `0.8.28` | 2026-08-24 | published stable release | [`release notes`](../current/release/v0.8.28-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
 | `0.8.29` | 2026-08-24 | published stable release | [`release notes`](../current/release/v0.8.29-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
 | `0.8.30` | 2026-08-25 | published stable release | [`release notes`](../current/release/v0.8.30-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
+| `0.8.31` | 2026-08-25 | published stable release | [`release notes`](../current/release/v0.8.31-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
 
 ## Future Migration Notes
 

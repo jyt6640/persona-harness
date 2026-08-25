@@ -11,9 +11,9 @@ version/package chronology, use
 
 ## Current Source Authority And Live Release Lookup
 
-The current source package authority is 0.8.31. Its root package, lockfile,
-private shared-skills package, and v0831 acceptance record must agree exactly.
-Published 0.8.30 is immutable historical evidence and cannot authorize a later
+The current source package authority is 0.8.32. Its root package, lockfile,
+private shared-skills package, and v0832 acceptance record must agree exactly.
+Published 0.8.31 is immutable historical evidence and cannot authorize a later
 package, tag, release, or npm publication.
 
 For the current live npm dist-tags, read
@@ -46,7 +46,11 @@ migrated only when the intact owned init manifest verifies its matching package
 binding; unrelated plugin entries remain untouched.
 
 An owned project can opt into automatic update staging with `ph update enable
---yes`. The next OpenCode session checks the npm `latest` tag with a bounded
+--yes`. A narrowly recognized legacy attach can first run `ph update repair
+--yes` to replace only its stale absolute Persona Harness plugin entry and
+rebind the manifest to the real project, without overwriting diverged rules,
+profile, workflow state, `.gitignore`, or unrelated OpenCode settings. The next
+OpenCode session checks the npm `latest` tag with a bounded
 background request and, only for a newer stable version, atomically updates the
 active exact plugin pin and the matching manifest digest. It never changes the
 current session, rules, profiles, workflow state, or unrelated plugins.

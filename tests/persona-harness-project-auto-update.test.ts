@@ -2,7 +2,9 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
@@ -11,7 +13,12 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
-import { readInitManifest, sha256Bytes } from "../src/cli/init-manifest.js"
+import {
+  createInitManifest,
+  readInitManifest,
+  serializeInitManifest,
+  sha256Bytes,
+} from "../src/cli/init-manifest.js"
 import { applyProjectAutoUpdate } from "../src/cli/project-auto-update.js"
 import { mergePluginPath } from "../src/cli/init-source.js"
 import { personaHarnessVersion } from "../src/cli/version.js"
@@ -52,6 +59,46 @@ function configAndManifestBytes(projectDir: string): readonly [Buffer, Buffer] {
   ]
 }
 
+function writeLegacyAttachedProject(projectDir: string): void {
+  expect(cli(projectDir, ["init"]).status).toBe(0)
+  const legacyPackageRoot = join(realpathSync(projectDir), "legacy-persona-harness")
+  mkdirSync(join(legacyPackageRoot, "dist"), { recursive: true })
+  writeFileSync(
+    join(legacyPackageRoot, "package.json"),
+    `${JSON.stringify({ name: "persona-harness", version: personaHarnessVersion() }, null, 2)}\n`,
+  )
+  writeFileSync(join(legacyPackageRoot, "dist", "index.js"), "export {}\n")
+  writeFileSync(
+    join(projectDir, ".opencode", "opencode.json"),
+    `${JSON.stringify({
+      mcp: { context7: { type: "remote", url: "https://mcp.context7.com/mcp" } },
+      plugin: [
+        ["third-party-plugin", { mode: "strict" }],
+        join(legacyPackageRoot, "dist", "index.js"),
+      ],
+    }, null, 2)}\n`,
+  )
+  writeFileSync(join(projectDir, ".gitignore"), "# project-owned ignore\n")
+  writeFileSync(join(projectDir, ".persona", "harness.jsonc"), "{\n  \"runtimeInjection\": true\n}\n")
+
+  const manifest = readInitManifest(projectDir)
+  if (manifest === null) {
+    throw new Error("expected init manifest")
+  }
+  const staleManifest = createInitManifest(
+    manifest.package,
+    {
+      profileDigest: null,
+      realPath: join(realpathSync(tmpdir()), "persona-attach-stage-legacy"),
+    },
+    manifest.files,
+  )
+  writeFileSync(
+    join(projectDir, ".persona", ".ph-init-manifest.json"),
+    serializeInitManifest(staleManifest),
+  )
+}
+
 async function waitFor(condition: () => boolean): Promise<void> {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     if (condition()) {
@@ -69,6 +116,93 @@ afterEach(() => {
 })
 
 describe("ph update", () => {
+  it("explicitly recovers a bounded legacy attach before enabling auto-update", () => {
+    const projectDir = createProject()
+    writeLegacyAttachedProject(projectDir)
+    const gitignorePath = join(projectDir, ".gitignore")
+    const harnessPath = join(projectDir, ".persona", "harness.jsonc")
+    const beforeGitignore = readFileSync(gitignorePath)
+    const beforeHarness = readFileSync(harnessPath)
+
+    const repair = cli(projectDir, ["update", "repair", "--yes"])
+
+    expect(repair.status).toBe(0)
+    expect(readOpenCodeConfig(projectDir)).toEqual({
+      mcp: { context7: { type: "remote", url: "https://mcp.context7.com/mcp" } },
+      plugin: [
+        ["third-party-plugin", { mode: "strict" }],
+        `persona-harness@${personaHarnessVersion()}`,
+      ],
+    })
+    expect(readFileSync(gitignorePath)).toEqual(beforeGitignore)
+    expect(readFileSync(harnessPath)).toEqual(beforeHarness)
+    const manifest = readInitManifest(projectDir)
+    expect(manifest?.project.realPath).toBe(realpathSync(projectDir))
+    expect(manifest?.project.profileDigest).toBeNull()
+    expect(manifest?.files.some((entry) => entry.path === ".opencode/opencode.json")).toBe(true)
+    expect(manifest?.files.some((entry) => entry.path === ".gitignore")).toBe(false)
+    expect(manifest?.files.some((entry) => entry.path === ".persona/harness.jsonc")).toBe(false)
+    expect(manifest?.files.find((entry) => entry.path === ".opencode/opencode.json")?.digest).toBe(
+      sha256Bytes(readFileSync(join(projectDir, ".opencode", "opencode.json"))),
+    )
+
+    expect(cli(projectDir, ["update", "enable", "--yes"]).status).toBe(0)
+    expect(readOpenCodeConfig(projectDir).plugin).toEqual([
+      ["third-party-plugin", { mode: "strict" }],
+      [`persona-harness@${personaHarnessVersion()}`, { autoUpdate: true }],
+    ])
+  })
+
+  it("fails closed without changing a non-legacy project", () => {
+    const projectDir = createProject()
+    expect(cli(projectDir, ["init"]).status).toBe(0)
+    const before = configAndManifestBytes(projectDir)
+
+    const repair = cli(projectDir, ["update", "repair", "--yes"])
+
+    expect(repair.status).toBe(1)
+    expect(repair.stderr).toContain("ownership-unavailable")
+    expect(configAndManifestBytes(projectDir)).toEqual(before)
+  })
+
+  it("fails closed without changing malformed legacy ownership state", () => {
+    const projectDir = createProject()
+    writeLegacyAttachedProject(projectDir)
+    const manifestPath = join(projectDir, ".persona", ".ph-init-manifest.json")
+    const configPath = join(projectDir, ".opencode", "opencode.json")
+    writeFileSync(manifestPath, "{ malformed\n")
+    const beforeConfig = readFileSync(configPath)
+    const beforeManifest = readFileSync(manifestPath)
+
+    const repair = cli(projectDir, ["update", "repair", "--yes"])
+
+    expect(repair.status).toBe(1)
+    expect(repair.stderr).toContain("ownership-unavailable")
+    expect(readFileSync(configPath)).toEqual(beforeConfig)
+    expect(readFileSync(manifestPath)).toEqual(beforeManifest)
+  })
+
+  it.skipIf(process.platform === "win32")("fails closed without changing a legacy project with a symlinked plugin", () => {
+    const projectDir = createProject()
+    writeLegacyAttachedProject(projectDir)
+    const configPath = join(projectDir, ".opencode", "opencode.json")
+    const manifestPath = join(projectDir, ".persona", ".ph-init-manifest.json")
+    const legacyPluginPath = join(realpathSync(projectDir), "legacy-persona-harness", "dist", "index.js")
+    const outsidePluginPath = join(realpathSync(projectDir), "outside-plugin.js")
+    writeFileSync(outsidePluginPath, "export {}\n")
+    rmSync(legacyPluginPath)
+    symlinkSync(outsidePluginPath, legacyPluginPath)
+    const beforeConfig = readFileSync(configPath)
+    const beforeManifest = readFileSync(manifestPath)
+
+    const repair = cli(projectDir, ["update", "repair", "--yes"])
+
+    expect(repair.status).toBe(1)
+    expect(repair.stderr).toContain("ownership-unavailable")
+    expect(readFileSync(configPath)).toEqual(beforeConfig)
+    expect(readFileSync(manifestPath)).toEqual(beforeManifest)
+  })
+
   it("enables an owned project without changing unrelated OpenCode plugins", () => {
     const projectDir = createProject()
     mkdirSync(join(projectDir, ".opencode"), { recursive: true })

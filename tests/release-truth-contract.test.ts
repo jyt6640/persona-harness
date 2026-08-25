@@ -13,7 +13,7 @@ function readRepositoryFile(path: string) {
 
 describe("public release truth", () => {
   it("keeps live release lookup out of package-visible current documents", () => {
-    const releaseNotes = readRepositoryFile("docs/current/release/v0.8.31-release-notes.md")
+    const releaseNotes = readRepositoryFile("docs/current/release/v0.8.32-release-notes.md")
     const releaseOperations = readRepositoryFile("docs/current/release/README.md")
     const releaseHistory = readRepositoryFile("docs/current/release/history.md")
     const changelog = readRepositoryFile("CHANGELOG.md")
@@ -29,8 +29,8 @@ describe("public release truth", () => {
     expect(releaseOperations).not.toMatch(/\| npm `latest` \| `\d/)
     expect(releaseHistory).not.toMatch(/\| npm `latest` \| `\d/)
     expect(packageIndex.split("## Reading Rules", 1)[0]).not.toMatch(/npm `latest`: `\d/)
-    expect(changelog).toMatch(/^## \[0\.8\.30\] - 2026-08-25$/m)
-    expect(packageIndex).toContain("| `0.8.30` | 2026-08-25 | published stable release")
+    expect(changelog).toMatch(/^## \[0\.8\.31\] - 2026-08-25$/m)
+    expect(packageIndex).toContain("| `0.8.31` | 2026-08-25 | published stable release")
     expect(releaseDocs).toContain("live lookup links")
   })
 
