@@ -567,6 +567,8 @@ describe("package files policy", () => {
       "scripts/consumer-authority-v0830-acceptance-schema.mjs",
       "scripts/consumer-authority-v0831-acceptance-schema.d.mts",
       "scripts/consumer-authority-v0831-acceptance-schema.mjs",
+      "scripts/consumer-authority-v0832-acceptance-schema.d.mts",
+      "scripts/consumer-authority-v0832-acceptance-schema.mjs",
       "scripts/consumer-authority-v0829-acceptance-schema.d.mts",
       "scripts/consumer-authority-v0829-acceptance-schema.mjs",
       "scripts/consumer-authority-final-observer-v4-cleanliness.d.mts",

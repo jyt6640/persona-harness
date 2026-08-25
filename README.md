@@ -169,6 +169,22 @@ the already-running session, rules, profile, workflow files, and other plugins
 are left alone. The new pin is picked up by the following session. Disable it
 with `npx ph update disable --yes`.
 
+Older projects attached through a disposable staging directory can have a
+valid-looking manifest that still binds that temporary path. If `ph update
+enable --yes` reports `ownership-unavailable`, run the explicit recovery once:
+
+```bash
+npx ph update repair --yes
+npx ph update enable --yes
+```
+
+Recovery recognizes only that bounded legacy attach shape. It replaces the
+legacy absolute Persona Harness plugin entry with the installed versioned npm
+specifier and rebinds the manifest to the current project. It preserves other
+OpenCode configuration and never overwrites changed rules, profiles, workflow
+state, or `.gitignore`; malformed, symlinked, foreign, or ordinary projects are
+left unchanged.
+
 > [!NOTE]
 > If `workflow finish` fails, the agent must fix the reported blocker before claiming completion. **That failure is the product working, not a bug.**
 

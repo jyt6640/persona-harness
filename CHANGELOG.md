@@ -8,6 +8,14 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+- Add `ph update repair --yes` for a narrowly recognized legacy attach
+  manifest that still points at a disposable staging directory. It rebinds only
+  the OpenCode Persona Harness plugin entry and ownership manifest so an
+  explicit subsequent `ph update enable --yes` can opt in; malformed, foreign,
+  symlinked, or user-diverged state remains fail-closed and unchanged.
+
+## [0.8.31] - 2026-08-25
+
 - Clarify `ph workflow finish implement` source-read runtime failures with a
   bounded blocker and next action. Existing workflow reports and history remain
   diagnostic-only and never grant Finish authority.

@@ -1,5 +1,6 @@
-import { realpathSync } from "node:fs"
-import { dirname, resolve } from "node:path"
+import { lstatSync, realpathSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { basename, dirname, isAbsolute, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 import { profileDigest } from "./init-source.js"
@@ -7,6 +8,7 @@ import { parseOpencodeConfigBytes } from "./init-source.js"
 import {
   createInitManifest,
   INIT_MANIFEST_RELATIVE_PATH,
+  INIT_OWNERSHIP_MARKER,
   InitManifestError,
   parseInitManifestBytes,
   sha256Bytes,
@@ -76,11 +78,30 @@ type OwnedProjectAutoUpdateResult =
   | { readonly kind: "blocked"; readonly reason: "configuration-invalid" | "ownership-unavailable" }
   | { readonly kind: "ready"; readonly value: OwnedProjectAutoUpdate }
 
+type LegacyOwnedProjectAutoUpdate = {
+  readonly config: Record<string, unknown>
+  readonly configSnapshot: FileSnapshot
+  readonly entries: readonly OpenCodePluginEntry[]
+  readonly legacyPluginIndex: number
+  readonly manifest: InitManifest
+  readonly manifestSnapshot: FileSnapshot
+  readonly projectDir: string
+  readonly retainedFiles: readonly InitManifest["files"][number][]
+  readonly retainedSnapshots: readonly FileSnapshot[]
+}
+
+type LegacyOwnedProjectAutoUpdateResult =
+  | { readonly kind: "blocked"; readonly reason: "configuration-invalid" | "ownership-unavailable" }
+  | { readonly kind: "ready"; readonly value: LegacyOwnedProjectAutoUpdate }
+
 type UpdateCommand =
   | { readonly kind: "disable" }
   | { readonly kind: "enable" }
+  | { readonly kind: "repair" }
   | { readonly kind: "status"; readonly json: boolean }
   | { readonly kind: "invalid"; readonly message: string }
+
+const LEGACY_ATTACH_STAGE_PREFIXES = ["persona-attach-stage-", "persona-attach-repair-"] as const
 
 function defaultPackageRoot(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -200,6 +221,127 @@ function readOwnedProjectAutoUpdate(projectDir: string): OwnedProjectAutoUpdateR
   }
 }
 
+function isLegacyAttachStagePath(path: string): boolean {
+  try {
+    const temporaryRoot = realpathSync(tmpdir())
+    const normalized = resolve(path)
+    return dirname(normalized) === temporaryRoot
+      && LEGACY_ATTACH_STAGE_PREFIXES.some((prefix) => basename(normalized).startsWith(prefix))
+  } catch {
+    return false
+  }
+}
+
+function regularPathWithoutSymbolicLinks(path: string): boolean {
+  try {
+    let current = resolve(path)
+    while (true) {
+      if (lstatSync(current).isSymbolicLink()) {
+        return false
+      }
+      const parent = dirname(current)
+      if (parent === current) {
+        return lstatSync(path).isFile()
+      }
+      current = parent
+    }
+  } catch {
+    return false
+  }
+}
+
+function isLegacyPersonaHarnessPluginPath(specifier: string): boolean {
+  const candidate = specifier.trim()
+  if (
+    candidate !== specifier
+    || !isAbsolute(candidate)
+    || candidate !== resolve(candidate)
+    || !regularPathWithoutSymbolicLinks(candidate)
+  ) {
+    return false
+  }
+  try {
+    const packageRoot = dirname(dirname(candidate))
+    if (resolve(candidate) !== join(packageRoot, "dist", "index.js")) {
+      return false
+    }
+    const packagePath = join(packageRoot, "package.json")
+    if (!regularPathWithoutSymbolicLinks(packagePath)) {
+      return false
+    }
+    const binding = packageBinding(packageRoot, "")
+    return binding.name === PERSONA_HARNESS_PACKAGE_NAME && stableVersion(binding.version)
+  } catch {
+    return false
+  }
+}
+
+function legacyPersonaHarnessPluginIndex(entries: readonly OpenCodePluginEntry[]): number | undefined {
+  if (activePersonaHarnessPluginIndex(entries) !== undefined) {
+    return undefined
+  }
+  const matches = entries.flatMap((entry, index) => isLegacyPersonaHarnessPluginPath(entry.specifier) ? [index] : [])
+  return matches.length === 1 ? matches[0] : undefined
+}
+
+function readLegacyOwnedProjectAutoUpdate(projectDir: string): LegacyOwnedProjectAutoUpdateResult {
+  try {
+    const resolvedProjectDir = resolve(projectDir)
+    const configSnapshot = readSnapshot(resolvedProjectDir, OPENCODE_CONFIG_PATH)
+    const manifestSnapshot = readSnapshot(resolvedProjectDir, INIT_MANIFEST_RELATIVE_PATH)
+    if (configSnapshot.bytes === null || manifestSnapshot.bytes === null) {
+      return { kind: "blocked", reason: "ownership-unavailable" }
+    }
+    const config = parseOpencodeConfigBytes(configSnapshot.bytes)
+    const entries = readOpenCodePluginEntries(config.plugin)
+    if (entries === undefined) {
+      return { kind: "blocked", reason: "configuration-invalid" }
+    }
+    const manifest = parseInitManifestBytes(manifestSnapshot.bytes)
+    if (
+      !isLegacyAttachStagePath(manifest.project.realPath)
+      || !manifest.files.some((entry) => entry.path === OPENCODE_CONFIG_PATH)
+    ) {
+      return { kind: "blocked", reason: "ownership-unavailable" }
+    }
+    const legacyPluginIndex = legacyPersonaHarnessPluginIndex(entries)
+    if (legacyPluginIndex === undefined) {
+      return { kind: "blocked", reason: "ownership-unavailable" }
+    }
+    const retainedFiles: InitManifest["files"][number][] = []
+    const retainedSnapshots: FileSnapshot[] = []
+    for (const entry of manifest.files) {
+      if (entry.path === OPENCODE_CONFIG_PATH) {
+        continue
+      }
+      const snapshot = readSnapshot(resolvedProjectDir, entry.path)
+      if (snapshot.bytes === null) {
+        return { kind: "blocked", reason: "ownership-unavailable" }
+      }
+      if (sha256Bytes(snapshot.bytes) === entry.digest) {
+        retainedFiles.push(entry)
+        retainedSnapshots.push(snapshot)
+      }
+    }
+    return {
+      kind: "ready",
+      value: {
+        config,
+        configSnapshot,
+        entries,
+        legacyPluginIndex,
+        manifest,
+        manifestSnapshot,
+        projectDir: resolvedProjectDir,
+        retainedFiles,
+        retainedSnapshots,
+      },
+    }
+  } catch {
+    return { kind: "blocked", reason: "ownership-unavailable" }
+  }
+}
+
 function commitPluginEntries(
   prepared: OwnedProjectAutoUpdate,
   entries: readonly OpenCodePluginEntry[],
@@ -236,6 +378,72 @@ function commitPluginEntries(
   }
 }
 
+function recoverLegacyProjectAutoUpdate(
+  projectDir: string,
+  packageRoot: string,
+): { readonly kind: "blocked"; readonly reason: ProjectAutoUpdateBlockReason } | { readonly kind: "changed" | "no-op"; readonly version: string } {
+  const preparedResult = readLegacyOwnedProjectAutoUpdate(projectDir)
+  if (preparedResult.kind === "blocked") {
+    return preparedResult
+  }
+  const version = packageVersion(packageRoot)
+  if (version === undefined) {
+    return { kind: "blocked", reason: "configuration-invalid" }
+  }
+  const prepared = preparedResult.value
+  const legacyEntry = prepared.entries[prepared.legacyPluginIndex]
+  if (legacyEntry === undefined || personaAutoUpdateState(legacyEntry) === "invalid") {
+    return { kind: "blocked", reason: "configuration-invalid" }
+  }
+  const replacement = withPersonaAutoUpdate(
+    withPluginSpecifier(legacyEntry, `${PERSONA_HARNESS_PACKAGE_NAME}@${version}`),
+    false,
+  )
+  const entries = replaceEntry(prepared.entries, prepared.legacyPluginIndex, replacement)
+  const nextConfig = { ...prepared.config, plugin: serializeOpenCodePluginEntries(entries) }
+  const nextBytes = Buffer.from(`${JSON.stringify(nextConfig, null, 2)}\n`, "utf8")
+  const nextManifest = createInitManifest(
+    prepared.manifest.package,
+    {
+      profileDigest: profileDigest(prepared.projectDir),
+      realPath: realpathSync(prepared.projectDir),
+    },
+    [
+      ...prepared.retainedFiles,
+      {
+        digest: sha256Bytes(nextBytes),
+        marker: INIT_OWNERSHIP_MARKER,
+        owner: "persona-harness",
+        path: OPENCODE_CONFIG_PATH,
+      },
+    ],
+  )
+  try {
+    const transaction = commitInitPlan(
+      prepared.projectDir,
+      [{ nextBytes, relativePath: OPENCODE_CONFIG_PATH }],
+      nextManifest,
+      prepared.manifest,
+      {
+        onBeforeCommit: () => {
+          if (
+            !sameSnapshot(prepared.configSnapshot)
+            || !sameSnapshot(prepared.manifestSnapshot)
+            || !prepared.retainedSnapshots.every((snapshot) => sameSnapshot(snapshot))
+          ) {
+            throw new InitManifestError("Project update target changed before commit; no files were changed.")
+          }
+        },
+      },
+    )
+    return transaction.decision === "apply"
+      ? { kind: "changed", version }
+      : { kind: "no-op", version }
+  } catch {
+    return { kind: "blocked", reason: "write-failed" }
+  }
+}
+
 function activeOwnedPlugin(prepared: OwnedProjectAutoUpdate):
   | { readonly kind: "blocked"; readonly reason: "configuration-invalid" | "unconfigured" }
   | { readonly kind: "ready"; readonly entry: OpenCodePluginEntry; readonly index: number } {
@@ -269,7 +477,7 @@ function packageVersion(packageRoot: string): string | undefined {
 
 function updateUsage(invocationName: string): string {
   return [
-    `Usage: ${invocationName} update <status|enable|disable> [--yes] [--json]`,
+    `Usage: ${invocationName} update <status|enable|disable|repair> [--yes] [--json]`,
     "",
     "Enable project-local automatic Persona Harness updates without changing workflow, rules, or profile files.",
     "A newer stable package is staged for the next OpenCode session only.",
@@ -285,7 +493,7 @@ function parseUpdateCommand(args: readonly string[]): UpdateCommand {
         ? { json: true, kind: "status" }
         : { kind: "invalid", message: "Unknown update status option." }
   }
-  if (command === "enable" || command === "disable") {
+  if (command === "enable" || command === "disable" || command === "repair") {
     return rest.length === 1 && rest[0] === "--yes"
       ? { kind: command }
       : { kind: "invalid", message: `Explicit confirmation is required: update ${command} --yes.` }
@@ -355,6 +563,26 @@ export function runProjectAutoUpdateCommand(
       }
     }
     return { status: status.state === "invalid" ? 1 : 0, stdout: `${formatStatus(status)}\n`, stderr: "" }
+  }
+  if (command.kind === "repair") {
+    const result = recoverLegacyProjectAutoUpdate(
+      projectDir,
+      resolve(options.packageRoot ?? defaultPackageRoot()),
+    )
+    if (result.kind === "blocked") {
+      return {
+        status: 1,
+        stdout: "",
+        stderr: `Project auto-update recovery is blocked (${result.reason}); no files were changed.\n`,
+      }
+    }
+    return {
+      status: 0,
+      stdout: result.kind === "changed"
+        ? `Project auto-update ownership recovered for ${PERSONA_HARNESS_PACKAGE_NAME}@${result.version}.\nNext command: ${invocationName} update enable --yes\n`
+        : "Project auto-update ownership is already recovered.\n",
+      stderr: "",
+    }
   }
   const result = enableOrDisableProjectAutoUpdate(
     projectDir,
