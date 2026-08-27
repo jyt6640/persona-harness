@@ -28,7 +28,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 59
 - versioned durable: 26
 
-Total indexed files: 338
+Total indexed files: 339
 
 ## File Inventory
 
@@ -414,6 +414,7 @@ Total indexed files: 338
 | `docs/releases/v0.7.0-rc.3/measurements.md` | versioned durable | v0.7.0-rc.3 | Scoped package-surface observations and claim boundaries carried by the published release candidate. |
 | `docs/releases/v0.7.0-rc.3/release-facts.md` | versioned durable | v0.7.0-rc.3 | Published registry/tag/workflow facts and claim boundaries for the next-channel candidate. |
 | `docs/troubleshooting/README.md` | operational stable | - | Stable troubleshooting index. |
+| `docs/troubleshooting/ci-fast-feedback.md` | operational stable | - | Measured CI fast-feedback architecture and troubleshooting guide. |
 | `docs/troubleshooting/check-rail-active.md` | operational stable | - | Stable troubleshooting guide for checking whether the PH rail is active. |
 | `docs/troubleshooting/enforce-the-gate.md` | operational stable | - | Stable troubleshooting guide for gate enforcement. |
 | `docs/troubleshooting/existing-project-profile.md` | operational stable | - | Stable troubleshooting guide for existing-project profile setup. |
