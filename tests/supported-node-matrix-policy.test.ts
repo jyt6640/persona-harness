@@ -9,7 +9,7 @@ import { collectSupportedNodeMatrixDiagnostics } from "../scripts/check-supporte
 const repositoryRoot = process.cwd()
 
 describe("supported Node matrix policy", () => {
-  it("assigns automatic Linux Node 20.19 source evidence to Verify repository and keeps exact product floors manual", async () => {
+  it("keeps PR fast feedback separate from main-only Linux Node package integration and exact product floors manual", async () => {
     const diagnostics = await collectSupportedNodeMatrixDiagnostics(repositoryRoot)
     const verify = readFileSync(join(repositoryRoot, ".github", "workflows", "ci.yml"), "utf8")
     const matrix = readFileSync(join(repositoryRoot, ".github", "workflows", "supported-node-matrix.yml"), "utf8")
@@ -17,6 +17,11 @@ describe("supported Node matrix policy", () => {
     expect(diagnostics).toEqual([])
     expect(readFileSync(join(repositoryRoot, "scripts", "check-supported-node-matrix.mjs"), "utf8")).not.toContain("node:child_process")
     expect(verify).toContain("name: Verify repository")
+    expect(verify).toContain("name: Fast feedback")
+    expect(verify).toContain("npm run test:repository:parallel")
+    expect(verify).toContain("npm run test:repository:resource-sensitive")
+    expect(verify).toContain("name: Main package integration")
+    expect(verify).toContain("if: github.event_name == 'push'")
     expect(verify).toContain("node-version: 20.19.0")
     expect(verify).toContain(
       'node scripts/verify-supported-node-surface.mjs --surface source --expected-platform "linux" --expected-node "20.19.0" --expected-node-mode "exact"',

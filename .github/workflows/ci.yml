@@ -14,8 +14,97 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
-    name: Verify repository
+  fast_feedback:
+    name: Fast feedback
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20.19.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check CI and release workflow policy
+        run: npm run check:release-workflows
+
+      - name: Check supported Node policy
+        run: node scripts/check-supported-node-matrix.mjs
+
+      - name: Check docs
+        run: npm run check:docs
+
+      - name: Check scope
+        run: npm run check:scope:strict
+
+      - name: Check injection value
+        run: npm run check:injection-value
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+  test_parallel:
+    name: Repository tests / parallel
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20.19.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run parallel repository tests
+        run: npm run test:repository:parallel
+
+  test_resource_sensitive:
+    name: Repository tests / resource-sensitive
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20.19.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run resource-sensitive repository tests
+        run: npm run test:repository:resource-sensitive
+
+  main_integration:
+    name: Main package integration
+    if: github.event_name == 'push'
+    needs:
+      - fast_feedback
+      - test_parallel
+      - test_resource_sensitive
     runs-on: ubuntu-latest
 
     steps:
@@ -53,28 +142,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check CI and release workflow policy
-        run: npm run check:release-workflows
-
-      - name: Check supported Node policy
-        run: node scripts/check-supported-node-matrix.mjs
-
-      - name: Check docs
-        run: npm run check:docs
-
-      - name: Check scope
-        run: npm run check:scope:strict
-
-      - name: Check injection value
-        run: npm run check:injection-value
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test
+      - name: Verify authoritative clean package boundary
         env:
           PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}
-        run: npm run test:repository
+        run: npm run test:authoritative-bundle-package-contract
 
       - name: Build
         run: npm run build
@@ -89,8 +160,35 @@ jobs:
           PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}
         run: node scripts/verify-supported-node-surface.mjs --surface installed --expected-platform "linux" --expected-node "20.19.0" --expected-node-mode "exact"
 
-      - name: Pack dry run
-        run: npm pack --dry-run --json
-
       - name: Verify exact packaged Gradle/JUnit cooperative finish demo
         run: node scripts/verify-cooperative-finish-demo.mjs
+
+  verify:
+    name: Verify repository
+    if: ${{ always() }}
+    needs:
+      - fast_feedback
+      - test_parallel
+      - test_resource_sensitive
+      - main_integration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Require expected verification lanes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          FAST_FEEDBACK_RESULT: ${{ needs.fast_feedback.result }}
+          PARALLEL_TEST_RESULT: ${{ needs.test_parallel.result }}
+          RESOURCE_SENSITIVE_TEST_RESULT: ${{ needs.test_resource_sensitive.result }}
+          MAIN_INTEGRATION_RESULT: ${{ needs.main_integration.result }}
+        run: |
+          set -euo pipefail
+          test "$FAST_FEEDBACK_RESULT" = "success"
+          test "$PARALLEL_TEST_RESULT" = "success"
+          test "$RESOURCE_SENSITIVE_TEST_RESULT" = "success"
+          if test "$EVENT_NAME" = "push"; then
+            test "$MAIN_INTEGRATION_RESULT" = "success"
+          else
+            test "$EVENT_NAME" = "pull_request"
+            test "$MAIN_INTEGRATION_RESULT" = "skipped"
+          fi

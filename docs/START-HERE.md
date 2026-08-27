@@ -54,12 +54,12 @@ registry or trust state.
 
 | Surface | Status | Evidence boundary |
 | --- | --- | --- |
-| Linux + OpenCode | Product: Node ^20.17.0 || >=22.9.0; source checks: Node 20.19.0 | Required Verify repository runs Linux Node 20.19.0 source-built, packed-tarball, and fresh local-tarball installed checks on pull requests and main pushes. The dispatch-only support matrix retains exact product-floor Linux Node 20.17.0 and 22.9.0 imports plus latest Linux Node 20, 22, and 24 on demand. |
+| Linux + OpenCode | Product: Node ^20.17.0 || >=22.9.0; source checks: Node 20.19.0 | Required Verify repository aggregates PR fast feedback and main package integration. Pull requests run policy, typecheck, build, and the two Vitest projects; main pushes additionally run Linux Node 20.19.0 source-built, packed-tarball, and fresh local-tarball installed checks. The dispatch-only support matrix retains exact product-floor Linux Node 20.17.0 and 22.9.0 imports plus latest Linux Node 20, 22, and 24 on demand. |
 | macOS + OpenCode | Manual limited smoke | The dispatch-only support matrix retains macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |
 | Windows | Unverified / nonblocking | No Windows matrix job or support claim. Lock identity device/inode behavior and stale-lock/concurrency conclusions are not measured or verified. |
 | Codex adapter | Planned | No current Codex adapter or Codex product evidence; this is a planned adapter only. |
 
-Automatic CI boundary: Verify repository is the required Linux Node 20.19.0 PR/main gate. The dispatch-only support matrix is deferred multi-runtime evidence, not a required PR/main gate. It is distinct from the canonical clean-CI builder's main-push signed evidence and the ordinary path-filtered diagnostic selftest.
+Automatic CI boundary: Verify repository is the required PR/main aggregate. Pull requests require only the fast feedback lanes; main pushes also require Linux Node 20.19.0 package integration. The dispatch-only support matrix is deferred multi-runtime evidence, not a required PR/main gate. It is distinct from the canonical clean-CI builder's main-push signed evidence and the ordinary path-filtered diagnostic selftest.
 
 ## I am confused by docs/current
 
