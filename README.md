@@ -215,6 +215,9 @@ retain the full `test:repository` contract. These commands establish their
 named contracts; they do not certify generated application quality or external
 Finish authority.
 
+For the measured CI decision and operational failure modes, see [CI fast
+feedback troubleshooting](docs/troubleshooting/ci-fast-feedback.md).
+
 ## TDD Rail (opt-in)
 
 Enable both settings in `.persona/harness.jsonc`:
