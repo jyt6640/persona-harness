@@ -18,7 +18,7 @@ const immutableActionPins = {
 }
 
 const expectedActionCounts = {
-  ".github/workflows/ci.yml": { checkout: 1, setupGradle: 1, setupJava: 1, setupNode: 1 },
+  ".github/workflows/ci.yml": { checkout: 4, setupGradle: 1, setupJava: 1, setupNode: 4 },
   ".github/workflows/publish.yml": { checkout: 1, setupNode: 2, uploadArtifact: 1 },
   ".github/workflows/release.yml": { checkout: 2, setupNode: 3 },
   ".github/workflows/canonical-clean-ci-attestation-builder.yml": {
@@ -252,13 +252,17 @@ function hasContextDiagnosticFinalizerRuntime(metadata, entrypoint) {
 
 function hasWorkflowOwnedObserverGhSelection(text) {
   const selection = text.indexOf("- name: Select observer GitHub CLI")
-  const preflight = text.indexOf("- name: Preflight selected observer GitHub CLI")
-  const installation = text.indexOf("- name: Install dependencies")
-  const test = text.indexOf("- name: Test")
+  const selectedJob = selection >= 0 ? text.slice(selection) : ""
+  const preflight = selectedJob.indexOf("- name: Preflight selected observer GitHub CLI")
+  const installation = selectedJob.indexOf("- name: Install dependencies")
+  const verificationBoundary = Math.max(
+    selectedJob.indexOf("- name: Test"),
+    selectedJob.indexOf("- name: Verify authoritative clean package boundary"),
+  )
   return selection >= 0
-    && preflight > selection
+    && preflight > 0
     && installation > preflight
-    && test > selection
+    && verificationBoundary > installation
     && text.includes("id: observer-gh")
     && text.includes("run: node .github/scripts/prepare-observer-gh-tool.mjs")
     && text.includes("PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}")
@@ -365,7 +369,9 @@ function isRecord(value) {
 
 const requirements = [
   ["ci trigger", ".github/workflows/ci.yml", (text) => text.includes("pull_request:") && text.includes("push:") && text.includes("- main")],
-  ["ci checks", ".github/workflows/ci.yml", (text) => ["npm run check:release-workflows", "npm run check:docs", "npm run typecheck", "npm run test:repository", "npm run build", "npm pack --dry-run --json"].every((value) => text.includes(value))],
+  ["ci fast feedback", ".github/workflows/ci.yml", (text) => ["name: Fast feedback", "npm run check:release-workflows", "npm run check:docs", "npm run check:scope:strict", "npm run check:injection-value", "npm run typecheck", "npm run test:repository:parallel", "npm run test:repository:resource-sensitive", "npm run build"].every((value) => text.includes(value))],
+  ["ci main package integration", ".github/workflows/ci.yml", (text) => ["name: Main package integration", "if: github.event_name == 'push'", "npm run test:authoritative-bundle-package-contract", "scripts/verify-supported-node-surface.mjs --surface source", "scripts/verify-supported-node-surface.mjs --surface installed", "node scripts/verify-cooperative-finish-demo.mjs"].every((value) => text.includes(value))],
+  ["ci required aggregate", ".github/workflows/ci.yml", (text) => ["name: Verify repository", "if: ${{ always() }}", 'test "$FAST_FEEDBACK_RESULT" = "success"', 'test "$PARALLEL_TEST_RESULT" = "success"', 'test "$RESOURCE_SENSITIVE_TEST_RESULT" = "success"', 'test "$MAIN_INTEGRATION_RESULT" = "success"'].every((value) => text.includes(value))],
   ["ci workflow-owned observer gh", ".github/workflows/ci.yml", hasWorkflowOwnedObserverGhSelection],
   ["publish repository tests", ".github/workflows/publish.yml", (text) => text.includes("npm run test:repository")],
   ["publish workflow-owned observer gh", ".github/workflows/publish.yml", hasWorkflowOwnedObserverGhSelection],

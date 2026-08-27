@@ -358,7 +358,7 @@ describe("release workflow policy", () => {
     })).toMatchObject({ ok: false, code })
   })
 
-  it("keeps package and repository test contracts explicit and sequential", () => {
+  it("separates PR fast-feedback tests from full package and release contracts", () => {
     const scripts = readPackageScripts(join(repositoryRoot, "package.json"))
 
     expect(scripts["test"]).toBe("npm run test:package")
@@ -367,11 +367,24 @@ describe("release workflow policy", () => {
     expect(scripts["test:clean-package-boundary"]).toBe("node scripts/verify-clean-package-boundary.mjs")
     expect(scripts["test:installed-package-contract"]).toBe("node scripts/test-installed-package-contract.mjs --package-acceptance")
     expect(scripts["test:installed-package-contract"]).not.toContain("observer-gh")
+    expect(scripts["test:repository:parallel"]).toBe("vitest run --testTimeout=15000 --project parallel")
+    expect(scripts["test:repository:resource-sensitive"]).toBe("vitest run --testTimeout=15000 --project resource-sensitive")
+    expect(scripts["test:repository:fast"]).toBe("npm run test:repository:parallel && npm run test:repository:resource-sensitive")
     expect(scripts["test:repository"]).toBe(
       "npm run check:scope && npm run check:docs && npm run check:release-workflows && vitest run --testTimeout=15000 && npm run test:authoritative-bundle-package-contract",
     )
 
-    for (const workflow of ["ci.yml", "publish.yml", "release.yml"]) {
+    const ci = readFileSync(join(repositoryRoot, ".github", "workflows", "ci.yml"), "utf8")
+    expect(ci).toContain("name: Fast feedback")
+    expect(ci).toContain("npm run test:repository:parallel")
+    expect(ci).toContain("npm run test:repository:resource-sensitive")
+    expect(ci).toContain("name: Main package integration")
+    expect(ci).toContain("if: github.event_name == 'push'")
+    expect(ci).toContain("npm run test:authoritative-bundle-package-contract")
+    expect(ci).not.toContain("npm run test:repository\n")
+    expect(ci).not.toContain("npm pack --dry-run --json")
+
+    for (const workflow of ["publish.yml", "release.yml"]) {
       const source = readFileSync(join(repositoryRoot, ".github", "workflows", workflow), "utf8")
       expect(source).toContain("npm run test:repository")
     }

@@ -200,13 +200,20 @@ From a source checkout, the commands have deliberately different scopes:
 ```bash
 npm test                    # packaged CLI smoke
 npm run test:unit           # full Vitest unit/integration suite
-npm run test:repository     # full repository contract: policy, docs, unit/integration, and clean-package checks
+npm run test:repository:parallel           # parallel-safe Vitest project
+npm run test:repository:resource-sensitive # isolated fixture-heavy Vitest project
+npm run test:repository:fast               # both PR test projects, sequentially for local use
+npm run test:repository     # full repository contract for release: policy, docs, all tests, and clean-package checks
 node scripts/verify-cooperative-finish-demo.mjs # exact packed-package Java/Spring Gradle/JUnit demo
 ```
 
-The required `Verify repository` workflow runs the full repository contract and
-the exact cooperative demo. These commands establish their named contracts; they
-do not certify generated application quality or external Finish authority.
+The required `Verify repository` aggregate waits for policy, typecheck, build,
+and both Vitest projects on pull requests. On `main` pushes it additionally
+requires the authoritative clean-package boundary, Linux source and installed
+package surfaces, and the exact cooperative demo. Release and publish workflows
+retain the full `test:repository` contract. These commands establish their
+named contracts; they do not certify generated application quality or external
+Finish authority.
 
 ## TDD Rail (opt-in)
 
@@ -289,12 +296,12 @@ command publishes a package, moves a channel, or consumes Finish authority.
 
 | Surface | Status | Evidence boundary |
 | --- | --- | --- |
-| Linux + OpenCode | Product: Node ^20.17.0 || >=22.9.0; source checks: Node 20.19.0 | Required Verify repository runs Linux Node 20.19.0 source-built, packed-tarball, and fresh local-tarball installed checks on pull requests and main pushes. The dispatch-only support matrix retains exact product-floor Linux Node 20.17.0 and 22.9.0 imports plus latest Linux Node 20, 22, and 24 on demand. |
+| Linux + OpenCode | Product: Node ^20.17.0 || >=22.9.0; source checks: Node 20.19.0 | Required Verify repository aggregates PR fast feedback and main package integration. Pull requests run policy, typecheck, build, and the two Vitest projects; main pushes additionally run Linux Node 20.19.0 source-built, packed-tarball, and fresh local-tarball installed checks. The dispatch-only support matrix retains exact product-floor Linux Node 20.17.0 and 22.9.0 imports plus latest Linux Node 20, 22, and 24 on demand. |
 | macOS + OpenCode | Manual limited smoke | The dispatch-only support matrix retains macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |
 | Windows | Unverified / nonblocking | No Windows matrix job or support claim. Lock identity device/inode behavior and stale-lock/concurrency conclusions are not measured or verified. |
 | Codex adapter | Planned | No current Codex adapter or Codex product evidence; this is a planned adapter only. |
 
-Automatic CI boundary: Verify repository is the required Linux Node 20.19.0 PR/main gate. The dispatch-only support matrix is deferred multi-runtime evidence, not a required PR/main gate. It is distinct from the canonical clean-CI builder's main-push signed evidence and the ordinary path-filtered diagnostic selftest.
+Automatic CI boundary: Verify repository is the required PR/main aggregate. Pull requests require only the fast feedback lanes; main pushes also require Linux Node 20.19.0 package integration. The dispatch-only support matrix is deferred multi-runtime evidence, not a required PR/main gate. It is distinct from the canonical clean-CI builder's main-push signed evidence and the ordinary path-filtered diagnostic selftest.
 
 ## Boundaries & safety
 
