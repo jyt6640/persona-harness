@@ -1,3 +1,7 @@
+import process from "node:process"
+
+import { isProjectPhilosophyInjectionEnabled, loadHarnessConfig } from "../config/harness-config.js"
+import { readBackendProjectPhilosophyStatus } from "../config/project-profile.js"
 import {
   proposePersonalizationCandidate,
   PersonalizationStoreError,
@@ -11,6 +15,7 @@ import { refinePersonalization } from "./philosophy-refinement.js"
 import type { CliRunResult } from "./bearshell.js"
 
 export type PhilosophyCommandOptions = PersonalizationStoreOptions & {
+  readonly projectDir?: string
   readonly stdin?: string
 }
 
@@ -19,7 +24,7 @@ export function philosophyUsage(invocationName = "ph"): string {
     `Usage: ${invocationName} philosophy <status|init|propose|refine|resolve|history|rollback>`,
     "",
     "Commands:",
-    "  status                         Inspect starter/profile state without creating files.",
+    "  status                         Inspect personal and project philosophy state without creating files.",
     "  init                           Inspect the same starter/profile state.",
     "  propose --stdin [--pending]   Validate one structured candidate from stdin.",
     "  refine --stdin                Record only an explicit, complete Socratic refinement.",
@@ -77,10 +82,19 @@ function runRefine(args: readonly string[], options: PhilosophyCommandOptions): 
 function runStatus(args: readonly string[], options: PhilosophyCommandOptions, command: "status" | "init"): CliRunResult {
   if (args.length !== 0) return failure("personalization-command-invalid")
   const document = readPersonalizationStore(options)
+  const projectDir = options.projectDir ?? process.cwd()
+  const projectPhilosophy = readBackendProjectPhilosophyStatus(projectDir)
+  const projectInjection = isProjectPhilosophyInjectionEnabled(loadHarnessConfig(projectDir))
   return success(`${JSON.stringify({
     activeRules: document.profile.activeRules.length,
     command,
     pendingCandidates: document.profile.pendingCandidates.length,
+    project: {
+      conventionState: projectPhilosophy.conventionState,
+      hostDelivery: "unobserved",
+      injection: projectInjection ? "enabled" : "disabled",
+      profileState: projectPhilosophy.profileState,
+    },
     starter: true,
     store: document.profile.activeRules.length === 0 && document.profile.pendingCandidates.length === 0 ? "uninitialized" : "active",
   })}\n`)

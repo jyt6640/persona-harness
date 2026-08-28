@@ -225,6 +225,7 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
       idFactory: options.personalizationIdFactory,
       now: options.personalizationNow,
       platform: options.personalizationPlatform,
+      projectDir: options.cwd,
       stdin: options.stdin,
       storeRoot: options.personalizationStoreRoot,
     }, invocationName)
