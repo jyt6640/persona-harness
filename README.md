@@ -87,6 +87,61 @@ A workflow + evidence CLI (`ph`) with an optional OpenCode plugin, for Java/Spri
 - can block completion when required reports or evidence for defined gates are
   missing.
 
+Persona Harness exposes two deliberately separate tracks:
+
+- **Workflow Integrity** is the existing evidence and completion-gate product.
+- **Context Personalization (Experimental)** is a local, default-off path for
+  targeted convention guidance. When enabled in a project that has the
+  OpenCode plugin registered, it delivers one bounded Context block only after
+  a safe observed file target. It grants no completion authority.
+
+Context configuration is separate from legacy runtime guidance switches. A
+missing block stays disabled. An explicit `context.enabled` setting controls
+only the targeted Context adapter; it does not enable legacy runtime guidance,
+write configuration, or create workflow/evidence/authority state:
+
+```jsonc
+{
+  "context": {
+    "enabled": false,
+    "mode": "targeted",
+    "maxCapsules": 8,
+    "maxChars": 1600
+  }
+}
+```
+
+Only `targeted` is accepted. Invalid or unknown Context fields leave Context
+disabled with a bounded diagnostic; they do not inherit enablement from
+`features.runtimeInjection` or `features.projectPhilosophyInjection`.
+
+`ph context status` is available as a read-only local inspection of that
+configuration and an optional safe Team Profile. `ph context preview
+<target-file>` accepts a safe project-relative path without opening the target,
+then renders a deterministic local Context Envelope from product invariants,
+starter defaults, and any available Team or personal rules. It remains an
+inspection surface: it neither enables Context nor delivers to a host.
+`ph context explain <target-file>` renders the envelope's bounded selection,
+shadowing, resolution, budget, and digest metadata without exposing rule text.
+Both inspection commands are read-only: they do not enable Context, activate a
+host adapter, or create state. Bare `ph context init` remains a no-write
+preview. `ph context init --enable` creates only the minimal Context config in
+a fresh safe project; it refuses to overwrite an existing harness config and
+does not change legacy feature flags. `ph context doctor` reports the actual
+local configuration and Team Profile state, including the bundled OpenCode 1.x
+adapter. It cannot prove that a particular OpenCode session has loaded the
+project plugin.
+
+With Context enabled, the OpenCode adapter accepts only a safe observed
+project-relative target from a read or edit tool. It resolves the local
+envelope, rejects invalid/unsafe/budget-exceeding input without delivery, and
+prepends the selected bounded capsule content to the next user message for the
+same session. It suppresses the same digest until that session is compacted or
+deleted. It does not infer a target from the prompt, inject a full skill
+catalog, access the network, execute shell commands, or write workflow,
+evidence, or authority records. The adapter's actual behavior in a live
+OpenCode release remains a separate host-observation boundary.
+
 The optional runtime adapter also registers the bundled portable Persona-owned
 shared-skill catalog with OpenCode. Product ideas start with a one-question
 interview and explicit brief approval; adapters advise only and never create
@@ -198,8 +253,12 @@ Three-beat setup, gate, and goal-entry walkthrough: **[Quick Demo](docs/QUICK-DE
 From a source checkout, the commands have deliberately different scopes:
 
 ```bash
-npm test                    # packaged CLI smoke
-npm run test:unit           # full Vitest unit/integration suite
+npm test                    # source checkout: fast tests; installed tarball: CLI smoke
+npm run test:unit           # focused pure resolver/config/adapter tests
+npm run test:integration    # focused profile/runtime/package-policy integration
+npm run test:smoke          # build plus packaged CLI help smoke
+npm run test:package        # fresh tarball and installed-package contract
+npm run test:full           # complete repository/release contract
 npm run test:repository:parallel           # parallel-safe Vitest project
 npm run test:repository:resource-sensitive # isolated fixture-heavy Vitest project
 npm run test:repository:fast               # both PR test projects, sequentially for local use

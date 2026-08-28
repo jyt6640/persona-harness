@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url"
 import { runBootstrapCommand } from "./bootstrap.js"
 import { runAttachCommand } from "./attach.js"
 import { personaCliUsage } from "./cli-usage.js"
+import { runContextCommand } from "./context-command.js"
 import { parseRootHelpSelection } from "./help-locale.js"
 import { initUsage, runInitCommand } from "./init.js"
 import { type CliRunResult, runBearshell } from "./bearshell.js"
@@ -156,6 +157,18 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
 
   if (command === "observe") {
     return runObserveCommand(args.slice(1), { projectDir: options.cwd }, invocationName)
+  }
+
+  if (command === "context") {
+    return runContextCommand(args.slice(1), invocationName, {
+      personalization: {
+        env: options.env,
+        homeDir: options.personalizationHomeDir,
+        platform: options.personalizationPlatform,
+        storeRoot: options.personalizationStoreRoot,
+      },
+      projectDir: options.cwd,
+    })
   }
 
   if (command === "bearshell") {

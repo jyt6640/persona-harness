@@ -2,6 +2,7 @@ import type { Hooks, Plugin } from "@opencode-ai/plugin"
 import { fileURLToPath } from "node:url"
 
 import { isRecord } from "./config/jsonc.js"
+import { createOpenCodeContextHooks } from "./context-delivery/opencode-context-hooks.js"
 import { createPhase0Hooks } from "./runtime/hooks.js"
 
 const PERSONA_SHARED_SKILLS_PATH = fileURLToPath(new URL("../packages/shared-skills/skills", import.meta.url))
@@ -49,8 +50,21 @@ export const PersonaHarnessPlugin: Plugin = async (input, options): Promise<Hook
     projectAutoUpdate: { enabled: projectAutoUpdateEnabled(options) },
     projectDir: input.directory,
   })
+  const contextHooks = createOpenCodeContextHooks({ projectDir: input.directory })
   return {
     ...phase0Hooks,
+    event: async (event) => {
+      await phase0Hooks.event?.(event)
+      await contextHooks.event?.(event)
+    },
+    "tool.execute.after": async (input, output) => {
+      await phase0Hooks["tool.execute.after"]?.(input, output)
+      await contextHooks["tool.execute.after"]?.(input, output)
+    },
+    "experimental.chat.messages.transform": async (input, output) => {
+      await phase0Hooks["experimental.chat.messages.transform"]?.(input, output)
+      await contextHooks["experimental.chat.messages.transform"]?.(input, output)
+    },
     config: async (config) => {
       registerPersonaSharedSkills(config)
       await phase0Hooks.config?.(config)

@@ -88,13 +88,24 @@ npm install
 Before opening a PR, all of these must pass:
 
 ```bash
-npm test            # packaged CLI smoke
-npm run test:unit   # full Vitest unit/integration suite
-npm run test:repository # full repository contract: policy, docs, unit/integration, and clean-package checks
-npm run typecheck   # tsc, zero errors
-npm run build       # clean tsc build
-npm run check:docs  # docs taxonomy + claim/acceptance consistency
+npm test                 # source checkout: focused tests; installed tarball: CLI smoke
+npm run test:unit        # pure resolver/config/adapter and script-contract tests
+npm run test:integration # local profile/runtime/package-policy integration tests
+npm run test:smoke       # build plus packaged CLI help smoke
+npm run test:repository  # full repository contract; has named external prerequisites
+npm run test:full        # alias for the full repository contract
+npm run test:package     # fresh tarball install and installed-package contract
+npm run typecheck        # tsc, zero errors
+npm run build            # clean tsc build
+npm run check:docs       # docs taxonomy + claim/acceptance consistency
 ```
+
+In a source checkout, `npm test` does not require a pre-existing `dist/`
+directory and runs the fast unit and integration contract. In an installed
+tarball, it intentionally becomes a CLI smoke so a consumer never needs this
+repository's test-only dependencies. The package and full contracts are
+separate because they are slower and can have named environment prerequisites
+that must not be reported as source-test failures.
 
 If your change touches injection value or scope, also run:
 

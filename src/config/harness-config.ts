@@ -14,6 +14,12 @@ import {
   normalizeEvidenceMode,
   type EvidenceMode,
 } from "./evidence-privacy.js"
+import {
+  DEFAULT_CONTEXT_CONFIG,
+  parseContextConfig,
+  type ContextConfigDiagnostic,
+  type HarnessContextConfig,
+} from "./context-config.js"
 import { isRecord, stripJsonComments } from "./jsonc.js"
 import type {
   BootstrapWriteBoundary,
@@ -22,6 +28,8 @@ import type {
 
 export type { ConventionLevel } from "./convention-registry.js"
 export type { EvidenceMode, EvidencePrivacyClass } from "./evidence-privacy.js"
+export { DEFAULT_CONTEXT_CONFIG } from "./context-config.js"
+export type { ContextConfigDiagnostic, HarnessContextConfig } from "./context-config.js"
 
 export const BACKEND_GUIDANCE_PACKS = [
   "domain-layout",
@@ -38,6 +46,7 @@ export type BackendGuidancePack = (typeof BACKEND_GUIDANCE_PACKS)[number]
 
 export type HarnessConfig = {
   readonly conventions: Readonly<Record<string, ConventionLevel>>
+  readonly context: HarnessContextConfig
   readonly enabled: boolean
   readonly rulesDir: string
   readonly evidenceDir: string
@@ -134,12 +143,14 @@ export type HarnessConfigDiagnostic = {
 
 export type HarnessConfigLoadResult = {
   readonly config: HarnessConfig
+  readonly contextDiagnostics: readonly ContextConfigDiagnostic[]
   readonly diagnostics: readonly HarnessConfigDiagnostic[]
   readonly safe: boolean
 }
 
 const DEFAULT_CONFIG: HarnessConfig = {
   conventions: DEFAULT_CONVENTION_LEVELS,
+  context: DEFAULT_CONTEXT_CONFIG,
   enabled: true,
   rulesDir: ".persona/rules",
   evidenceDir: ".persona/evidence",
@@ -189,6 +200,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
 const INVALID_CONFIG_PATH = ".persona/.invalid-config-path"
 const FAIL_CLOSED_CONFIG: HarnessConfig = {
   ...DEFAULT_CONFIG,
+  context: DEFAULT_CONTEXT_CONFIG,
   enabled: false,
   rulesDir: INVALID_CONFIG_PATH,
   evidenceDir: INVALID_CONFIG_PATH,
@@ -570,6 +582,13 @@ export function isRuntimeInjectionEnabled(config: HarnessConfig): boolean {
   return config.enabled && config.features.runtimeInjection
 }
 
+export function isContextPersonalizationEnabled(configResult: HarnessConfigLoadResult): boolean {
+  return configResult.safe
+    && configResult.contextDiagnostics.length === 0
+    && configResult.config.enabled
+    && configResult.config.context.enabled
+}
+
 export function isProjectPhilosophyInjectionEnabled(config: HarnessConfig): boolean {
   return config.enabled && config.features.projectPhilosophyInjection
 }
@@ -585,10 +604,10 @@ export function loadHarnessConfigResult(
   const harnessPath = join(projectDir, ".persona", "harness.jsonc")
   const bytes = projectReadBoundary?.readProjectFile(".persona/harness.jsonc")
   if (projectReadBoundary !== undefined && bytes === undefined) {
-    return { config: DEFAULT_CONFIG, diagnostics: [], safe: true }
+    return { config: DEFAULT_CONFIG, contextDiagnostics: [], diagnostics: [], safe: true }
   }
   if (projectReadBoundary === undefined && !existsSync(harnessPath)) {
-    return { config: DEFAULT_CONFIG, diagnostics: [], safe: true }
+    return { config: DEFAULT_CONFIG, contextDiagnostics: [], diagnostics: [], safe: true }
   }
 
   let parsed: unknown
@@ -597,6 +616,7 @@ export function loadHarnessConfigResult(
   } catch (error) {
     return {
       config: FAIL_CLOSED_CONFIG,
+      contextDiagnostics: [],
       diagnostics: [
         configDiagnostic(
           error instanceof SyntaxError ? "malformed_config" : "config_read_failed",
@@ -612,6 +632,7 @@ export function loadHarnessConfigResult(
   if (!isRecord(parsed)) {
     return {
       config: FAIL_CLOSED_CONFIG,
+      contextDiagnostics: [],
       diagnostics: [
         configDiagnostic("invalid_config", ".persona/harness.jsonc must contain a JSON object; read-only recovery is required."),
       ],
@@ -622,6 +643,7 @@ export function loadHarnessConfigResult(
   if (!validConfigShape(parsed)) {
     return {
       config: FAIL_CLOSED_CONFIG,
+      contextDiagnostics: [],
       diagnostics: [
         configDiagnostic("invalid_config", ".persona/harness.jsonc has an invalid field shape; read-only recovery is required."),
       ],
@@ -629,8 +651,10 @@ export function loadHarnessConfigResult(
     }
   }
 
+  const contextResult = parseContextConfig(parsed.context)
   const config: HarnessConfig = {
     conventions: readConventionLevels(parsed.conventions),
+    context: contextResult.config,
     enabled: readBoolean(parsed.enabled, DEFAULT_CONFIG.enabled),
     rulesDir: readString(parsed.rulesDir, DEFAULT_CONFIG.rulesDir),
     evidenceDir: readString(parsed.evidenceDir, DEFAULT_CONFIG.evidenceDir),
@@ -672,8 +696,13 @@ export function loadHarnessConfigResult(
     }
   })
   if (pathDiagnostics.length > 0) {
-    return { config: FAIL_CLOSED_CONFIG, diagnostics: pathDiagnostics, safe: false }
+    return {
+      config: FAIL_CLOSED_CONFIG,
+      contextDiagnostics: contextResult.diagnostics,
+      diagnostics: pathDiagnostics,
+      safe: false,
+    }
   }
 
-  return { config, diagnostics: [], safe: true }
+  return { config, contextDiagnostics: contextResult.diagnostics, diagnostics: [], safe: true }
 }

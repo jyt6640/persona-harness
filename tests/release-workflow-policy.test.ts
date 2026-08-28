@@ -361,8 +361,11 @@ describe("release workflow policy", () => {
   it("separates PR fast-feedback tests from full package and release contracts", () => {
     const scripts = readPackageScripts(join(repositoryRoot, "package.json"))
 
-    expect(scripts["test"]).toBe("npm run test:package")
-    expect(scripts["test:package"]).toBe("node dist/cli/index.js --help")
+    expect(scripts["test"]).toBe("node scripts/run-default-test.mjs")
+    expect(scripts["test:fast"]).toBe("npm run test:unit && npm run test:integration")
+    expect(scripts["test:smoke"]).toBe("npm run build && node dist/cli/index.js --help")
+    expect(scripts["test:full"]).toBe("npm run test:repository")
+    expect(scripts["test:package"]).toBe("node scripts/test-package-smoke.mjs")
     expect(scripts["test:authoritative-bundle-package-contract"]).toBe("node scripts/verify-clean-package-boundary.mjs --exercise-contract --observer-gh \"$PERSONA_HARNESS_OBSERVER_GH\"")
     expect(scripts["test:clean-package-boundary"]).toBe("node scripts/verify-clean-package-boundary.mjs")
     expect(scripts["test:installed-package-contract"]).toBe("node scripts/test-installed-package-contract.mjs --package-acceptance")
