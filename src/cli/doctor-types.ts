@@ -14,6 +14,7 @@ import type { VerificationAuthorityAssessment } from "./workflow-verification-re
 import type { RuleDiagnosticReportItem } from "../rules/rule-diagnostics-report.js"
 import type { AuthorityStatus } from "./authority-command.js"
 import type { ProjectFinishTrustReadiness } from "./project-finish-trust-readiness.js"
+import type { OpenCodeSharedSkillRoutingStatus } from "../runtime/opencode-shared-skill-routing-status.js"
 
 export type DoctorOptions = {
   readonly authorityStoreRoot?: string
@@ -83,6 +84,7 @@ export type DoctorSummary = {
   readonly legacyDiffRulesPresent: boolean
   readonly entrySteeringEnabled: boolean
   readonly entrySteeringStatus: EntrySteeringStatusSummary
+  readonly opencodeSharedSkillRouting: OpenCodeSharedSkillRoutingStatus
   readonly externalTrust: DoctorExternalTrustSummary
   readonly consumerAuthority: AuthorityStatus
   readonly sigstoreTrust: ProjectFinishTrustReadiness

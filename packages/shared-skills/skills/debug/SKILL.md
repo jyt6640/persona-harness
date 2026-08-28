@@ -1,5 +1,6 @@
 ---
 name: debug
+description: Use for a reproducible failure or unexpected behavior; reproduce, isolate, and verify the cause.
 persona-skill: core
 mutability: advisory
 handoff: tdd

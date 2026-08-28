@@ -44,6 +44,7 @@ try {
 
   const installedRoot = join(consumerRoot, "node_modules", packageIdentity.name)
   assertRegularDirectory(installedRoot, "installed-package-root")
+  assertInstalledSharedSkillDescriptions(installedRoot)
   const cliPath = join(installedRoot, "dist", "cli", "index.js")
   const contextCompatibility = runContextCompatibilityManifest(contextCompatibilityManifest(packageIdentity, tarballPath), {
     archivePath: tarballPath,
@@ -183,6 +184,50 @@ function assertRegularDirectory(path, code) {
   if (!existsSync(path)) throw new PackageSmokeError(code)
   const stat = lstatSync(path)
   if (!stat.isDirectory() || stat.isSymbolicLink()) throw new PackageSmokeError(code)
+}
+
+function assertInstalledSharedSkillDescriptions(installedRoot) {
+  const catalogPath = join(installedRoot, "packages", "shared-skills", "catalog.json")
+  assertRegularFile(catalogPath, "installed-shared-skill-catalog")
+  const catalog = parseJson(readFileSync(catalogPath, "utf8"), "installed-shared-skill-catalog")
+  if (!isRecord(catalog) || !Array.isArray(catalog.skills)) {
+    throw new PackageSmokeError("installed-shared-skill-catalog")
+  }
+
+  for (const skill of catalog.skills) {
+    if (!isRecord(skill) || typeof skill.id !== "string" || typeof skill.entry !== "string") {
+      throw new PackageSmokeError("installed-shared-skill-catalog")
+    }
+    const skillPath = join(installedRoot, "packages", "shared-skills", skill.entry)
+    assertRegularFile(skillPath, "installed-shared-skill-description")
+    const metadata = readSkillFrontmatter(readFileSync(skillPath, "utf8"))
+    if (
+      metadata?.name !== skill.id
+      || typeof metadata.description !== "string"
+      || metadata.description.trim() === ""
+      || metadata.description.length > 240
+    ) {
+      throw new PackageSmokeError("installed-shared-skill-description")
+    }
+  }
+}
+
+function readSkillFrontmatter(source) {
+  const lines = source.split(/\r?\n/)
+  if (lines[0] !== "---") return undefined
+  const end = lines.indexOf("---", 1)
+  if (end < 1) return undefined
+
+  const metadata = {}
+  for (const line of lines.slice(1, end)) {
+    if (line.trim() === "") continue
+    const match = /^([a-z][a-z0-9-]*):[ \t]+(.+?)\s*$/.exec(line)
+    if (match === null || match[1] === undefined || match[2] === undefined || metadata[match[1]] !== undefined) {
+      return undefined
+    }
+    metadata[match[1]] = match[2].trim()
+  }
+  return metadata
 }
 
 function run(command, args, cwd, code) {

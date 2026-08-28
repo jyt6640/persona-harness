@@ -1,5 +1,6 @@
 ---
 name: deep-interview
+description: Use only for an ambiguous product request; ask one plain-language question before proposing a brief.
 persona-skill: core
 mutability: conversation-only
 handoff: technical-intake

@@ -1,5 +1,6 @@
 ---
 name: philosophy-refinement
+description: Use only when the user explicitly asks to change, review, or persist reusable development philosophy.
 persona-skill: core
 mutability: explicit-user-action
 handoff: null

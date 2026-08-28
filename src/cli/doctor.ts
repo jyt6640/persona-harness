@@ -9,6 +9,7 @@ import {
 import { walkBoundedFiles } from "../io/bounded-path-walker.js"
 import { nativeProjectReadPlatformSupported } from "../io/native-project-read.js"
 import { readEntrySteeringStatusSummary } from "../runtime/entry-steering-status.js"
+import { readOpenCodeSharedSkillRoutingStatus } from "../runtime/opencode-shared-skill-routing-status.js"
 import { summarizeRuleDiagnostics } from "../rules/rule-diagnostics-report.js"
 import { findAstGrepBinary } from "./ast-grep-convention-runner.js"
 import { missingWorkflowTemplates } from "./plan.js"
@@ -84,6 +85,13 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
   const conventionPackDiagnostics = summarizeConventionPackDiagnostics(projectDir)
   const opencode = opencodeVersion(options)
   const reachability = readDoctorReachability(projectDir)
+  const opencodeSharedSkillRouting = readOpenCodeSharedSkillRoutingStatus({
+    configSafe: configResult.safe,
+    enabled: harnessConfig.enabled,
+    enabledDomains: harnessConfig.enabledDomains,
+    pluginConfigured: reachability.projectPluginState === "configured",
+    runtimeInjection: harnessConfig.features.runtimeInjection,
+  })
   const packageVersionValue = packageVersion()
   const registryDetails = registrySummary(packageVersionValue, options)
   const nodeSupport = assessSigstoreNodeRuntime(options.nodeVersion ?? process.versions.node)
@@ -159,6 +167,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     pathSafetyDiagnostics,
     entrySteeringEnabled: harnessConfig.features.entrySteering,
     entrySteeringStatus: readEntrySteeringStatusSummary(projectDir, harnessConfig),
+    opencodeSharedSkillRouting,
     externalTrust,
     consumerAuthority,
     sigstoreTrust,

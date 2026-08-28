@@ -145,6 +145,21 @@ sources are retained; an incompatible setting is left untouched. Registration
 does not activate a skill, inject all skill bodies, or change the routing and
 workflow authority rules above.
 
+Every bundled `SKILL.md` carries a short `name` and `description` frontmatter
+pair so OpenCode can advertise the compact native catalog to the model. The
+description is a selection hint, not permission to run a workflow. `ph doctor`
+reports separate local metadata, plugin configuration, adapter reachability,
+automatic-route configuration, native selection, and host-delivery facts. The
+CLI can establish that the package metadata is ready, but it cannot inspect a
+running host session: adapter reachability, current OpenCode native selection,
+and host route delivery therefore remain **unobserved**. It never lists a skill
+as active merely because the catalog or plugin is present. A host-native
+selection remains host evidence; Persona's own automatic advisory route emits
+its compact user-visible notice only after that route has actually been
+injected. The automatic route is reported as configured only when the local
+plugin registration, safe harness configuration, `runtimeInjection`, and a
+`workflow` or `product` domain are all present.
+
 ## Portable Host Contract
 
 The root package exposes the versioned `persona-portable-skill-contract.1`

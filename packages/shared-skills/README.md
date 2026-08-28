@@ -29,6 +29,14 @@ discover the catalog without a consumer-specific absolute path. Registration is
 not activation: it does not inject every skill body, run a command, or advance
 workflow state.
 
+Each bundled `SKILL.md` has the short `name` and `description` frontmatter that
+OpenCode uses to advertise a native skill. A description is only a compact
+selection hint. It does not prove that a particular session selected the skill,
+loaded its full body, or ran a command. `ph doctor` reports local package
+metadata and Persona's optional automatic advisory-route configuration
+separately, and leaves adapter reachability, current host-native selection, and
+host route delivery as `UNOBSERVED` unless the host itself provides evidence.
+
 ## Portable Contract
 
 The root package exposes `persona-portable-skill-contract.1` through its

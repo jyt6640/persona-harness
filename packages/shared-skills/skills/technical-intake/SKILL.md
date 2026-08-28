@@ -1,5 +1,6 @@
 ---
 name: technical-intake
+description: Use after an approved product brief to collect project facts that materially affect delivery.
 persona-skill: core
 mutability: explicit-user-action
 handoff: plan

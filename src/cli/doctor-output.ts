@@ -70,6 +70,11 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `Session reachability: ${summary.reachability.level}`,
     `AGENTS.md steering: ${summary.reachability.agentsState}`,
     `Project-local OpenCode plugin registration: ${summary.reachability.projectPluginState}`,
+    `OpenCode native shared-skill metadata: ${formatNativeCatalog(summary)}`,
+    "OpenCode plugin adapter reachability: UNOBSERVED (doctor does not inspect a running host session)",
+    `OpenCode automatic advisory route: ${summary.opencodeSharedSkillRouting.automaticRoute === "configured" ? "CONFIGURED (not host-observed)" : summary.opencodeSharedSkillRouting.automaticRoute === "disabled" ? "OFF" : "UNAVAILABLE"}`,
+    "OpenCode current skill selection: UNOBSERVED (doctor does not inspect a running host session)",
+    "OpenCode host route delivery: UNOBSERVED (doctor does not inspect a running host session)",
     `PH-run verification: ${summary.reachability.executeVerification ? "ON" : "OFF"}`,
     `Entry steering: ${summary.entrySteeringEnabled ? "ON (default-off opt-in)" : "OFF"}`,
     `Entry steering decisions: ${summary.entrySteeringStatus.decisions}`,
@@ -160,6 +165,14 @@ export function doctorJson(summary: DoctorSummary): string {
       level: summary.reachability.level,
       plugin: summary.reachability.projectPluginState,
     },
+    sharedSkills: {
+      adapterReachability: summary.opencodeSharedSkillRouting.adapterReachability,
+      automaticAdvisoryRoute: summary.opencodeSharedSkillRouting.automaticRoute,
+      hostDelivery: summary.opencodeSharedSkillRouting.hostDelivery,
+      hostSelection: summary.opencodeSharedSkillRouting.hostSelection,
+      nativeCatalog: summary.opencodeSharedSkillRouting.nativeCatalog,
+      schemaVersion: summary.opencodeSharedSkillRouting.schemaVersion,
+    },
     registry: summary.registryDetails,
     sigstore: summary.sigstoreTrust,
     runtime: {
@@ -168,6 +181,13 @@ export function doctorJson(summary: DoctorSummary): string {
     runtimeReadiness: summary.runtimeReadiness,
     schemaVersion: "doctor.1",
   }, null, 2)}\n`
+}
+
+function formatNativeCatalog(summary: DoctorSummary): string {
+  const catalog = summary.opencodeSharedSkillRouting.nativeCatalog
+  return catalog.state === "ready"
+    ? `READY (${catalog.describedSkillCount}/${catalog.skillCount} described)`
+    : catalog.state.toUpperCase()
 }
 
 function formatRulePackDiagnostic(item: RuleDiagnosticReportItem): string {

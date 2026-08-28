@@ -1,5 +1,6 @@
 ---
 name: grill-me
+description: Pressure-test a concrete decision, design, or plan only when the user asks to examine assumptions, alternatives, risks, or trade-offs.
 persona-skill: core
 mutability: conversation-only
 handoff: none

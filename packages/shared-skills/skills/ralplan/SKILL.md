@@ -1,5 +1,6 @@
 ---
 name: ralplan
+description: Use only when the user explicitly asks for an adversarial review of a high-risk delivery plan.
 persona-skill: core
 mutability: advisory
 optional: true

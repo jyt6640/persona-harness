@@ -1,5 +1,6 @@
 ---
 name: lsp-setup
+description: Use only when the user explicitly requests language-server setup or diagnostics.
 persona-skill: optional-extension
 mutability: explicit-user-action
 handoff: none
