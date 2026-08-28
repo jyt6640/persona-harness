@@ -3,7 +3,7 @@ import { resolve } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-import { parseContextComparisonArguments } from "../scripts/eval/run-context-comparison.mjs"
+import { assertContextComparisonCandidate, parseContextComparisonArguments } from "../scripts/eval/run-context-comparison.mjs"
 
 describe("Context comparison runner", () => {
   it("requires explicit candidate metadata instead of inferring a Git revision", () => {
@@ -24,6 +24,15 @@ describe("Context comparison runner", () => {
     })
   })
 
+  it("rejects explicit metadata that does not bind the checked-out candidate", () => {
+    const candidate = { commit: "a562331f9db321845b05da1e16edc4b83bf78ece", packageVersion: "0.8.32" }
+
+    expect(() => assertContextComparisonCandidate(candidate, {
+      commit: "43b23da58de7b24f8875722c568cb52235e4419a",
+      packageVersion: "0.8.32",
+    })).toThrow("context-comparison-candidate-mismatch")
+  })
+
   it("prints bounded help without loading a model, host, or fixture", () => {
     const result = spawnSync(process.execPath, [resolve("scripts/eval/run-context-comparison.mjs"), "--help"], {
       cwd: repositoryRoot(),
@@ -32,7 +41,8 @@ describe("Context comparison runner", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Usage: node scripts/eval/run-context-comparison.mjs")
-    expect(result.stdout).toContain("does not invoke a model, host adapter, network, or workflow")
+    expect(result.stdout).toContain("binds explicit candidate metadata to the local Git/package identity")
+    expect(result.stdout).toContain("not invoke a model, host adapter, network, or workflow")
   })
 
   it("does not execute the CLI argument parser when the runner is imported", () => {

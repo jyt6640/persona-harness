@@ -185,7 +185,7 @@ not assert direct closure causality.
 | #401 | closed via #413 | Bare `ph context init` remains a no-write preview. Explicit `ph context init --enable` uses no-follow exclusive creation to write only a minimal `.persona/harness.jsonc` Context configuration in a fresh safe project. Existing regular config files, unsafe paths, and malformed arguments return finite errors without rewriting any configuration. It does not alter legacy feature flags, activate a host, or create completion state. Focused init/status/routing tests and the isolated tarball smoke cover the public surface. |
 | #402 | closed via #413 | `ph context doctor` now reuses the safe status readers instead of emitting fixed placeholder state. It reports bounded config/enablement/mode/budget/Team Profile diagnostics and explicitly distinguishes available local Core/CLI inspection from unavailable host delivery. It does not load personal rule content, write state, activate a host, or use network/shell/process/completion behavior. Focused doctor/status/routing tests and the isolated tarball smoke cover the public surface. |
 | #403 | closed via #413 | The isolated OpenCode adapter captures only safe observed targets, uses the local Context preview/envelope boundary, suppresses duplicate digests until session compaction/deletion, and mutates only the next matching user message. `context.enabled` is its sole feature switch; it does not inherit `runtimeInjection`. Adapter, actual plugin composition, status/doctor wording, type compatibility, and fail-closed target cases have focused RED-to-GREEN coverage. A real `experimental.chat.messages.transform` host observation remains separate. |
-| #411 | local implementation verified, integration pending | `persona-context-comparison-manifest.1` fixes ten P0 fixtures and compares `off`, `legacy-broad`, and `targeted-layered` through `persona-context-comparison-result.1`. The version-neutral `npm run benchmark:context -- ...` runner requires an explicit candidate commit and package version, evaluates 30 deterministic records, and never invokes a model, host adapter, network, workflow, authority, or evidence path. It emits only rule ids/layers and digests; model/host/operational fields remain `null` and every local product verdict is `INCONCLUSIVE`. |
+| #411 | local implementation verified, integration pending | `persona-context-comparison-manifest.1` fixes ten P0 fixtures and compares `off`, `legacy-broad`, and `targeted-layered` through `persona-context-comparison-result.1`. The version-neutral `npm run benchmark:context -- ...` runner requires an explicit full candidate commit and package version, then rejects a mismatch with the local Git/package identity before evaluating 30 deterministic records. It emits only rule ids/layers and digests; model/host/operational fields remain `null` and every local product verdict is `INCONCLUSIVE`. |
 | #414 | blocked, release/source provenance prerequisite | Stable `v0.8.32` targets a commit before #403. #414 alone owns the next immutable protected-main package/source binding; it must preserve historical releases and does not authorize #410, a host session, or any Context product claim by itself. |
 
 The heavy `test:installed-package-contract` and full protected repository suite
@@ -220,7 +220,7 @@ metadata so it cannot infer a commit or package version from the checkout:
 
 ```bash
 npm run benchmark:context -- \
-  --candidate-commit <exact-commit> \
+  --candidate-commit <full-current-commit> \
   --package-version <exact-package-version>
 ```
 
@@ -230,7 +230,8 @@ the same schema, but this local command deliberately emits `null` for those
 measurements and `INCONCLUSIVE` for product verdicts. There is intentionally
 no `check:context-value` command: fixture-only evidence must not be named or
 treated as a product-effectiveness check. The runner does not execute a host,
-model, workflow, authority, or network request.
+model, workflow, authority, or network request; it performs only a local Git
+identity read to reject a mismatched declared candidate.
 
 ## Current 0.8.33 Audit And Residuals
 

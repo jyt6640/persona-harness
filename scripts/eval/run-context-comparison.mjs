@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { execFileSync } from "node:child_process"
 import { existsSync, lstatSync, readFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import process from "node:process"
@@ -26,13 +27,23 @@ export function parseContextComparisonArguments(argv) {
   return options
 }
 
+export function assertContextComparisonCandidate(candidate, checkoutCandidate) {
+  if (
+    candidate.commit !== checkoutCandidate.commit
+    || candidate.packageVersion !== checkoutCandidate.packageVersion
+  ) {
+    throw new Error("context-comparison-candidate-mismatch")
+  }
+}
+
 function usage() {
   return `Usage: node scripts/eval/run-context-comparison.mjs --manifest <path> --candidate-commit <sha> --package-version <version>
 
 Evaluates the versioned Context OFF, legacy broad compatibility, and targeted layered corpus.
 
-This command does not invoke a model, host adapter, network, or workflow. It records
-unavailable execution measurements as null and leaves product verdicts INCONCLUSIVE.`
+This command binds explicit candidate metadata to the local Git/package identity. It does
+not invoke a model, host adapter, network, or workflow; execution measurements remain null
+and product verdicts remain INCONCLUSIVE.`
 }
 
 async function main() {
@@ -42,6 +53,7 @@ async function main() {
     return
   }
   const options = parseContextComparisonArguments(argv)
+  assertContextComparisonCandidate(options.candidate, readCheckoutCandidate())
   const manifest = readManifest(options.manifestPath)
   const evaluatorPath = resolve(packageRoot, "dist", "context-comparison", "index.js")
   if (!isRegularFile(evaluatorPath)) throw new Error("context-comparison-runtime-unavailable")
@@ -58,6 +70,31 @@ function readManifest(path) {
     return JSON.parse(readFileSync(resolved, "utf8"))
   } catch {
     throw new Error("context-comparison-manifest-invalid")
+  }
+}
+
+function readCheckoutCandidate() {
+  const packagePath = resolve(packageRoot, "package.json")
+  if (!isRegularFile(packagePath)) throw new Error("context-comparison-candidate-unavailable")
+  let packageVersion
+  try {
+    packageVersion = JSON.parse(readFileSync(packagePath, "utf8")).version
+  } catch {
+    throw new Error("context-comparison-candidate-unavailable")
+  }
+  if (typeof packageVersion !== "string" || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(packageVersion)) {
+    throw new Error("context-comparison-candidate-unavailable")
+  }
+  try {
+    const commit = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: packageRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim()
+    if (!/^[0-9a-f]{40,64}$/u.test(commit)) throw new Error("invalid checkout commit")
+    return { commit, packageVersion }
+  } catch {
+    throw new Error("context-comparison-candidate-unavailable")
   }
 }
 

@@ -7,3 +7,8 @@ export type ContextComparisonRunnerArguments = {
 }
 
 export function parseContextComparisonArguments(argv: readonly string[]): ContextComparisonRunnerArguments
+
+export function assertContextComparisonCandidate(
+  candidate: ContextComparisonRunnerArguments["candidate"],
+  checkoutCandidate: ContextComparisonRunnerArguments["candidate"],
+): void
