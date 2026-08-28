@@ -3,6 +3,7 @@ import { lstatSync, readFileSync, realpathSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join, posix, win32 } from "node:path"
 
+import { STARTER_PROFILE } from "../context-core/rule-types.js"
 import { ensurePrivateDirectory, writePrivateFileAtomic } from "../io/atomic-file.js"
 import {
   emptyPersonalizationStore,
@@ -21,6 +22,7 @@ import {
 import { PersonalizationValidationError } from "./personalization-profile-model.js"
 
 export * from "./personalization-profile-model.js"
+export { STARTER_PROFILE } from "../context-core/rule-types.js"
 
 export type PersonalizationStoreOptions = {
   readonly env?: Readonly<Record<string, string | undefined>>
@@ -40,14 +42,6 @@ export class PersonalizationStoreError extends Error {
     this.code = code
   }
 }
-
-export const STARTER_PROFILE = Object.freeze([
-  "Put responsibility with the object or data owner.",
-  "Separate business judgment from execution flow.",
-  "Prefer explicit intent over clever reuse.",
-  "Add abstractions only after a demonstrated need.",
-  "Require evidence before claiming completion.",
-])
 
 export function resolvePersonalizationStoreRoot(options: Pick<PersonalizationStoreOptions, "env" | "homeDir" | "platform"> = {}): string {
   const env = options.env ?? process.env

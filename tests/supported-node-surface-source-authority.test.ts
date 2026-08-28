@@ -47,6 +47,7 @@ describe("source-built and packed installed supported Node authority-negative su
   it("constructs lifecycle fixtures through the package surface under test", () => {
     const supportScript = readFileSync(join(repositoryRoot, "scripts", "verify-supported-node-surface.mjs"), "utf8")
 
+    expect(supportScript).toContain("assertPackageTest(")
     expect(supportScript).toContain("writeCurrentLifecycleStates(projectRoot, packageRoot)")
     expect(supportScript).toContain('join(packageRoot, "dist", "cli", "workflow-loop-state.js")')
     expect(supportScript).not.toContain('join(repositoryRoot, "dist", "cli", "workflow-loop-state.js")')

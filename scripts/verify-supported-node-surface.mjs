@@ -223,7 +223,7 @@ function assertPackageTest(packageRoot, label) {
   const result = runCommand("npm", ["test"], packageRoot)
   requireSuccess(result, `${label} npm test`)
   if (!result.stdout.includes("Persona Harness")) {
-    throw new SupportSurfaceError(`${label} npm test did not reach package help`)
+    throw new SupportSurfaceError(`${label} npm test did not reach package test contract`)
   }
 }
 

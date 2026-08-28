@@ -107,10 +107,13 @@ describe("package files policy", () => {
     const packageJson = readPackageJson(path.join(packageRoot, "package.json"))
     const scripts = packageJson.scripts
 
+    expect(existsSync(path.join(packageRoot, "scripts", "run-default-test.mjs"))).toBe(true)
     expect(existsSync(path.join(packageRoot, "scripts", "package-root-build.mjs"))).toBe(true)
     expect(existsSync(path.join(packageRoot, "scripts", "package-root-build-lock.mjs"))).toBe(true)
+    expect(isCoveredByPackageFiles("scripts/run-default-test.mjs", packageJson.files)).toBe(true)
     expect(isCoveredByPackageFiles("scripts/package-root-build-lock.mjs", packageJson.files)).toBe(true)
     expect(isCoveredByPackageFiles("scripts/package-root-build.mjs", packageJson.files)).toBe(true)
+    expect(scripts?.["test"]).toBe("node scripts/run-default-test.mjs")
     expect(scripts?.["build"]).toBe("node scripts/package-root-build.mjs")
     expect(scripts?.["prepack"]).toBe("node scripts/package-root-build.mjs")
   })
@@ -754,6 +757,7 @@ describe("package files policy", () => {
       "docs/current/workflow-closure-state-machine-design.md",
       "docs/current/persona-shared-skills-core.md",
       "docs/current/personalization-profile-v1.md",
+      "docs/current/context-program-status.md",
       "docs/current/measurement-scorecard.md",
       "docs/current/consumer-authority-v1-decision.md",
       "docs/current/release/README.md",
