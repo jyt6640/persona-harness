@@ -256,6 +256,11 @@ A successful attach enables PH-run verification and the narrow
 guidance. It does not enable the broader `runtimeInjection`,
 `systemConstitution`, `idleContinuation`, or Ralph loop rails, which remain off.
 
+If bootstrap workspace intake or `attach --repair --yes` stops, do not repeat
+the repair blindly. Run `npx ph workflow diagnose` first. It is read-only and
+classifies the workspace, active workflow artifacts, retained history, and the
+current source-read prerequisite; see [workflow intake troubleshooting](docs/troubleshooting/workflow-intake.md).
+
 `ph go` is the host-neutral single entry for one concrete implementation
 requirement after bootstrap and plan acceptance. It captures the requirement,
 creates and selects the ticket, and prints the existing implementation rail;
@@ -354,7 +359,7 @@ sufficiency, run coverage/mutation, or certify app quality.
 ```bash
 npx ph attach [--yes]                                  # existing Java/Spring/Gradle project
 npx ph go "Add a task creation endpoint."                 # concrete single entry
-npx ph workflow check | implement | finish implement | archive <ticket-id>
+npx ph workflow check | diagnose | implement | finish implement | archive <ticket-id>
 npx ph workflow split README.md && npx ph workflow next   # multi-ticket
 npx ph bearshell --shell 'gradle test'                    # bounded execution
 npx ph evidence summary | metrics --json | ab-report --json | pminus-report --json

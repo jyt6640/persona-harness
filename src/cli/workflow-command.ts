@@ -33,6 +33,7 @@ import {
   uninitializedWorkflowFinishOutput,
 } from "./workflow-output.js"
 import { parseWorkflowArgs, workflowUsage } from "./workflow-args.js"
+import { runWorkflowDiagnoseCommand } from "./workflow-diagnose-command.js"
 import { runWorkflowRelayCommand } from "./workflow-relay.js"
 import { runWorkflowLoopCommand } from "./workflow-loop.js"
 import { runWorkflowRalphLoopCommand } from "./workflow-ralph-loop.js"
@@ -311,6 +312,9 @@ export function runWorkflowCommand(args: readonly string[], options: WorkflowOpt
   }
   if (parsed.kind === "guard") {
     return runWorkflowGuard(parsed.guardKind, options)
+  }
+  if (parsed.kind === "diagnose") {
+    return runWorkflowDiagnoseCommand(options)
   }
   if (parsed.kind === "implement") {
     return runWorkflowImplement({ ...options, full: parsed.full })

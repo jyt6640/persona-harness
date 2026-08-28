@@ -4,6 +4,7 @@ import type { FinishAssuranceRequirement } from "./workflow-verification-decisio
 
 export type ParsedWorkflowArgs =
   | { readonly full: boolean; readonly kind: "check" }
+  | { readonly kind: "diagnose" }
   | { readonly full: boolean; readonly kind: "implement" }
   | { readonly kind: "test" }
   | { readonly kind: "tdd" }
@@ -42,12 +43,13 @@ export type ParsedWorkflowArgs =
 
 export function workflowUsage(invocation = "ph"): string {
   return [
-    `Usage: ${invocation} workflow <check|implement|test|tdd|continue|loop|ralph-loop|role-boundary|closure|relay|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
+    `Usage: ${invocation} workflow <check|diagnose|implement|test|tdd|continue|loop|ralph-loop|role-boundary|closure|relay|roles|draft|approve|capture|split|next|archive|start implement|finish implement|guard implement|guard final>`,
     "",
     "Checks or guards Persona Harness workflow artifacts before or after implementation.",
     "",
     "Scope:",
     "- workflow check is report-only except opt-in TDD green evidence capture when enforce.tdd is enabled",
+    "- workflow diagnose is a read-only workspace intake, artifact, history, and source-read prerequisite summary",
     "- workflow implement prints a single AI-facing implementation rail",
     "- workflow test records opt-in TDD red evidence from PH-run strict Gradle/JUnit verification",
     "- workflow tdd prints read-only TDD red→green status and next action",
@@ -75,6 +77,11 @@ export function workflowUsage(invocation = "ph"): string {
 export function parseWorkflowArgs(args: readonly string[]): ParsedWorkflowArgs {
   if (args.length === 0 || args[0] === "check") {
     return parseFullOnlyArgs(args.slice(args[0] === "check" ? 1 : 0), "check")
+  }
+  if (args[0] === "diagnose") {
+    return args.length === 1
+      ? { kind: "diagnose" }
+      : { kind: "invalid", message: "workflow diagnose does not accept extra arguments." }
   }
   if (args[0] === "implement") {
     return parseFullOnlyArgs(args.slice(1), "implement")

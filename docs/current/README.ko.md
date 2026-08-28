@@ -91,6 +91,11 @@ npx ph attach --repair --yes
 verification을 켜되 `runtimeInjection`, `systemConstitution`,
 `idleContinuation`, Ralph loop는 끈 상태로 유지합니다.
 
+bootstrap workspace intake 또는 `attach --repair --yes`가 멈추면 같은 repair를
+반복하지 말고 먼저 `npx ph workflow diagnose`를 실행하세요. 이 명령은 읽기
+전용이며 workspace 소유권, 활성 workflow 산출물, history, 현재 source-read
+전제를 분류합니다. 자세한 분기표는 [workflow intake troubleshooting](../troubleshooting/workflow-intake.md)에 있습니다.
+
 그다음 OpenCode에서 에이전트에게 당신의 `README.md`를 구현하도록 요청하세요. 에이전트는 스스로 rail을 돌리고 `npx ph workflow finish implement`로 끝내야 합니다.
 
 > [!NOTE]
@@ -112,7 +117,7 @@ verification을 켜되 `runtimeInjection`, `systemConstitution`,
 
 ```bash
 npx ph attach [--yes]                                  # 기존 Java/Spring/Gradle 프로젝트
-npx ph workflow check | implement | finish implement | archive <ticket-id>
+npx ph workflow check | diagnose | implement | finish implement | archive <ticket-id>
 npx ph workflow split README.md && npx ph workflow next   # 멀티 ticket
 npx ph bearshell --shell 'gradle test'                    # 제한된 실행
 npx ph evidence summary | metrics --json | ab-report --json | pminus-report --json

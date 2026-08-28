@@ -223,7 +223,7 @@ describe("ph workflow test TDD rail", () => {
     const rootHelp = runPersonaCli(["help"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(workflowHelp.status).toBe(0)
-    expect(workflowHelp.stdout).toContain("workflow <check|implement|test|tdd|continue")
+    expect(workflowHelp.stdout).toContain("workflow <check|diagnose|implement|test|tdd|continue")
     expect(workflowHelp.stdout).toContain("workflow tdd prints read-only TDD red→green status")
     expect(rootHelp.status).toBe(0)
     expect(rootHelp.stdout).not.toContain("  workflow")
