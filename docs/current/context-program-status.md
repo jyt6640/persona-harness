@@ -133,7 +133,7 @@ evidence rather than a description of current protected main.
 | M9 | implementation candidate; external evidence absent | Local Context inspection and deterministic fixtures do not establish independent usefulness. | #429 adds a strict preregistration and result-status contract; its committed state records no observation and `INCONCLUSIVE`. |
 | M10 | delivered via #411/#439; #436 local candidate | #411 provides a versioned three-arm protocol, strict ten-fixture manifest, and deterministic evaluator for Context OFF, legacy broad compatibility, and targeted layered envelopes. #436 adds an explicit clean-current-checkout candidate source without changing the fixed corpus. | Keep model, host, and operational measurements unavailable until a separately authorized observation; every local product verdict remains `INCONCLUSIVE`. |
 | M11 | delivered and released via #412/#441 | The installed-package compatibility boundary uses a generic manifest and runner. | Keep version-specific acceptance scripts out of new Context changes. |
-| M12 | verified-existing | CI critical-path optimization is already measured and active. | Preserve it and add only bounded Context checks to the correct lane. |
+| M12 | verified-existing; #431 local candidate | CI critical-path optimization is already measured and active. #431 classifies an unavailable repository observer as `clean-package-observer-gh-required` rather than a source-test failure. | Preserve the critical path; treat the named observer prerequisite as `ENVIRONMENT_BLOCKED` and add only bounded Context checks to the correct lane. |
 | M13 | mixed: #412 delivered; #430/#435 local candidates | Stable `v0.8.36` provides the generic manifest/runner; the contributor map and its security/release/bootstrap-intake routes are local candidates for a readable credential-free contributor route. | Preserve generic package/source-fallback checks and keep the route separate from hosted or release work. |
 | M14 | #433 local candidate | The README entrypoint makes Context activation, authority, host, evidence, and product-focus limits explicit, with usefulness still `INCONCLUSIVE`. | Preserve the public boundary without promoting local evidence to host delivery or product value. |
 
@@ -178,7 +178,8 @@ evidence rather than a description of current protected main.
    parser/evaluator and empty status, #430 records the contributor map, #433
    records the README claim boundary, #434 reconciles current program status,
    #435 binds contributor operations to existing security/release/diagnosis
-   routes, and #436 adds the explicit clean-current-checkout comparison route.
+   routes, #436 adds the explicit clean-current-checkout comparison route, and
+   #431 classifies the repository observer prerequisite before package work.
    They are local integration candidates only; none is release, host-delivery,
    or product-value evidence.
 

@@ -6,8 +6,12 @@ import { describe, expect, it } from "vitest"
 describe("Context program status", () => {
   it("distinguishes released compatibility work, local contributors, live host delivery, and independent value evidence", () => {
     const status = readFileSync(resolve(process.cwd(), "docs/current/context-program-status.md"), "utf8")
+    const m12 = matrixRow(status, "M12")
     const m13 = matrixRow(status, "M13")
     const m14 = matrixRow(status, "M14")
+
+    expect(m12).toContain("#431")
+    expect(m12).toContain("local candidate")
 
     expect(m13).toContain("#412")
     expect(m13).toContain("#430")
@@ -24,6 +28,7 @@ describe("Context program status", () => {
     expect(status).toContain("external-validation")
     expect(status).toContain("#436")
     expect(status).toContain("--current-checkout")
+    expect(status).toContain("clean-package-observer-gh-required")
     expect(status).toContain("local candidate")
   })
 })

@@ -146,8 +146,10 @@ value, or a product verdict.
 Keep these separate:
 
 - `npm run test:package` validates a fresh local tarball and installed package.
-- `npm run test:repository` is the broader repository contract and can report
-  a named environment prerequisite rather than a source failure.
+- `npm run test:repository` is the broader repository contract. When its
+  selected observer path is unavailable, it reports
+  `clean-package-observer-gh-required` as `ENVIRONMENT_BLOCKED`, not as a
+  source failure.
 - [#414](https://github.com/jyt6640/persona-harness/issues/414) is the
   historical P0 implementation release lineage; [#412](https://github.com/jyt6640/persona-harness/issues/412)
   is the generic compatibility release lineage.

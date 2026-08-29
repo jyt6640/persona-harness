@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 
@@ -22,6 +23,43 @@ const IDENTITY = {
 }
 
 describe("clean package boundary", () => {
+  it("classifies an empty environment-expanded observer as an external prerequisite", () => {
+    const result = spawnSync(process.execPath, [
+      join(process.cwd(), "scripts", "verify-clean-package-boundary.mjs"),
+      "--exercise-contract",
+      "--observer-gh",
+      "",
+    ], { encoding: "utf8" })
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe("")
+    expect(result.stderr).toBe("clean-package-observer-gh-required\n")
+  })
+
+  it("requires an observer before preparing an exercised package contract", () => {
+    const result = spawnSync(process.execPath, [
+      join(process.cwd(), "scripts", "verify-clean-package-boundary.mjs"),
+      "--exercise-contract",
+    ], { encoding: "utf8" })
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe("")
+    expect(result.stderr).toBe("clean-package-observer-gh-required\n")
+  })
+
+  it("keeps a nonempty malformed observer path as an argument error", () => {
+    const result = spawnSync(process.execPath, [
+      join(process.cwd(), "scripts", "verify-clean-package-boundary.mjs"),
+      "--exercise-contract",
+      "--observer-gh",
+      "relative/gh",
+    ], { encoding: "utf8" })
+
+    expect(result.status).toBe(1)
+    expect(result.stdout).toBe("")
+    expect(result.stderr).toBe("clean-package-arguments\n")
+  })
+
   it("accepts the configured canonical candidate branch without a literal HEAD alias", () => {
     expect(assertBundleHeadBinding([
       { ref: CANDIDATE_REF, sha: HEAD },
