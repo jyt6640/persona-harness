@@ -95,6 +95,22 @@ Persona Harness exposes two deliberately separate tracks:
   OpenCode plugin registered, it delivers one bounded Context block only after
   a safe observed file target. It grants no completion authority.
 
+### Context Boundary
+
+- **Activation:** `context.enabled` is explicit and `default-off`; it does not
+  inherit broad runtime guidance switches.
+- **Authority:** Context is `non-authoritative`: it cannot grant completion or
+  verification authority.
+- **Isolation:** Context-only paths do not execute project commands or contact
+  GitHub/network.
+- **Host:** OpenCode is the only implemented delivery adapter; live host
+  delivery remains a separate, unobserved boundary.
+- **Evidence:** Context usefulness remains `INCONCLUSIVE` until independent
+  external evidence exists.
+- **Product focus:** the productized workflow focus is Java/Spring. The
+  TypeScript reference implementation and fixtures support this experimental
+  Context boundary; they are not a TypeScript code-quality claim.
+
 Context configuration is separate from legacy runtime guidance switches. A
 missing block stays disabled. An explicit `context.enabled` setting controls
 only the targeted Context adapter; it does not enable legacy runtime guidance,
