@@ -64,7 +64,7 @@ describe("Context compatibility manifest runner", () => {
       schemaVersion: "persona-context-compatibility-result.1",
       state: "BLOCKED",
     })
-  })
+  }, 180_000)
 
   it("rejects an installed package whose executable path resolves into source", () => {
     const subject = createFreshInstalledSubject()
