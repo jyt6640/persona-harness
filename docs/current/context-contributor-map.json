@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "persona-context-contributor-map.1",
+  "localChecks": [
+    {
+      "script": "test",
+      "command": "npm test"
+    },
+    {
+      "script": "typecheck",
+      "command": "npm run typecheck"
+    },
+    {
+      "script": "check:docs",
+      "command": "npm run check:docs"
+    }
+  ],
+  "ownership": [
+    {
+      "id": "context-core",
+      "paths": ["src/context-core/"]
+    },
+    {
+      "id": "context-profile",
+      "paths": ["src/context-profile/"]
+    },
+    {
+      "id": "context-cli",
+      "paths": ["src/cli/context-command.ts"]
+    },
+    {
+      "id": "context-delivery",
+      "paths": ["src/context-delivery/opencode-context-hooks.ts"]
+    },
+    {
+      "id": "context-external-validation",
+      "paths": ["src/context-external-validation/"]
+    },
+    {
+      "id": "workflow-integrity",
+      "paths": ["src/cli/workflow-command.ts", "src/cli/authority-command.ts"]
+    }
+  ],
+  "separateBoundaries": [
+    {
+      "id": "installed-package",
+      "reference": "test:package"
+    },
+    {
+      "id": "repository-contract",
+      "reference": "test:repository"
+    },
+    {
+      "id": "p0-implementation-release",
+      "reference": "#414"
+    },
+    {
+      "id": "generic-compatibility-release",
+      "reference": "#412"
+    },
+    {
+      "id": "host-observation",
+      "reference": "#410"
+    }
+  ]
+}
