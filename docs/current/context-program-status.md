@@ -2,16 +2,19 @@
 
 Status: current canonical program record.
 
-Last reconciled: 2026-08-29
+Last reconciled: 2026-08-30
 P0 implementation release baseline: `9b80a45070be10659150095cf701a6f375bc6600`
 P0 implementation package: [`persona-harness@0.8.33`](https://www.npmjs.com/package/persona-harness/v/0.8.33)
 P0 implementation lineage: [#414](https://github.com/jyt6640/persona-harness/issues/414) delivered through [#437](https://github.com/jyt6640/persona-harness/pull/437)
 Current comparison release: `19c397e4fed5b1cce7d024fbcc51350e9676105f`
 Current comparison package: [`persona-harness@0.8.34`](https://www.npmjs.com/package/persona-harness/v/0.8.34)
 Current comparison lineage: [#411](https://github.com/jyt6640/persona-harness/issues/411) delivered through [#439](https://github.com/jyt6640/persona-harness/pull/439)
+Current Team Profile v2 release: `90a913168edac40eb29290e7ff47885bb94b30fd`
+Current Team Profile v2 package: [`persona-harness@0.8.35`](https://www.npmjs.com/package/persona-harness/v/0.8.35)
+Current Team Profile v2 lineage: [#421](https://github.com/jyt6640/persona-harness/issues/421) delivered through [#440](https://github.com/jyt6640/persona-harness/pull/440)
 Historical pre-integration audit source: `f677a635040ad55d8b7d25abab280c5703a153ea`
 Program issue: [#389](https://github.com/jyt6640/persona-harness/issues/389)
-Remaining bounded work: [#410](https://github.com/jyt6640/persona-harness/issues/410), [#412](https://github.com/jyt6640/persona-harness/issues/412), and [#421](https://github.com/jyt6640/persona-harness/issues/421)
+Remaining bounded work: [#410](https://github.com/jyt6640/persona-harness/issues/410) and [#412](https://github.com/jyt6640/persona-harness/issues/412)
 
 ## Purpose
 
@@ -118,15 +121,15 @@ evidence rather than a description of current protected main.
 | --- | --- | --- | --- |
 | M1 | delivered via #413 | Workflow Integrity and Context Personalization are named as distinct tracks in public help and README. | Preserve the separate product boundary. |
 | M2 | delivered via #413 | `ph context` provides explicit, default-off local Context inspection and enablement. | Preserve no-overwrite initialization and non-activating inspection. |
-| M3 | delivered via #413; v2 source candidate locally validated | A safe Team Profile v1 is resolved as a separate, local Context layer. | #421 adds a separate semantic v2 schema and explicit resolver bridge without silently upgrading v1 files; package and hosted gates remain separate. |
+| M3 | delivered and released via #421/#440 | `persona-context-team-profile.2` is a separate semantic schema and explicit pure-resolver layer. It does not silently upgrade v1 files or enable Context, CLI delivery, or host activation. | Preserve v1/v2 separation and default-off behavior. |
 | M4 | delivered via #413 | Pure Core resolves the seven precedence layers and produces a deterministic `persona-context-envelope.v1`. | Keep Core host-neutral. |
 | M5 | implementation delivered; hosted residual | Core has no OpenCode or Java runtime import; the isolated OpenCode adapter is locally covered. | #410 may observe the real transform only after its own named Delivery Control predicate. |
 | M6 | implementation delivered; hosted residual | Context resolution, rendering, and delivery are separated from legacy workflow/authority behavior. | Preserve the isolated adapter boundary during #410. |
-| M7 | open | Historical version checks remain a maintenance concern. | #412 owns the generic Context compatibility manifest and runner. |
+| M7 | in progress | Historical version checks remain a maintenance concern. | #412 owns the generic Context compatibility manifest and runner. |
 | M8 | delivered via #413 | `npm test` now selects focused source evidence and installed packages receive a separate smoke. | Keep full protected verification separate. |
 | M9 | implementation delivered; hosted residual | Context CLI and doctor report bounded local state without claiming host delivery. | #410 remains the sole real-host observation route after #414. |
 | M10 | delivered and released via #411/#439 | #411 provides a versioned three-arm protocol, strict ten-fixture manifest, and deterministic evaluator for Context OFF, legacy broad compatibility, and targeted layered envelopes. | Keep model, host, and operational measurements unavailable until a separately authorized observation; every local product verdict remains `INCONCLUSIVE`. |
-| M11 | open | Historical version-specific checks still need a version-neutral Context compatibility boundary. | #412 owns the manifest/runner work. |
+| M11 | in progress | Historical version-specific checks still need a version-neutral Context compatibility boundary. | #412 owns the manifest/runner work. |
 | M12 | verified-existing | CI critical-path optimization is already measured and active. | Preserve it and add only bounded Context checks to the correct lane. |
 
 ## Invariants
@@ -157,9 +160,12 @@ evidence rather than a description of current protected main.
    `19c397e4fed5b1cce7d024fbcc51350e9676105f`. It provides the fixture-only
    three-arm protocol below, does not initiate a host, model, workflow, or
    authority action, and cannot establish product value.
-4. **Remaining independent work:** #410 owns the sole real OpenCode-host
-   observation route; #421 owns Team Profile v2 and #412 owns the generic
-   installed-package compatibility boundary.
+4. **Team Profile v2 release:** #421 is delivered as stable `v0.8.35` through
+   #440 on `90a913168edac40eb29290e7ff47885bb94b30fd`. It preserves the
+   explicit Context boundary and does not begin host observation.
+5. **Remaining independent work:** #410 owns the sole real OpenCode-host
+   observation route and #412 owns the generic installed-package compatibility
+   boundary.
 
 Only one public command, schema, resolver, adapter, CI, script, or documentation
 boundary is changed per child issue. A child issue closes only when its stated
@@ -191,7 +197,7 @@ not assert direct closure causality.
 | #403 | closed via #413 | The isolated OpenCode adapter captures only safe observed targets, uses the local Context preview/envelope boundary, suppresses duplicate digests until session compaction/deletion, and mutates only the next matching user message. `context.enabled` is its sole feature switch; it does not inherit `runtimeInjection`. Adapter, actual plugin composition, status/doctor wording, type compatibility, and fail-closed target cases have focused RED-to-GREEN coverage. A real `experimental.chat.messages.transform` host observation remains separate. |
 | #411 | delivered through #439 | Stable `v0.8.34` binds the deterministic three-arm comparison source at `19c397e4fed5b1cce7d024fbcc51350e9676105f`. `persona-context-comparison-manifest.1` fixes ten P0 fixtures and compares `off`, `legacy-broad`, and `targeted-layered` through `persona-context-comparison-result.1`. The repository runner requires an explicit candidate commit and package version, rejects a local identity mismatch before evaluation, and produces 30 deterministic records. It emits only rule ids/layers and digests; model/host/operational fields remain `null` and every local product verdict is `INCONCLUSIVE`. |
 | #414 | delivered through #437 | Stable `v0.8.33` binds the P0 implementation package/source release lineage. It is immutable historical release evidence and does not authorize #410, a host session, or any Context product claim by itself. |
-| #421 | local source candidate | `persona-context-team-profile.2` adds a separate JSONC loader and explicit pure-resolver team layer. It rejects unknown fields, unsafe shared text, duplicate ids, active topic conflicts, malformed JSONC, and symlinked files without reading personal state or activating a host. Local source tests, typecheck, build, docs/scope checks, and package smoke pass. | Package acceptance, protected integration, CLI delivery, adapter delivery, runtime activation, and external effectiveness remain unstarted. |
+| #421 | delivered through #440 | Stable `v0.8.35` binds the Team Profile v2 source at `90a913168edac40eb29290e7ff47885bb94b30fd`. The separate JSONC loader and explicit pure-resolver layer reject unknown fields, unsafe shared text, duplicate ids, active topic conflicts, malformed JSONC, and symlinked files without reading personal state or activating a host. | Release and provenance evidence do not begin CLI delivery, adapter delivery, runtime activation, or external effectiveness observation. |
 
 The heavy `test:installed-package-contract` and full protected repository suite
 remain unchanged. The generic package smoke is version-neutral and does not
@@ -240,7 +246,7 @@ was not modified.
 | P0 implementation release lineage | #414 delivered stable `v0.8.33` through #437. Its immutable tag, GitHub Release, npm `latest`, canonical tar, and provenance bind to `9b80a45070be10659150095cf701a6f375bc6600`. | Historical P0 implementation release evidence does not prove live host delivery. |
 | Deterministic comparison release lineage | #411 delivered stable `v0.8.34` through #439. Its immutable tag, GitHub Release, npm `latest`, canonical tar, and provenance bind to `19c397e4fed5b1cce7d024fbcc51350e9676105f`. | It records only deterministic technical results; host/model/operational values remain unavailable and product verdicts remain `INCONCLUSIVE`. |
 | Hosted Context delivery | The current published comparison package contains the merged #403 adapter boundary, but no package/release record substitutes for the #410 start predicate. | #410 still needs its own named Delivery Control start predicate and one bounded real OpenCode observation. |
-| Other follow-ups | #421 has a local Team Profile v2 source candidate and #412 owns the generic Context compatibility runner. | #421 package and protected hosted gates remain unstarted; neither item may manufacture host or user-value evidence. |
+| Other follow-ups | #421 is delivered as stable `v0.8.35` through #440; #412 owns the generic Context compatibility runner. | #412 may not manufacture host or user-value evidence. |
 
 Product-value verdict remains **INCONCLUSIVE**. Local composition, package,
 release, and CI evidence do not establish host-session delivery or user benefit.
@@ -278,6 +284,6 @@ expand the released Context delivery scope or change its default-off boundary.
 Do not reopen the completed #390–#403 integration or #414 release paths.
 Delivery Control must record #410's own named hosted start predicate before one
 real OpenCode `experimental.chat.messages.transform` observation can begin.
-#421 and #412 remain independent follow-up boundaries. Do not infer host
-delivery or product value from local composition tests, catalog registration,
-release provenance, or historical evidence.
+#412 remains an independent follow-up boundary. Do not infer host delivery or
+product value from local composition tests, catalog registration, release
+provenance, or historical evidence.

@@ -1,10 +1,14 @@
 #!/usr/bin/env node
+import { createHash } from "node:crypto"
 import { spawnSync } from "node:child_process"
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
+
+import { runContextCompatibilityManifest } from "./context-compatibility-manifest-runner.mjs"
+import { readPackageContentIdentity } from "./package-content-identity.mjs"
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = realpathSync(mkdtempSync(join(tmpdir(), "persona-package-smoke-")))
@@ -41,6 +45,14 @@ try {
   const installedRoot = join(consumerRoot, "node_modules", packageIdentity.name)
   assertRegularDirectory(installedRoot, "installed-package-root")
   const cliPath = join(installedRoot, "dist", "cli", "index.js")
+  const contextCompatibility = runContextCompatibilityManifest(contextCompatibilityManifest(packageIdentity, tarballPath), {
+    archivePath: tarballPath,
+    installedPackageRoot: installedRoot,
+    sourceRoot: repositoryRoot,
+    temporaryRoot,
+  })
+  if (contextCompatibility.state !== "PASS") throw new PackageSmokeError(contextCompatibility.code)
+
   const help = run(process.execPath, [cliPath, "--help"], consumerRoot, "installed-cli-help")
   if (!help.stdout.includes("Usage: ph <command>")) throw new PackageSmokeError("installed-cli-help")
   const installedNpmTest = run(npmCommand, ["test"], installedRoot, "installed-npm-test")
@@ -52,16 +64,8 @@ try {
   }
   const version = run(process.execPath, [cliPath, "version"], consumerRoot, "installed-cli-version")
   if (version.stdout.trim() !== packageIdentity.version) throw new PackageSmokeError("installed-cli-version")
-  const contextStatus = run(process.execPath, [cliPath, "context", "status"], consumerRoot, "installed-context-status")
-  if (!contextStatus.stdout.includes("Context enabled: false") || !contextStatus.stdout.includes("Context Core: available")) {
-    throw new PackageSmokeError("installed-context-status")
-  }
   const contextDoctor = run(process.execPath, [cliPath, "context", "doctor"], consumerRoot, "installed-context-doctor")
   if (!contextDoctor.stdout.includes("Context Doctor (Experimental)")) throw new PackageSmokeError("installed-context-doctor")
-  const contextPreview = run(process.execPath, [cliPath, "context", "preview", "docs/Missing.md", "--json"], consumerRoot, "installed-context-preview")
-  if (!contextPreview.stdout.includes("persona-context-envelope.v1")) throw new PackageSmokeError("installed-context-preview")
-  const contextExplain = run(process.execPath, [cliPath, "context", "explain", "docs/Missing.md"], consumerRoot, "installed-context-explain")
-  if (!contextExplain.stdout.includes("Context Explanation (Experimental)")) throw new PackageSmokeError("installed-context-explain")
   const contextInit = run(process.execPath, [cliPath, "context", "init", "--enable"], consumerRoot, "installed-context-init")
   if (!contextInit.stdout.includes("Initialization: enabled")) throw new PackageSmokeError("installed-context-init")
   const enabledContextStatus = run(process.execPath, [cliPath, "context", "status"], consumerRoot, "installed-context-enabled-status")
@@ -104,6 +108,34 @@ function readPackageIdentity(path) {
     throw new PackageSmokeError("package-identity")
   }
   return { name: parsed.name, version: parsed.version }
+}
+
+function contextCompatibilityManifest(packageIdentity, tarballPath) {
+  const tarball = readFileSync(tarballPath)
+  return {
+    package: {
+      contentIdentity: readPackageContentIdentity(tarball),
+      name: packageIdentity.name,
+      tarballSha256: sha256(tarball),
+      version: packageIdentity.version,
+    },
+    requiredPackagePaths: [
+      "dist/cli/context-command.js",
+      "dist/cli/index.js",
+      "dist/context-core/context-envelope-builder.js",
+      "dist/context-core/index.js",
+    ],
+    scenarios: [
+      "status-default",
+      "preview-safe-target",
+      "explain-safe-target",
+      "init-preview-no-write",
+      "init-enable-no-overwrite",
+      "invalid-config",
+    ],
+    schemaVersion: "persona-context-compatibility-manifest.1",
+    sourceFallback: false,
+  }
 }
 
 function readPackResult(stdout) {
@@ -174,6 +206,10 @@ function parseJson(source, code) {
   } catch {
     throw new PackageSmokeError(code)
   }
+}
+
+function sha256(bytes) {
+  return createHash("sha256").update(bytes).digest("hex")
 }
 
 function consumerSetupSource() {

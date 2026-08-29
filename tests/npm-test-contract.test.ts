@@ -15,6 +15,7 @@ describe("npm contributor test contract", () => {
     expect(scripts["test:full"]).toBe("npm run test:repository")
     expect(scripts["test:package"]).toBe("node scripts/test-package-smoke.mjs")
     expect(scripts["benchmark:context"]).toBe("npm run build && node scripts/eval/run-context-comparison.mjs --manifest docs/current/context-comparison-manifest.json")
+    expect(selectedTestFiles(scripts["test:unit"])).toContain("tests/context-compatibility-manifest.test.ts")
     expect(selectedTestFiles(scripts["test:unit"])).toContain("tests/context-comparison.test.ts")
     expect(selectedTestFiles(scripts["test:unit"])).toContain("tests/context-comparison-runner.test.ts")
     expect(selectedTestFiles(scripts["test:integration"])).toContain("tests/opencode-context-delivery.test.ts")
