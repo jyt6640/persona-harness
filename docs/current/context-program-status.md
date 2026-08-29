@@ -17,7 +17,7 @@ Current compatibility package: [`persona-harness@0.8.36`](https://www.npmjs.com/
 Current compatibility lineage: [#412](https://github.com/jyt6640/persona-harness/issues/412) delivered through [#441](https://github.com/jyt6640/persona-harness/pull/441)
 Historical pre-integration audit source: `f677a635040ad55d8b7d25abab280c5703a153ea`
 Program issue: [#389](https://github.com/jyt6640/persona-harness/issues/389)
-Remaining bounded work: hosted residual [#410](https://github.com/jyt6640/persona-harness/issues/410), plus local integration candidates [#429](https://github.com/jyt6640/persona-harness/issues/429), [#430](https://github.com/jyt6640/persona-harness/issues/430), and [#433](https://github.com/jyt6640/persona-harness/issues/433)
+Remaining bounded work: hosted residual [#410](https://github.com/jyt6640/persona-harness/issues/410), plus local integration candidates [#429](https://github.com/jyt6640/persona-harness/issues/429), [#430](https://github.com/jyt6640/persona-harness/issues/430), [#433](https://github.com/jyt6640/persona-harness/issues/433), [#434](https://github.com/jyt6640/persona-harness/issues/434), and [#436](https://github.com/jyt6640/persona-harness/issues/436)
 
 ## Purpose
 
@@ -131,7 +131,7 @@ evidence rather than a description of current protected main.
 | M7 | delivered and released via #412/#441 | The generic Context compatibility manifest and runner are version-neutral. | Preserve the manifest-driven runner. |
 | M8 | delivered via #413 | `npm test` now selects focused source evidence and installed packages receive a separate smoke. | Keep full protected verification separate. |
 | M9 | implementation candidate; external evidence absent | Local Context inspection and deterministic fixtures do not establish independent usefulness. | #429 adds a strict preregistration and result-status contract; its committed state records no observation and `INCONCLUSIVE`. |
-| M10 | delivered and released via #411/#439 | #411 provides a versioned three-arm protocol, strict ten-fixture manifest, and deterministic evaluator for Context OFF, legacy broad compatibility, and targeted layered envelopes. | Keep model, host, and operational measurements unavailable until a separately authorized observation; every local product verdict remains `INCONCLUSIVE`. |
+| M10 | delivered via #411/#439; #436 local candidate | #411 provides a versioned three-arm protocol, strict ten-fixture manifest, and deterministic evaluator for Context OFF, legacy broad compatibility, and targeted layered envelopes. #436 adds an explicit clean-current-checkout candidate source without changing the fixed corpus. | Keep model, host, and operational measurements unavailable until a separately authorized observation; every local product verdict remains `INCONCLUSIVE`. |
 | M11 | delivered and released via #412/#441 | The installed-package compatibility boundary uses a generic manifest and runner. | Keep version-specific acceptance scripts out of new Context changes. |
 | M12 | verified-existing | CI critical-path optimization is already measured and active. | Preserve it and add only bounded Context checks to the correct lane. |
 | M13 | mixed: #412 delivered, #430 local candidate | Stable `v0.8.36` provides the generic manifest/runner; the contributor map is a local candidate for a readable credential-free contributor route. | Preserve generic package/source-fallback checks and keep the route separate from hosted or release work. |
@@ -175,9 +175,11 @@ evidence rather than a description of current protected main.
    observation route. #429 owns a preregistered external-validation schema
    whose initial state remains `INCONCLUSIVE` without an observation.
 7. **Current local P0 candidates:** #429 records the external-validation
-   parser/evaluator and empty status, #430 records the contributor map, and
-   #433 records the README claim boundary. They are local integration
-   candidates only; none is release, host-delivery, or product-value evidence.
+   parser/evaluator and empty status, #430 records the contributor map, #433
+   records the README claim boundary, #434 reconciles current program status,
+   and #436 adds the explicit clean-current-checkout comparison route. They are
+   local integration candidates only; none is release, host-delivery, or
+   product-value evidence.
 
 Only one public command, schema, resolver, adapter, CI, script, or documentation
 boundary is changed per child issue. A child issue closes only when its stated
@@ -207,7 +209,7 @@ not assert direct closure causality.
 | #401 | closed via #413 | Bare `ph context init` remains a no-write preview. Explicit `ph context init --enable` uses no-follow exclusive creation to write only a minimal `.persona/harness.jsonc` Context configuration in a fresh safe project. Existing regular config files, unsafe paths, and malformed arguments return finite errors without rewriting any configuration. It does not alter legacy feature flags, activate a host, or create completion state. Focused init/status/routing tests and the isolated tarball smoke cover the public surface. |
 | #402 | closed via #413 | `ph context doctor` now reuses the safe status readers instead of emitting fixed placeholder state. It reports bounded config/enablement/mode/budget/Team Profile diagnostics and explicitly distinguishes available local Core/CLI inspection from unavailable host delivery. It does not load personal rule content, write state, activate a host, or use network/shell/process/completion behavior. Focused doctor/status/routing tests and the isolated tarball smoke cover the public surface. |
 | #403 | closed via #413 | The isolated OpenCode adapter captures only safe observed targets, uses the local Context preview/envelope boundary, suppresses duplicate digests until session compaction/deletion, and mutates only the next matching user message. `context.enabled` is its sole feature switch; it does not inherit `runtimeInjection`. Adapter, actual plugin composition, status/doctor wording, type compatibility, and fail-closed target cases have focused RED-to-GREEN coverage. A real `experimental.chat.messages.transform` host observation remains separate. |
-| #411 | delivered through #439 | Stable `v0.8.34` binds the deterministic three-arm comparison source at `19c397e4fed5b1cce7d024fbcc51350e9676105f`. `persona-context-comparison-manifest.1` fixes ten P0 fixtures and compares `off`, `legacy-broad`, and `targeted-layered` through `persona-context-comparison-result.1`. The repository runner requires an explicit candidate commit and package version, rejects a local identity mismatch before evaluation, and produces 30 deterministic records. It emits only rule ids/layers and digests; model/host/operational fields remain `null` and every local product verdict is `INCONCLUSIVE`. |
+| #411 | delivered through #439; #436 local candidate | Stable `v0.8.34` binds the deterministic three-arm comparison source at `19c397e4fed5b1cce7d024fbcc51350e9676105f`. `persona-context-comparison-manifest.1` fixes ten P0 fixtures and compares `off`, `legacy-broad`, and `targeted-layered` through `persona-context-comparison-result.1`. The historical runner accepts explicit candidate commit and package-version metadata; #436 adds a distinct explicit `--current-checkout` source that binds a clean root checkout before evaluation. Both forms produce 30 deterministic records and emit only rule ids/layers and digests; model/host/operational fields remain `null` and every local product verdict is `INCONCLUSIVE`. |
 | #414 | delivered through #437 | Stable `v0.8.33` binds the P0 implementation package/source release lineage. It is immutable historical release evidence and does not authorize #410, a host session, or any Context product claim by itself. |
 | #421 | delivered through #440 | Stable `v0.8.35` binds the Team Profile v2 source at `90a913168edac40eb29290e7ff47885bb94b30fd`. The separate JSONC loader and explicit pure-resolver layer reject unknown fields, unsafe shared text, duplicate ids, active topic conflicts, malformed JSONC, and symlinked files without reading personal state or activating a host. | Release and provenance evidence do not begin CLI delivery, adapter delivery, runtime activation, or external effectiveness observation. |
 
@@ -266,14 +268,19 @@ release, and CI evidence do not establish host-session delivery or user benefit.
 ## #411 Comparison Protocol
 
 The Context comparison runner is repository-side tooling, not an installed
-user command. It requires an explicit full candidate commit and package version
-so it can reject a checkout mismatch before it evaluates the fixed corpus:
+user command. Its default command explicitly selects the clean current
+checkout as the candidate source:
 
 ```bash
-npm run benchmark:context -- \
-  --candidate-commit <full-current-commit> \
-  --package-version <exact-package-version>
+npm run benchmark:context
 ```
+
+The runner reads only the local Git root, full `HEAD`, clean working-tree state,
+and root `package.json` version for that mode. For reproducible supplied
+metadata, invoke the runner directly with both `--candidate-commit` and
+`--package-version`; mixing the two source forms, partial metadata, a dirty
+checkout, or a package root outside the Git root fails before manifest
+evaluation.
 
 It produces one `persona-context-comparison-result.1` record for each of ten
 fixtures and three arms. It emits only rule identifiers, layers, and digests;

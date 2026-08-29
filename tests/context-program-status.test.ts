@@ -21,6 +21,9 @@ describe("Context program status", () => {
     expect(status).toContain("named Delivery Control start predicate")
     expect(status).toContain("#429")
     expect(status).toContain("external-validation")
+    expect(status).toContain("#436")
+    expect(status).toContain("--current-checkout")
+    expect(status).toContain("local candidate")
   })
 })
 
