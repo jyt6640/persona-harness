@@ -2,10 +2,13 @@
 
 Status: current canonical program record.
 
-Last audited: 2026-08-28
-Audited source: `f677a635040ad55d8b7d25abab280c5703a153ea`
+Last reconciled: 2026-08-29
+Current protected main: `9b80a45070be10659150095cf701a6f375bc6600`
+Released package: [`persona-harness@0.8.33`](https://www.npmjs.com/package/persona-harness/v/0.8.33)
+Release lineage: [#414](https://github.com/jyt6640/persona-harness/issues/414) delivered through [#437](https://github.com/jyt6640/persona-harness/pull/437)
+Historical pre-integration audit source: `f677a635040ad55d8b7d25abab280c5703a153ea`
 Program issue: [#389](https://github.com/jyt6640/persona-harness/issues/389)
-Current bounded issue: [#403](https://github.com/jyt6640/persona-harness/issues/403)
+Remaining bounded work: [#410](https://github.com/jyt6640/persona-harness/issues/410), [#411](https://github.com/jyt6640/persona-harness/issues/411), [#412](https://github.com/jyt6640/persona-harness/issues/412), and [#421](https://github.com/jyt6640/persona-harness/issues/421)
 
 ## Purpose
 
@@ -22,10 +25,12 @@ The Context track may advise a coding host. It must not create workflow state,
 grant completion authority, execute project commands, contact GitHub, or turn
 local preferences into a product-efficacy claim.
 
-## Pre-change Baseline
+## Historical Pre-integration Baseline
 
-The audit used a clean worktree based on the exact source above. The original
-developer worktree was not modified.
+This audit predates #413 and is retained to explain the original gaps and their
+deterministic closure. It is not the current source or next-action authority.
+The audit used a clean worktree; the original developer worktree was not
+modified.
 
 | Command | Result | What the result means |
 | --- | --- | --- |
@@ -41,7 +46,10 @@ developer worktree was not modified.
 These labels distinguish a code failure from an environment prerequisite. An
 environment-blocked command must not be reported as a product failure or PASS.
 
-## Existing Product Boundaries
+## Historical Pre-integration Boundaries
+
+The following observations describe the source before #413. Current delivered
+behavior and remaining work are recorded below.
 
 ### CLI and public identity
 
@@ -98,7 +106,10 @@ environment-blocked command must not be reported as a product failure or PASS.
   4m03 on the measured run. This is existing verified work, not a new claim of
   this program.
 
-## P0 Problem Matrix
+## Historical P0 Problem Matrix
+
+This matrix captures the pre-#413 candidate state. It is retained as historical
+evidence rather than a description of current protected main.
 
 | Item | Classification | Audited state | Required P0 boundary |
 | --- | --- | --- | --- |
@@ -131,7 +142,10 @@ environment-blocked command must not be reported as a product failure or PASS.
 - No external value or adoption claim is made without independent users and
   repositories. Current product-value verdict: **INCONCLUSIVE**.
 
-## Bounded Delivery Order
+## Historical Delivery Order
+
+This was the delivery sequence before #413 and #414. The current gate order is
+recorded in the current audit below.
 
 1. **#390 P0 baseline and status:** this audit and canonical record.
 2. **Contributor test contract:** make default test names match what they
@@ -149,7 +163,12 @@ boundary is changed per child issue. A child issue closes only when its stated
 observable and fail-closed cases are proven. Technical completion does not
 promote the Context track to a product-value claim.
 
-## Local Candidate Progress
+## Historical Candidate Evidence
+
+The table below captures the frozen pre-#413 candidate. All #390 through #403
+are now observed closed after #413 merged; GitHub does not expose a direct
+PR-closing reference from each individual issue to #413, so this document does
+not assert direct closure causality.
 
 | Issue | State | Evidence |
 | --- | --- | --- |
@@ -172,10 +191,10 @@ The heavy `test:installed-package-contract` and full protected repository suite
 remain unchanged. The generic package smoke is version-neutral and does not
 replace release acceptance.
 
-## Candidate Verification And Residuals
+## Historical Candidate Verification And Residuals
 
-The current candidate was exercised in an isolated worktree before any PR or
-hosted action:
+The historical candidate was exercised in an isolated worktree before any PR
+or hosted action:
 
 - `npm test`, `npm run typecheck`, `npm run build`, `npm run check:docs`,
   `npm run check:scope:strict`, `npm run check:release-workflows`, and
@@ -193,6 +212,32 @@ hosted action:
   a hosted-only residual. Local composition and type tests do not establish
   that a host session received Context.
 
+## Current 0.8.33 Audit And Residuals
+
+The current audit used a clean detached worktree at
+`9b80a45070be10659150095cf701a6f375bc6600`; the original developer worktree
+was not modified.
+
+| Command | Result | What the result means |
+| --- | --- | --- |
+| `npm ci` | PASS | 209 packages installed. `npm audit` reported 7 findings; no automatic fix was applied. |
+| `npm test` | PASS | 8 unit files / 50 tests and 11 integration files / 64 tests passed. |
+| `npm run typecheck` | PASS | Current TypeScript source type-checks. |
+| `npm run build` | PASS | Current source builds successfully. |
+| `npm run test:package` | PASS | The generic package smoke passed. |
+| `npm pack --dry-run --json` | PASS | Current `0.8.33` package materialized with 1,631 entries. |
+| `npm run test:repository` | PASS | With the regular local GitHub CLI supplied through `PERSONA_HARNESS_OBSERVER_GH`, the chained scope, docs, release-workflow, Vitest, and authoritative package-contract checks completed successfully. |
+
+| Boundary | Current state | Residual |
+| --- | --- | --- |
+| P0 implementation | #413 merged at `a562331f9db321845b05da1e16edc4b83bf78ece`; #390 through #403 are observed closed after that merge. | No integration PR remains. |
+| Release lineage | #414 delivered as stable `v0.8.33` through #437 on current protected main. The immutable tag, GitHub Release, npm `latest`, canonical tar, and provenance bind to `9b80a45070be10659150095cf701a6f375bc6600`. | It does not prove live host delivery. |
+| Hosted Context delivery | The released package now satisfies #410's package/source prerequisite. | #410 still needs its own named Delivery Control start predicate and one bounded real OpenCode observation. |
+| Deterministic follow-ups | #421 owns Team Profile v2; #411 owns the three-arm comparison protocol; #412 owns the generic Context compatibility runner. | Each remains independently open and may not manufacture host or user-value evidence. |
+
+Product-value verdict remains **INCONCLUSIVE**. Local composition, package,
+release, and CI evidence do not establish host-session delivery or user benefit.
+
 ## Owner Dogfooding Follow-up
 
 The private, bounded owner dogfooding store now records the observed fixed
@@ -200,12 +245,13 @@ codes without conversation text, paths, or credentials. The remediation
 program is #405, with focused follow-ups for project-philosophy diagnostics
 (#406), deep-interview control (#407), workflow bootstrap/history diagnosis
 (#408), and shared-skill routing observability (#409). These issues do not
-expand this candidate or change its default-off Context boundary.
+expand the released Context delivery scope or change its default-off boundary.
 
 ## Next Action
 
-Open one protected integration PR for the frozen #390–#403 candidate after its
-final local package and documentation checks. After a successful merge, #410
-is the only route for a real OpenCode `experimental.chat.messages.transform`
-observation; #411 and #412 remain separate follow-up work. Do not infer host
-delivery from local composition tests or catalog registration.
+Do not reopen the completed #390–#403 integration or #414 release paths.
+Delivery Control must record #410's own named hosted start predicate before one
+real OpenCode `experimental.chat.messages.transform` observation can begin.
+#421, #411, and #412 remain independent follow-up boundaries. Do not infer
+host delivery or product value from local composition tests, catalog
+registration, release provenance, or historical evidence.
