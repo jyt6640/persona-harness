@@ -25,7 +25,7 @@
   "package": {
     "channel": "unpublished",
     "scope": "source-candidate",
-    "version": "0.8.36"
+    "version": "0.8.37"
   },
   "currentSourceCandidate": {
     "registryInstall": "requires-authorized-release-before-registry-install",

@@ -1,6 +1,6 @@
 {
   "name": "persona-harness",
-  "version": "0.8.36",
+  "version": "0.8.37",
   "private": false,
   "type": "module",
   "packageManager": "npm@10.8.2",
@@ -14,6 +14,7 @@
   },
   "exports": {
     ".": "./dist/index.js",
+    "./context-external-validation": "./dist/context-external-validation.js",
     "./effective-profile": "./dist/effective-profile.js",
     "./portable-skill": "./dist/portable-skill.js"
   },
@@ -62,6 +63,9 @@
     "docs/current/v0.3.0-alpha-publish-readiness.md",
     "docs/current/persona-harness-detailed-usage.md",
     "docs/current/context-program-status.md",
+    "docs/current/context-contributor-map.json",
+    "docs/current/context-external-validation.md",
+    "docs/current/context-external-validation-status.json",
     "docs/current/context-team-profile-v2.md",
     "docs/current/README.md",
     "docs/current/personalization-profile-v1.md",
@@ -340,10 +344,10 @@
     "observe:test-contract": "node scripts/observe-test-contract.mjs",
     "measure:entry-steering": "npm run build && node experiments/entry-intent-corpus/measure.mjs",
     "report:rules": "npm run build && node scripts/report-rule-diagnostics.mjs",
-    "benchmark:context": "npm run build && node scripts/eval/run-context-comparison.mjs --manifest docs/current/context-comparison-manifest.json",
+    "benchmark:context": "npm run build && node scripts/eval/run-context-comparison.mjs --manifest docs/current/context-comparison-manifest.json --current-checkout",
     "test": "node scripts/run-default-test.mjs",
     "test:fast": "npm run test:unit && npm run test:integration",
-    "test:unit": "vitest run --testTimeout=15000 tests/npm-test-contract.test.ts tests/context-compatibility-manifest.test.ts tests/context-config.test.ts tests/context-comparison.test.ts tests/context-comparison-runner.test.ts tests/context-core-import-boundary.test.ts tests/context-envelope-builder.test.ts tests/effective-context-v2.test.ts tests/effective-profile-resolution.test.ts tests/phase0-harness-config.test.ts tests/opencode-skill-adapter.test.ts",
+    "test:unit": "vitest run --testTimeout=15000 tests/npm-test-contract.test.ts tests/context-compatibility-manifest.test.ts tests/context-config.test.ts tests/context-comparison.test.ts tests/context-comparison-runner.test.ts tests/context-contributor-route.test.ts tests/context-core-import-boundary.test.ts tests/context-envelope-builder.test.ts tests/context-external-validation.test.ts tests/context-program-status.test.ts tests/context-readme-boundary.test.ts tests/effective-context-v2.test.ts tests/effective-profile-resolution.test.ts tests/phase0-harness-config.test.ts tests/opencode-skill-adapter.test.ts",
     "test:integration": "vitest run --testTimeout=15000 tests/context-command-routing.test.ts tests/context-doctor.test.ts tests/context-init.test.ts tests/context-preview.test.ts tests/context-explain.test.ts tests/context-status.test.ts tests/opencode-context-delivery.test.ts tests/personalization-profile-store.test.ts tests/team-profile-store.test.ts tests/team-profile-v2-store.test.ts tests/phase0-runtime-context-delivery.test.ts tests/personalization-profile-package-contract.test.ts",
     "test:smoke": "npm run build && node dist/cli/index.js --help",
     "test:full": "npm run test:repository",

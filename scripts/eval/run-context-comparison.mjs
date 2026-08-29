@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 
 export function parseContextComparisonArguments(argv) {
-  const options = { candidate: { commit: "", packageVersion: "" }, manifestPath: "" }
+  const options = { candidate: { commit: "", packageVersion: "" }, currentCheckout: false, manifestPath: "" }
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]
     const next = () => {
@@ -16,15 +16,28 @@ export function parseContextComparisonArguments(argv) {
       if (index >= argv.length) throw new Error("context-comparison-arguments-invalid")
       return argv[index]
     }
-    if (argument === "--manifest") options.manifestPath = next()
-    else if (argument === "--candidate-commit") options.candidate.commit = next()
-    else if (argument === "--package-version") options.candidate.packageVersion = next()
-    else throw new Error("context-comparison-arguments-invalid")
+    if (argument === "--manifest") {
+      if (options.manifestPath) throw new Error("context-comparison-arguments-invalid")
+      options.manifestPath = next()
+    } else if (argument === "--candidate-commit") {
+      if (options.currentCheckout || options.candidate.commit) throw new Error("context-comparison-arguments-invalid")
+      options.candidate.commit = next()
+    } else if (argument === "--package-version") {
+      if (options.currentCheckout || options.candidate.packageVersion) throw new Error("context-comparison-arguments-invalid")
+      options.candidate.packageVersion = next()
+    } else if (argument === "--current-checkout") {
+      if (options.currentCheckout || options.candidate.commit || options.candidate.packageVersion) {
+        throw new Error("context-comparison-arguments-invalid")
+      }
+      options.currentCheckout = true
+    } else throw new Error("context-comparison-arguments-invalid")
   }
-  if (!options.manifestPath || !options.candidate.commit || !options.candidate.packageVersion) {
-    throw new Error("context-comparison-arguments-invalid")
+  if (!options.manifestPath) throw new Error("context-comparison-arguments-invalid")
+  if (options.currentCheckout) {
+    return { candidateSource: "current-checkout", manifestPath: options.manifestPath }
   }
-  return options
+  if (!options.candidate.commit || !options.candidate.packageVersion) throw new Error("context-comparison-arguments-invalid")
+  return { candidate: options.candidate, candidateSource: "explicit", manifestPath: options.manifestPath }
 }
 
 export function assertContextComparisonCandidate(candidate, checkoutCandidate) {
@@ -37,11 +50,11 @@ export function assertContextComparisonCandidate(candidate, checkoutCandidate) {
 }
 
 function usage() {
-  return `Usage: node scripts/eval/run-context-comparison.mjs --manifest <path> --candidate-commit <sha> --package-version <version>
+  return `Usage: node scripts/eval/run-context-comparison.mjs --manifest <path> (--current-checkout | --candidate-commit <sha> --package-version <version>)
 
 Evaluates the versioned Context OFF, legacy broad compatibility, and targeted layered corpus.
 
-This command binds explicit candidate metadata to the local Git/package identity. It does
+This command binds an explicitly selected candidate source to a clean local Git/package identity. It does
 not invoke a model, host adapter, network, or workflow; execution measurements remain null
 and product verdicts remain INCONCLUSIVE.`
 }
@@ -53,12 +66,18 @@ async function main() {
     return
   }
   const options = parseContextComparisonArguments(argv)
-  assertContextComparisonCandidate(options.candidate, readCheckoutCandidate())
+  const checkoutCandidate = readCheckoutCandidate()
+  const candidate = options.candidateSource === "current-checkout"
+    ? checkoutCandidate
+    : options.candidate
+  if (options.candidateSource === "explicit") {
+    assertContextComparisonCandidate(candidate, checkoutCandidate)
+  }
   const manifest = readManifest(options.manifestPath)
   const evaluatorPath = resolve(packageRoot, "dist", "context-comparison", "index.js")
   if (!isRegularFile(evaluatorPath)) throw new Error("context-comparison-runtime-unavailable")
   const { evaluateContextComparison } = await import(pathToFileURL(evaluatorPath).href)
-  const result = evaluateContextComparison(manifest, options.candidate)
+  const result = evaluateContextComparison(manifest, candidate)
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
   process.exitCode = result.status === "ready" && result.records.every((record) => record.technicalVerdict === "TECHNICAL_PASS") ? 0 : 1
 }
@@ -86,6 +105,18 @@ function readCheckoutCandidate() {
     throw new Error("context-comparison-candidate-unavailable")
   }
   try {
+    const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+      cwd: packageRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim()
+    if (resolve(gitRoot) !== packageRoot) throw new Error("package root differs from Git root")
+    const status = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], {
+      cwd: packageRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+    if (status) throw new Error("dirty checkout")
     const commit = execFileSync("git", ["rev-parse", "HEAD"], {
       cwd: packageRoot,
       encoding: "utf8",

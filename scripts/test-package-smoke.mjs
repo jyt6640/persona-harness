@@ -88,7 +88,7 @@ try {
     [
       "--input-type=module",
       "-e",
-      "await import('persona-harness'); await import('persona-harness/effective-profile'); await import('persona-harness/portable-skill')",
+      "await import('persona-harness'); const externalValidation=await import('persona-harness/context-external-validation'); const result=externalValidation.evaluateContextExternalValidationStatus(externalValidation.CONTEXT_EXTERNAL_VALIDATION_INITIAL_STATUS); if(result.status!=='ready'||result.productVerdict!=='INCONCLUSIVE')process.exit(1); await import('persona-harness/effective-profile'); await import('persona-harness/portable-skill')",
     ],
     consumerRoot,
     "installed-package-exports",
@@ -161,7 +161,14 @@ function assertPackedFiles(files) {
     if (!isRecord(entry) || typeof entry.path !== "string") throw new PackageSmokeError("package-file-list")
     paths.add(entry.path)
   }
-  for (const required of ["dist/cli/index.js", "dist/index.js", "package.json"]) {
+  for (const required of [
+    "dist/cli/index.js",
+    "dist/context-external-validation.js",
+    "dist/index.js",
+    "docs/current/context-external-validation-status.json",
+    "docs/current/context-external-validation.md",
+    "package.json",
+  ]) {
     if (!paths.has(required)) throw new PackageSmokeError("package-file-list")
   }
 }

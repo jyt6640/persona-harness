@@ -114,6 +114,68 @@ npm run check:injection-value
 npm run check:scope
 ```
 
+## Context contribution route
+
+Context Personalization is a separate, explicit-opt-in product track. It is not
+Workflow Integrity, completion authority, a release path, or an external-host
+claim. The machine-checked source and script bindings for this section live in
+the [Context contributor map](docs/current/context-contributor-map.json).
+
+| Area | Current ownership | Contribution boundary |
+| --- | --- | --- |
+| Context Core | `src/context-core/` | Pure rule resolution and host-neutral envelopes. It must not gain host, workflow, authority, network, or process dependencies. |
+| Context Profile | `src/context-profile/` | Safe project-shareable Team Profile input. Do not read or rewrite the personal store from this boundary. |
+| Context CLI | `src/cli/context-command.ts` and adjacent `context-*.ts` files | Explicit local commands: init, status, preview, explain, and doctor. They must not create Workflow or authority state. |
+| OpenCode delivery | `src/context-delivery/opencode-context-hooks.ts` | The only implemented Context delivery adapter. Preserve explicit opt-in, bounded session state, and duplicate suppression. |
+| External-validation schema | `src/context-external-validation/` | Pure preregistration/result parsing. It validates supplied data only; it must not initiate an observation or record participant data. |
+| Workflow Integrity | `src/cli/workflow-command.ts` and `src/cli/authority-command.ts` | Separate ownership. A Context contribution must not widen Finish, evidence, enrollment, or authority behavior. |
+
+After dependencies are installed with `npm ci`, the fast contributor route is:
+
+```bash
+npm test
+npm run typecheck
+npm run check:docs
+```
+
+Those source-checkout commands require no GitHub authority credential, live
+OpenCode host, or release workflow. They prove only their local contracts; they
+do not establish package provenance, real host delivery, independent user
+value, or a product verdict.
+
+Keep these separate:
+
+- `npm run test:package` validates a fresh local tarball and installed package.
+- `npm run test:repository` is the broader repository contract. When its
+  selected observer path is unavailable, it reports
+  `clean-package-observer-gh-required` as `ENVIRONMENT_BLOCKED`, not as a
+  source failure.
+- [#414](https://github.com/jyt6640/persona-harness/issues/414) is the
+  historical P0 implementation release lineage; [#412](https://github.com/jyt6640/persona-harness/issues/412)
+  is the generic compatibility release lineage.
+- [#410](https://github.com/jyt6640/persona-harness/issues/410) owns the one
+  real OpenCode observation and starts only after its named Delivery Control
+  predicate. It is not a routine contributor check.
+
+For current program state and claim boundaries, read the
+[Context Personalization Program Status](docs/current/context-program-status.md).
+
+## Context operational routes
+
+These routes are deliberately separate from a normal Context contribution:
+
+- **Security vulnerability:** do not open a public issue. Use the private route
+  in [SECURITY.md](SECURITY.md#reporting-a-vulnerability).
+- **General Context change:** use the credential-free local checks in the
+  Context contribution route above. They do not authorize a release, host
+  observation, authority action, completion claim, or product-value claim.
+- **Release or recovery work:** these are owner-only operations. Start from the
+  [Release Operations entrypoint](docs/current/release/README.md); reading it
+  does not authorize a tag, release, publish, recovery, or retry.
+- **Blocked bootstrap workspace intake:** use `npx ph doctor` for read-only
+  diagnostics before any retry or repair decision. It does not repair the
+  workspace or make a bootstrap outcome valid.
+
 ## Pull request expectations
 
 - Keep it narrow. One behavior per PR.

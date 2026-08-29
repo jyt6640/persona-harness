@@ -143,11 +143,23 @@ function parseInput(args) {
     remaining.shift()
   }
   if (remaining[0] === "--observer-gh") {
-    if (typeof remaining[1] !== "string" || !remaining[1].startsWith("/") || remaining[1].includes("\0")) {
+    const candidate = remaining[1]
+    if (candidate === undefined || candidate === "") {
+      throw new CleanPackageBoundaryError("clean-package-observer-gh-required")
+    }
+    if (
+      typeof candidate !== "string"
+      || !isAbsolute(candidate)
+      || candidate.includes("\0")
+      || candidate.length > 4096
+    ) {
       throw new CleanPackageBoundaryError("clean-package-arguments")
     }
-    observerGh = remaining[1]
+    observerGh = candidate
     remaining.splice(0, 2)
+  }
+  if (exerciseContract && observerGh === undefined) {
+    throw new CleanPackageBoundaryError("clean-package-observer-gh-required")
   }
   if (remaining.length === 0) return { exerciseContract, gitBoundaryOnly, mode: "source", observerGh }
   if (gitBoundaryOnly) throw new CleanPackageBoundaryError("clean-package-arguments")

@@ -23,6 +23,8 @@ history but do not become a current product or release claim.
 | Use the portable shared-skill or product-discovery guidance | [Persona Shared Skills Core](persona-shared-skills-core.md) |
 | Maintain a local personalization profile | [Personalization Profile V1](personalization-profile-v1.md) |
 | Follow the Context Personalization program | [Context Personalization Program Status](context-program-status.md) |
+| Contribute to Context Personalization safely | [Context contributor map](context-contributor-map.json) |
+| Prepare or audit Context external validation | [Context External Validation Protocol](context-external-validation.md) |
 | Define safe project-shareable team conventions | [Team Profile V2](context-team-profile-v2.md) |
 | Understand claims and measurement limits | [Measurement scorecard](measurement-scorecard.md) |
 | Review Finish or external authority boundaries | [Consumer Authority V1 decision](consumer-authority-v1-decision.md); the repository-only external-attested walkthrough supplies the full procedure |

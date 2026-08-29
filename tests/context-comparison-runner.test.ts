@@ -11,11 +11,11 @@ const SYNTHETIC_CANDIDATE = {
 } as const
 
 describe("Context comparison runner", () => {
-  it("requires explicit candidate metadata instead of inferring a Git revision", () => {
+  it("requires an explicit candidate source instead of inferring a Git revision", () => {
     expect(() => parseContextComparisonArguments(["--manifest", "fixtures.json"])).toThrow("context-comparison-arguments-invalid")
   })
 
-  it("parses the version-neutral manifest runner arguments", () => {
+  it("parses the version-neutral explicit candidate arguments", () => {
     expect(parseContextComparisonArguments([
       "--manifest",
       "docs/current/context-comparison-manifest.json",
@@ -25,8 +25,32 @@ describe("Context comparison runner", () => {
       SYNTHETIC_CANDIDATE.packageVersion,
     ])).toEqual({
       candidate: SYNTHETIC_CANDIDATE,
+      candidateSource: "explicit",
       manifestPath: "docs/current/context-comparison-manifest.json",
     })
+  })
+
+  it("parses an explicitly requested current-checkout candidate source", () => {
+    expect(parseContextComparisonArguments([
+      "--manifest",
+      "docs/current/context-comparison-manifest.json",
+      "--current-checkout",
+    ])).toEqual({
+      candidateSource: "current-checkout",
+      manifestPath: "docs/current/context-comparison-manifest.json",
+    })
+  })
+
+  it("rejects mixed explicit and current-checkout candidate sources", () => {
+    expect(() => parseContextComparisonArguments([
+      "--manifest",
+      "docs/current/context-comparison-manifest.json",
+      "--current-checkout",
+      "--candidate-commit",
+      SYNTHETIC_CANDIDATE.commit,
+      "--package-version",
+      SYNTHETIC_CANDIDATE.packageVersion,
+    ])).toThrow("context-comparison-arguments-invalid")
   })
 
   it("rejects explicit metadata that does not bind the checked-out candidate", () => {
@@ -44,7 +68,8 @@ describe("Context comparison runner", () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Usage: node scripts/eval/run-context-comparison.mjs")
-    expect(result.stdout).toContain("binds explicit candidate metadata to the local Git/package identity")
+    expect(result.stdout).toContain("--current-checkout")
+    expect(result.stdout).toContain("binds an explicitly selected candidate source to a clean local Git/package identity")
     expect(result.stdout).toContain("not invoke a model, host adapter, network, or workflow")
   })
 
