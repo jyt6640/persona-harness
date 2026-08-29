@@ -3,6 +3,7 @@ import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
+import { readCurrentAcceptanceManifest } from "../scripts/consumer-authority-current-acceptance-schema.mjs"
 import { renderReleaseBody } from "../scripts/generate-github-release-notes.mjs"
 
 const repositoryRoot = process.cwd()
@@ -13,7 +14,9 @@ function readRepositoryFile(path: string) {
 
 describe("public release truth", () => {
   it("keeps live release lookup out of package-visible current documents", () => {
-    const releaseNotes = readRepositoryFile("docs/current/release/v0.8.32-release-notes.md")
+    const packageJson = JSON.parse(readRepositoryFile("package.json")) as { readonly version: string }
+    const releaseNotes = readRepositoryFile(`docs/current/release/v${packageJson.version}-release-notes.md`)
+    const acceptance = readCurrentAcceptanceManifest(repositoryRoot)
     const releaseOperations = readRepositoryFile("docs/current/release/README.md")
     const releaseHistory = readRepositoryFile("docs/current/release/history.md")
     const changelog = readRepositoryFile("CHANGELOG.md")
@@ -29,8 +32,8 @@ describe("public release truth", () => {
     expect(releaseOperations).not.toMatch(/\| npm `latest` \| `\d/)
     expect(releaseHistory).not.toMatch(/\| npm `latest` \| `\d/)
     expect(packageIndex.split("## Reading Rules", 1)[0]).not.toMatch(/npm `latest`: `\d/)
-    expect(changelog).toMatch(/^## \[0\.8\.31\] - 2026-08-25$/m)
-    expect(packageIndex).toContain("| `0.8.31` | 2026-08-25 | published stable release")
+    expect(changelog).toContain(`## [${acceptance.previousPublishedRelease.version}] - `)
+    expect(packageIndex).toContain(`| \`${acceptance.previousPublishedRelease.version}\` |`)
     expect(releaseDocs).toContain("live lookup links")
   })
 

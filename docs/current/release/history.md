@@ -11,10 +11,12 @@ version/package chronology, use
 
 ## Current Source Authority And Live Release Lookup
 
-The current source package authority is 0.8.32. Its root package, lockfile,
-private shared-skills package, and v0832 acceptance record must agree exactly.
-Published 0.8.31 is immutable historical evidence and cannot authorize a later
-package, tag, release, or npm publication.
+The current source package authority is read from
+[`consumer-authority-current-acceptance.json`](consumer-authority-current-acceptance.json).
+Its root package, lockfile, private shared-skills package, and current
+acceptance record must agree exactly. The record names the immediately previous
+published release as immutable historical evidence; that release cannot
+authorize a later package, tag, release, or npm publication.
 
 For the current live npm dist-tags, read
 [the npm version page](https://www.npmjs.com/package/persona-harness?activeTab=versions).
