@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest"
 const repositoryRoot = process.cwd()
 
 describe("current package authority", () => {
-  it("binds the root, lockfile, and private shared package to 0.8.32", () => {
+  it("binds the root, lockfile, and private shared package to one current version", () => {
     const packageJson = JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8")) as {
       readonly version: string
     }
@@ -18,19 +18,18 @@ describe("current package authority", () => {
       readonly version: string
     }
 
-    expect(packageJson.version).toBe("0.8.32")
-    expect(packageLock.version).toBe("0.8.32")
-    expect(packageLock.packages[""]?.version).toBe("0.8.32")
-    expect(sharedPackage.version).toBe("0.8.32")
+    expect(packageLock.version).toBe(packageJson.version)
+    expect(packageLock.packages[""]?.version).toBe(packageJson.version)
+    expect(sharedPackage.version).toBe(packageJson.version)
   })
 
-  it("ships a distinct current acceptance record while retaining historical records", () => {
+  it("ships a generic current acceptance record while retaining historical records", () => {
     const packageJson = JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8")) as {
       readonly files: readonly string[]
     }
-    const currentSchema = "scripts/consumer-authority-v0832-acceptance-schema.mjs"
-    const currentTypes = "scripts/consumer-authority-v0832-acceptance-schema.d.mts"
-    const currentRecord = "docs/current/release/consumer-authority-v0832-acceptance.json"
+    const currentSchema = "scripts/consumer-authority-current-acceptance-schema.mjs"
+    const currentTypes = "scripts/consumer-authority-current-acceptance-schema.d.mts"
+    const currentRecord = "docs/current/release/consumer-authority-current-acceptance.json"
 
     expect(existsSync(join(repositoryRoot, currentSchema))).toBe(true)
     expect(existsSync(join(repositoryRoot, currentTypes))).toBe(true)

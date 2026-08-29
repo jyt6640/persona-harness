@@ -7,7 +7,6 @@ import {
   V0832AcceptanceManifestError,
   canonicalV0832AcceptanceManifest,
   parseV0832AcceptanceManifest,
-  readV0832AcceptanceManifest,
 } from "../scripts/consumer-authority-v0832-acceptance-schema.mjs"
 import { parseV0831AcceptanceManifest } from "../scripts/consumer-authority-v0831-acceptance-schema.mjs"
 import { PACKAGE_EXERCISE_PHASES } from "../scripts/clean-package-exercise-phase.mjs"
@@ -15,8 +14,8 @@ import { PACKAGE_EXERCISE_PHASES } from "../scripts/clean-package-exercise-phase
 const repositoryRoot = process.cwd()
 
 describe("consumer authority 0.8.32 acceptance schema", () => {
-  it("binds the current package to the legacy auto-update recovery boundary", () => {
-    const manifest = readV0832AcceptanceManifest(repositoryRoot)
+  it("retains the legacy auto-update recovery boundary as historical data", () => {
+    const manifest = parseV0832AcceptanceManifest(canonicalV0832AcceptanceManifest(), "0.8.32")
 
     expect(manifest.package).toMatchObject({ channel: "unpublished", scope: "source-candidate", version: "0.8.32" })
     expect(manifest.v0831HistoricalRelease).toMatchObject({ reusableForV0832: false, version: "0.8.31" })
@@ -43,14 +42,14 @@ describe("consumer authority 0.8.32 acceptance schema", () => {
     expect(() => parseV0831AcceptanceManifest(canonicalV0832AcceptanceManifest(), "0.8.32")).toThrow()
   })
 
-  it("routes current external preflights through v0832 and keeps v0831 historical", () => {
+  it("keeps the v0832 reader historical while current external preflights use the generic reader", () => {
     for (const script of [
       "preflight-consumer-authority-external-attestation.mjs",
       "preflight-consumer-authority-external-artifact-transport.mjs",
     ]) {
       const source = readFileSync(join(repositoryRoot, "scripts", script), "utf8")
-      expect(source).toContain('from "./consumer-authority-v0832-acceptance-schema.mjs"')
-      expect(source).toContain("readV0832AcceptanceManifest(packageRoot)")
+      expect(source).toContain('from "./consumer-authority-current-acceptance-schema.mjs"')
+      expect(source).toContain("readCurrentAcceptanceManifest(packageRoot)")
       expect(source).not.toContain('from "./consumer-authority-v0831-acceptance-schema.mjs"')
       expect(source).not.toContain("readV0831AcceptanceManifest(packageRoot)")
     }

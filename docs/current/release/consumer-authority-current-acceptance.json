@@ -1,0 +1,40 @@
+{
+  "acceptanceResponsibilities": {
+    "package": {
+      "excludes": [
+        "attestation-parser",
+        "observer-gh-selector"
+      ],
+      "requires": [
+        "exact-tar-provenance",
+        "normal-install",
+        "installed-only-no-source-fallback",
+        "cli-and-approval-before-mutation",
+        "post-model-assistant-response-and-pre-approval-trace"
+      ]
+    },
+    "sourceAndProtectedUbuntuCi": {
+      "requires": [
+        "workflow-owned-dpkg-observer-gh-selection",
+        "private-regular-nonsymlink-observer-gh-copy",
+        "path-free-attestation-parser-preflight"
+      ]
+    }
+  },
+  "schemaVersion": "consumer-authority-current-acceptance.1",
+  "package": {
+    "channel": "unpublished",
+    "scope": "source-candidate",
+    "version": "0.8.33"
+  },
+  "currentSourceCandidate": {
+    "registryInstall": "requires-authorized-release-before-registry-install",
+    "hostedRevision": "current-source-candidate-head-before-authorized-release",
+    "hostedResidualId": "current-package-acceptance-and-authorized-current-artifact-observation"
+  },
+  "previousPublishedRelease": {
+    "outcome": "published-release-is-immutable-and-not-reusable-for-this-current-source-candidate-or-any-later-package",
+    "reusableForCurrent": false,
+    "version": "0.8.31"
+  }
+}

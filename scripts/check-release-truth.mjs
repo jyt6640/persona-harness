@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
 
+import { readCurrentAcceptanceManifest } from "./consumer-authority-current-acceptance-schema.mjs"
 import { renderReleaseBody } from "./generate-github-release-notes.mjs"
 
 async function main() {
@@ -13,7 +14,7 @@ async function main() {
 
   const releaseNotesPath = `docs/current/release/v${version}-release-notes.md`
   const releaseNotes = await readText(projectRoot, releaseNotesPath)
-  const acceptance = await readJson(projectRoot, `docs/current/release/consumer-authority-v${version.replaceAll(".", "")}-acceptance.json`)
+  const acceptance = readCurrentAcceptanceManifest(projectRoot)
   const previous = readHistoricalRelease(acceptance, version)
 
   const body = renderReleaseBody({
@@ -64,18 +65,15 @@ function isRecord(value) {
 
 function readHistoricalRelease(acceptance, version) {
   const current = parseVersion(version)
-  const records = Object.entries(acceptance)
-    .filter(([key, value]) => /^v\d+HistoricalRelease$/.test(key) && isRecord(value))
-    .map(([, value]) => ({
-      value,
-      version: typeof value.version === "string" ? parseVersion(value.version) : null,
-    }))
-    .filter((record) => record.version !== null && compareVersions(record.version, current) < 0)
-    .sort((left, right) => compareVersions(right.version, left.version))
-  if (records.length === 0 || records[0].version === null) {
+  const previous = acceptance.previousPublishedRelease
+  if (!isRecord(previous) || typeof previous.version !== "string") {
     throw new Error("release-truth-historical-authority")
   }
-  return records[0].value
+  const previousVersion = parseVersion(previous.version)
+  if (compareVersions(previousVersion, current) >= 0) {
+    throw new Error("release-truth-historical-authority")
+  }
+  return previous
 }
 
 function parseVersion(value) {
