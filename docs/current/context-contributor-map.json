@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "persona-context-contributor-map.1",
+  "schemaVersion": "persona-context-contributor-map.2",
   "localChecks": [
     {
       "script": "test",
@@ -12,6 +12,30 @@
     {
       "script": "check:docs",
       "command": "npm run check:docs"
+    }
+  ],
+  "operationalRoutes": [
+    {
+      "id": "private-security-report",
+      "marker": "## Reporting a vulnerability",
+      "path": "SECURITY.md"
+    },
+    {
+      "id": "context-local-verification",
+      "marker": "## Context contribution route",
+      "path": "CONTRIBUTING.md",
+      "script": "test"
+    },
+    {
+      "id": "owner-release-operations",
+      "marker": "# Release Operations",
+      "path": "docs/current/release/README.md"
+    },
+    {
+      "command": "npx ph doctor",
+      "id": "bootstrap-intake-diagnosis",
+      "marker": "if (command === \"doctor\")",
+      "path": "src/cli/index.ts"
     }
   ],
   "ownership": [

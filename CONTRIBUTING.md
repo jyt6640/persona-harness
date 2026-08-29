@@ -158,6 +158,22 @@ Keep these separate:
 For current program state and claim boundaries, read the
 [Context Personalization Program Status](docs/current/context-program-status.md).
 
+## Context operational routes
+
+These routes are deliberately separate from a normal Context contribution:
+
+- **Security vulnerability:** do not open a public issue. Use the private route
+  in [SECURITY.md](SECURITY.md#reporting-a-vulnerability).
+- **General Context change:** use the credential-free local checks in the
+  Context contribution route above. They do not authorize a release, host
+  observation, authority action, completion claim, or product-value claim.
+- **Release or recovery work:** these are owner-only operations. Start from the
+  [Release Operations entrypoint](docs/current/release/README.md); reading it
+  does not authorize a tag, release, publish, recovery, or retry.
+- **Blocked bootstrap workspace intake:** use `npx ph doctor` for read-only
+  diagnostics before any retry or repair decision. It does not repair the
+  workspace or make a bootstrap outcome valid.
+
 ## Pull request expectations
 
 - Keep it narrow. One behavior per PR.

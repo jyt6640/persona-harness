@@ -11,6 +11,7 @@ describe("Context program status", () => {
 
     expect(m13).toContain("#412")
     expect(m13).toContain("#430")
+    expect(m13).toContain("#435")
     expect(m13).toContain("local candidate")
 
     expect(m14).toContain("#433")

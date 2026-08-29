@@ -28,14 +28,40 @@ const REQUIRED_SEPARATE_BOUNDARIES = [
   { id: "host-observation", reference: "#410" },
 ] as const
 
+const REQUIRED_OPERATIONAL_ROUTES = [
+  {
+    id: "private-security-report",
+    marker: "## Reporting a vulnerability",
+    path: "SECURITY.md",
+  },
+  {
+    id: "context-local-verification",
+    marker: "## Context contribution route",
+    path: "CONTRIBUTING.md",
+    script: "test",
+  },
+  {
+    id: "owner-release-operations",
+    marker: "# Release Operations",
+    path: "docs/current/release/README.md",
+  },
+  {
+    command: "npx ph doctor",
+    id: "bootstrap-intake-diagnosis",
+    marker: 'if (command === "doctor")',
+    path: "src/cli/index.ts",
+  },
+] as const
+
 describe("Context contributor route", () => {
   it("binds contributor ownership and local checks to current source and scripts", () => {
     const map = readContributorMap()
     const scripts = readPackageScripts()
     const contributing = readFileSync(resolve(repositoryRoot, "CONTRIBUTING.md"), "utf8")
 
-    expect(map.schemaVersion).toBe("persona-context-contributor-map.1")
+    expect(map.schemaVersion).toBe("persona-context-contributor-map.2")
     expect(contributing).toContain("docs/current/context-contributor-map.json")
+    expect(contributing).toContain("## Context operational routes")
 
     for (const required of REQUIRED_OWNERSHIP) {
       const ownership = map.ownership.find((entry) => entry.id === required.id)
@@ -56,12 +82,22 @@ describe("Context contributor route", () => {
         expect(scripts[required.reference]).toBeDefined()
       }
     }
+
+    for (const required of REQUIRED_OPERATIONAL_ROUTES) {
+      expect(map.operationalRoutes.find((entry) => entry.id === required.id)).toEqual(required)
+      expect(existsSync(resolve(repositoryRoot, required.path))).toBe(true)
+      expect(readFileSync(resolve(repositoryRoot, required.path), "utf8")).toContain(required.marker)
+      if ("script" in required) {
+        expect(scripts[required.script]).toBeDefined()
+      }
+    }
   })
 })
 
 type ContributorMap = {
   readonly localChecks: readonly ScriptCheck[]
   readonly ownership: readonly Ownership[]
+  readonly operationalRoutes: readonly OperationalRoute[]
   readonly schemaVersion: string
   readonly separateBoundaries: readonly Boundary[]
 }
@@ -74,6 +110,14 @@ type ScriptCheck = {
 type Ownership = {
   readonly id: string
   readonly paths: readonly string[]
+}
+
+type OperationalRoute = {
+  readonly command?: string
+  readonly id: string
+  readonly marker: string
+  readonly path: string
+  readonly script?: string
 }
 
 type Boundary = {
@@ -90,9 +134,34 @@ function readContributorMap(): ContributorMap {
   return {
     localChecks: readScriptChecks(value.localChecks),
     ownership: readOwnership(value.ownership),
+    operationalRoutes: readOperationalRoutes(value.operationalRoutes),
     schemaVersion: value.schemaVersion,
     separateBoundaries: readBoundaries(value.separateBoundaries),
   }
+}
+
+function readOperationalRoutes(value: unknown): readonly OperationalRoute[] {
+  if (!Array.isArray(value)) {
+    throw new TypeError("context contributor operational routes are unavailable")
+  }
+  return value.map((entry) => {
+    if (!isRecord(entry) || typeof entry.id !== "string" || typeof entry.marker !== "string" || typeof entry.path !== "string") {
+      throw new TypeError("context contributor operational route is invalid")
+    }
+    if (entry.command !== undefined && typeof entry.command !== "string") {
+      throw new TypeError("context contributor operational route command is invalid")
+    }
+    if (entry.script !== undefined && typeof entry.script !== "string") {
+      throw new TypeError("context contributor operational route script is invalid")
+    }
+    return {
+      ...(typeof entry.command === "string" ? { command: entry.command } : {}),
+      id: entry.id,
+      marker: entry.marker,
+      path: entry.path,
+      ...(typeof entry.script === "string" ? { script: entry.script } : {}),
+    }
+  })
 }
 
 function readPackageScripts(): Readonly<Record<string, string>> {
