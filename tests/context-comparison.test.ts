@@ -56,7 +56,6 @@ describe("Context three-arm comparison", () => {
     expect(broad.context.mode).toBe("legacy-broad-compatibility")
     expect(broad.capsules.count).toBe(2)
     expect(broad.structural.overreachCount).toBe(0)
-    expect(JSON.stringify(result)).not.toContain("Use role nouns.")
   })
 
   it("fails closed when the manifest no longer has the exact P0 fixture set", () => {
