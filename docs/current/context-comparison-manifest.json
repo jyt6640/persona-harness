@@ -1,0 +1,533 @@
+{
+  "schemaVersion": "persona-context-comparison-manifest.1",
+  "fixtureSet": "p0-context-three-arm",
+  "fixtures": [
+    {
+      "id": "personal-vs-team",
+      "claimScope": "context-resolution",
+      "task": "Apply naming guidance to a Java service change.",
+      "target": {
+        "path": "src/main/java/community/UserService.java",
+        "fileRole": "service",
+        "language": "java"
+      },
+      "deliveryAttempts": 1,
+      "context": {
+        "productInvariants": [],
+        "taskDecisions": [],
+        "projectContracts": [],
+        "teamContracts": [
+          {
+            "id": "team-naming",
+            "topic": "naming",
+            "rule": "Use role nouns.",
+            "scope": { "kind": "team", "key": "platform" },
+            "status": "active"
+          }
+        ],
+        "personalRules": [
+          {
+            "id": "personal-naming",
+            "topic": "naming",
+            "rule": "Prefer concise names.",
+            "status": "active"
+          }
+        ],
+        "languageDefaults": [],
+        "commonDefaults": [],
+        "relevance": {
+          "topics": ["naming"],
+          "fileRole": "service",
+          "language": "java",
+          "skillIds": [],
+          "teamKey": "platform"
+        }
+      },
+      "expectation": {
+        "resolutionStatus": "resolved",
+        "envelopeStatus": "resolved",
+        "selected": [{ "id": "team-naming", "layer": "team" }],
+        "shadowed": [{ "id": "personal-naming", "layer": "personal" }],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "team-vs-project",
+      "claimScope": "context-resolution",
+      "task": "Choose the architecture rule for a project controller.",
+      "target": {
+        "path": "src/main/java/community/BoardController.java",
+        "fileRole": "controller",
+        "language": "java"
+      },
+      "deliveryAttempts": 1,
+      "context": {
+        "productInvariants": [],
+        "taskDecisions": [],
+        "projectContracts": [
+          {
+            "id": "project-architecture",
+            "topic": "architecture",
+            "rule": "Keep controller orchestration thin.",
+            "scope": { "kind": "project", "key": "community" },
+            "status": "active"
+          }
+        ],
+        "teamContracts": [
+          {
+            "id": "team-architecture",
+            "topic": "architecture",
+            "rule": "Prefer service boundaries.",
+            "scope": { "kind": "team", "key": "platform" },
+            "status": "active"
+          }
+        ],
+        "personalRules": [],
+        "languageDefaults": [],
+        "commonDefaults": [],
+        "relevance": {
+          "topics": ["architecture"],
+          "fileRole": "controller",
+          "language": "java",
+          "skillIds": [],
+          "projectKey": "community",
+          "teamKey": "platform"
+        }
+      },
+      "expectation": {
+        "resolutionStatus": "resolved",
+        "envelopeStatus": "resolved",
+        "selected": [{ "id": "project-architecture", "layer": "project" }],
+        "shadowed": [{ "id": "team-architecture", "layer": "team" }],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "project-vs-task",
+      "claimScope": "context-resolution",
+      "task": "Apply the task-specific OAuth callback decision.",
+      "target": {
+        "path": "src/main/java/community/OAuthCallbackService.java",
+        "fileRole": "service",
+        "language": "java"
+      },
+      "deliveryAttempts": 1,
+      "context": {
+        "productInvariants": [],
+        "taskDecisions": [
+          {
+            "id": "task-callback-flow",
+            "topic": "callback-flow",
+            "rule": "Let Spring Security own the callback flow.",
+            "scope": { "kind": "task", "key": "oauth" },
+            "status": "active"
+          }
+        ],
+        "projectContracts": [
+          {
+            "id": "project-callback-flow",
+            "topic": "callback-flow",
+            "rule": "Keep external OAuth details in auth.",
+            "scope": { "kind": "project", "key": "community" },
+            "status": "active"
+          }
+        ],
+        "teamContracts": [],
+        "personalRules": [],
+        "languageDefaults": [],
+        "commonDefaults": [],
+        "relevance": {
+          "topics": ["callback-flow"],
+          "fileRole": "service",
+          "language": "java",
+          "skillIds": [],
+          "projectKey": "community",
+          "taskKey": "oauth"
+        }
+      },
+      "expectation": {
+        "resolutionStatus": "resolved",
+        "envelopeStatus": "resolved",
+        "selected": [{ "id": "task-callback-flow", "layer": "task" }],
+        "shadowed": [{ "id": "project-callback-flow", "layer": "project" }],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "invariant-vs-project-team",
+      "claimScope": "context-resolution",
+      "task": "Preserve the authorization boundary for a service change.",
+      "target": {
+        "path": "src/main/java/community/AccessService.java",
+        "fileRole": "service",
+        "language": "java"
+      },
+      "deliveryAttempts": 1,
+      "context": {
+        "productInvariants": [
+          {
+            "id": "invariant-access",
+            "topic": "access",
+            "rule": "Do not weaken access controls.",
+            "status": "active"
+          }
+        ],
+        "taskDecisions": [],
+        "projectContracts": [
+          {
+            "id": "project-access",
+            "topic": "access",
+            "rule": "Use the project authorization adapter.",
+            "scope": { "kind": "project", "key": "community" },
+            "status": "active"
+          }
+        ],
+        "teamContracts": [
+          {
+            "id": "team-access",
+            "topic": "access",
+            "rule": "Use team access conventions.",
+            "scope": { "kind": "team", "key": "platform" },
+            "status": "active"
+          }
+        ],
+        "personalRules": [],
+        "languageDefaults": [],
+        "commonDefaults": [],
+        "relevance": {
+          "topics": ["access"],
+          "fileRole": "service",
+          "language": "java",
+          "skillIds": [],
+          "projectKey": "community",
+          "teamKey": "platform"
+        }
+      },
+      "expectation": {
+        "resolutionStatus": "resolved",
+        "envelopeStatus": "resolved",
+        "selected": [{ "id": "invariant-access", "layer": "invariant" }],
+        "shadowed": [
+          { "id": "project-access", "layer": "project" },
+          { "id": "team-access", "layer": "team" }
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "same-layer-ambiguity",
+      "claimScope": "context-resolution",
+      "task": "Resolve two competing persistence rules.",
+      "target": {
+        "path": "src/main/java/community/PostRepository.java",
+        "fileRole": "repository",
+        "language": "java"
+      },
+      "deliveryAttempts": 1,
+      "context": {
+        "productInvariants": [],
+        "taskDecisions": [],
+        "projectContracts": [
+          {
+            "id": "project-first",
+            "topic": "persistence",
+            "rule": "Use optimistic locking.",
+            "status": "active"
+          },
+          {
+            "id": "project-second",
+            "topic": "persistence",
+            "rule": "Use explicit transactions.",
+            "status": "active"
+          }
+        ],
+        "teamContracts": [],
+        "personalRules": [],
+        "languageDefaults": [],
+        "commonDefaults": [],
+        "relevance": {
+          "topics": ["persistence"],
+          "fileRole": "repository",
+          "language": "java",
+          "skillIds": []
+        }
+      },
+      "expectation": {
+        "resolutionStatus": "blocked",
+        "envelopeStatus": "blocked",
+        "blockReason": "resolution-blocked",
+        "selected": [],
+        "shadowed": [],
+        "conflicts": [
+          {
+            "reason": "same-layer-conflict",
+            "ruleIds": ["project-first", "project-second"],
+            "topic": "persistence"
+          }
+        ]
+      }
+    },
+    {
+      "id": "java-controller",
+      "claimScope": "context-resolution",
+      "task": "Implement a Java controller without leaking service ownership.",
+      "target": {
+        "path": "src/main/java/community/PostController.java",
+        "fileRole": "controller",
+        "language": "java"
+      },
+      "deliveryAttempts": 1,
+      "context": {
+        "productInvariants": [],
+        "taskDecisions": [],
+        "projectContracts": [
+          {
+            "id": "project-controller-boundary",
+            "topic": "controller-boundary",
+            "rule": "Keep controller orchestration thin.",
+            "fileRoles": ["controller"],
+            "languages": ["java"],
+            "scope": { "kind": "project", "key": "community" },
+            "status": "active"
+          }
+        ],
+        "teamContracts": [],
+        "personalRules": [],
+        "languageDefaults": [
+          {
+            "id": "java-controller-baseline",
+            "topic": "java-style",
+            "rule": "Use explicit Java types at boundaries.",
+            "fileRoles": ["controller"],
+            "languages": ["java"],
+            "status": "active"
+          }
+        ],
+        "commonDefaults": [
+          {
+            "id": "common-controller-test",
+            "topic": "test-boundary",
+            "rule": "Add a focused controller test.",
+            "fileRoles": ["controller"],
+            "status": "active"
+          }
+        ],
+        "relevance": {
+          "topics": ["controller-boundary", "java-style", "test-boundary"],
+          "fileRole": "controller",
+          "language": "java",
+          "skillIds": [],
+          "projectKey": "community"
+        }
+      },
+      "expectation": {
+        "resolutionStatus": "resolved",
+        "envelopeStatus": "resolved",
+        "selected": [
+          { "id": "project-controller-boundary", "layer": "project" },
+          { "id": "java-controller-baseline", "layer": "language" },
+          { "id": "common-controller-test", "layer": "common" }
+        ],
+        "shadowed": [],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "java-service",
+      "claimScope": "context-resolution",
+      "task": "Implement a Java service with a domain boundary.",
+      "target": {
+        "path": "src/main/java/community/CommentService.java",
+        "fileRole": "service",
+        "language": "java"
+      },
+      "deliveryAttempts": 1,
+      "context": {
+        "productInvariants": [],
+        "taskDecisions": [],
+        "projectContracts": [
+          {
+            "id": "project-service-boundary",
+            "topic": "service-boundary",
+            "rule": "Keep business judgment in the service.",
+            "fileRoles": ["service"],
+            "languages": ["java"],
+            "scope": { "kind": "project", "key": "community" },
+            "status": "active"
+          }
+        ],
+        "teamContracts": [],
+        "personalRules": [],
+        "languageDefaults": [
+          {
+            "id": "java-service-baseline",
+            "topic": "java-service-style",
+            "rule": "Use constructor injection.",
+            "fileRoles": ["service"],
+            "languages": ["java"],
+            "status": "active"
+          }
+        ],
+        "commonDefaults": [],
+        "relevance": {
+          "topics": ["service-boundary", "java-service-style"],
+          "fileRole": "service",
+          "language": "java",
+          "skillIds": [],
+          "projectKey": "community"
+        }
+      },
+      "expectation": {
+        "resolutionStatus": "resolved",
+        "envelopeStatus": "resolved",
+        "selected": [
+          { "id": "project-service-boundary", "layer": "project" },
+          { "id": "java-service-baseline", "layer": "language" }
+        ],
+        "shadowed": [],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "typescript-core-reference",
+      "claimScope": "core-portability-only",
+      "task": "Apply a generic TypeScript reference rule without host delivery.",
+      "target": {
+        "path": "src/context-core/context-envelope.ts",
+        "fileRole": "source",
+        "language": "typescript"
+      },
+      "deliveryAttempts": 1,
+      "context": {
+        "productInvariants": [],
+        "taskDecisions": [],
+        "projectContracts": [],
+        "teamContracts": [],
+        "personalRules": [],
+        "languageDefaults": [
+          {
+            "id": "typescript-reference",
+            "topic": "reference-style",
+            "rule": "Use readonly typed contracts.",
+            "languages": ["typescript"],
+            "status": "active"
+          }
+        ],
+        "commonDefaults": [
+          {
+            "id": "common-explicit-intent",
+            "topic": "explicit-intent",
+            "rule": "Prefer explicit intent over clever reuse.",
+            "status": "active"
+          }
+        ],
+        "relevance": {
+          "topics": ["reference-style", "explicit-intent"],
+          "fileRole": "source",
+          "language": "typescript",
+          "skillIds": []
+        }
+      },
+      "expectation": {
+        "resolutionStatus": "resolved",
+        "envelopeStatus": "resolved",
+        "selected": [
+          { "id": "typescript-reference", "layer": "language" },
+          { "id": "common-explicit-intent", "layer": "common" }
+        ],
+        "shadowed": [],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "duplicate-delivery",
+      "claimScope": "context-resolution",
+      "task": "Offer the same task capsule twice without a host delivery claim.",
+      "target": {
+        "path": "src/main/java/community/NotificationService.java",
+        "fileRole": "service",
+        "language": "java"
+      },
+      "deliveryAttempts": 2,
+      "context": {
+        "productInvariants": [],
+        "taskDecisions": [
+          {
+            "id": "task-delivery",
+            "topic": "delivery",
+            "rule": "Deliver one bounded context capsule.",
+            "scope": { "kind": "task", "key": "same-message" },
+            "status": "active"
+          }
+        ],
+        "projectContracts": [],
+        "teamContracts": [],
+        "personalRules": [],
+        "languageDefaults": [],
+        "commonDefaults": [],
+        "relevance": {
+          "topics": ["delivery"],
+          "fileRole": "service",
+          "language": "java",
+          "skillIds": [],
+          "taskKey": "same-message"
+        }
+      },
+      "expectation": {
+        "resolutionStatus": "resolved",
+        "envelopeStatus": "resolved",
+        "selected": [{ "id": "task-delivery", "layer": "task" }],
+        "shadowed": [],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "context-budget-overflow",
+      "claimScope": "context-resolution",
+      "task": "Block delivery rather than silently truncate an oversized context.",
+      "target": {
+        "path": "src/main/java/community/ModerationService.java",
+        "fileRole": "service",
+        "language": "java"
+      },
+      "budget": { "maxCapsules": 1, "maxChars": 1600 },
+      "deliveryAttempts": 1,
+      "context": {
+        "productInvariants": [],
+        "taskDecisions": [],
+        "projectContracts": [],
+        "teamContracts": [],
+        "personalRules": [],
+        "languageDefaults": [],
+        "commonDefaults": [
+          {
+            "id": "budget-first",
+            "topic": "budget-first",
+            "rule": "Keep one rule.",
+            "status": "active"
+          },
+          {
+            "id": "budget-second",
+            "topic": "budget-second",
+            "rule": "Keep another rule.",
+            "status": "active"
+          }
+        ],
+        "relevance": {
+          "topics": ["budget-first", "budget-second"],
+          "fileRole": "service",
+          "language": "java",
+          "skillIds": []
+        }
+      },
+      "expectation": {
+        "resolutionStatus": "resolved",
+        "envelopeStatus": "blocked",
+        "blockReason": "budget-exceeded",
+        "selected": [],
+        "shadowed": [],
+        "conflicts": []
+      }
+    }
+  ]
+}

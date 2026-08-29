@@ -3,12 +3,12 @@
 Status: current canonical program record.
 
 Last reconciled: 2026-08-29
-Current protected main: `9b80a45070be10659150095cf701a6f375bc6600`
+Released Context package baseline: `9b80a45070be10659150095cf701a6f375bc6600`
 Released package: [`persona-harness@0.8.33`](https://www.npmjs.com/package/persona-harness/v/0.8.33)
 Release lineage: [#414](https://github.com/jyt6640/persona-harness/issues/414) delivered through [#437](https://github.com/jyt6640/persona-harness/pull/437)
 Historical pre-integration audit source: `f677a635040ad55d8b7d25abab280c5703a153ea`
 Program issue: [#389](https://github.com/jyt6640/persona-harness/issues/389)
-Remaining bounded work: [#410](https://github.com/jyt6640/persona-harness/issues/410), [#411](https://github.com/jyt6640/persona-harness/issues/411), [#412](https://github.com/jyt6640/persona-harness/issues/412), and [#421](https://github.com/jyt6640/persona-harness/issues/421)
+Remaining bounded work: [#410](https://github.com/jyt6640/persona-harness/issues/410), [#412](https://github.com/jyt6640/persona-harness/issues/412), and [#421](https://github.com/jyt6640/persona-harness/issues/421)
 
 ## Purpose
 
@@ -113,17 +113,17 @@ evidence rather than a description of current protected main.
 
 | Item | Classification | Audited state | Required P0 boundary |
 | --- | --- | --- | --- |
-| M1 | locally complete, integration pending | Broad legacy `runtimeInjection` is default-off; a narrow project philosophy feature exists separately. A distinct `context` parser now defaults to off and is controlled only by `context.enabled`. | Preserve the separate enablement boundary. |
-| M2 | partially closed-local | Personal/project/task profile records, the exact v1 resolver, pure v2 precedence, read-only target-path inspection, and an explicit fresh-project Context enable path now live behind `src/context-core` and `ph context`. | Preserve the no-overwrite initialization boundary; inspection and enablement must not activate a host. |
-| M3 | locally complete, integration pending | A read-only `.persona/team-profile.json` loader validates shared Team rules, rejects unsafe/no-follow inputs, and converts valid rules to Core `teamContracts`. | Preserve its file boundary while later exposing it through explicit Context CLI inspection only. |
-| M4 | locally complete, integration pending | Pure Core now supports all seven precedence layers and builds a `persona-context-envelope.v1` with deterministic selected/shadowed/conflict metadata, budget, privacy filtering, and canonical digest. | Preserve the Core boundary while later adding only a thin adapter backed by a real host API. |
-| M5 | locally complete, hosted observation pending | Context Core has no OpenCode or Java runtime import. An isolated OpenCode 1.x adapter now reads the local preview boundary after a safe observed target and delivers one bounded block on the next same-session user message. | Keep Core host-neutral; validate the experimental host transform only through #410's separate bounded Hosted observation. |
-| M6 | locally complete, hosted observation pending | The effective-profile resolver and its parsing/types remain separated in `src/context-core`; the adapter has no legacy runtime/evidence/workflow/authority/process/network dependency. | Preserve the isolated adapter boundary while observing the actual host API. |
-| M7 | verified-existing / open | Version-specific acceptance files have accumulated. | Use a manifest plus generic runner for new Context compatibility cases. |
-| M8 | closed-local | The baseline help-only contract was replaced locally by focused source tests, explicit smoke/full commands, and a generic tarball/install package smoke. | Integrate only after the local candidate is reviewed; protected CI remains unchanged. |
-| M9 | locally complete, hosted observation pending | `ph context status` and `ph context doctor` report the bundled OpenCode 1.x adapter plus its target-triggered eligibility without claiming a session loaded it. Preview/explain remain read-only. Bare init creates no state; `ph context init --enable` creates a minimal config only when no harness config exists. | Confirm the packaged plugin against a real host only through #410's named Hosted observation. |
-| M10 | open | No Context OFF/broad/targeted benchmark. | #411 adds a reproducible benchmark that reports cost and task result separately. |
-| M11 | verified-existing / open | Historical version checks are mostly one-off scripts. | #412 adds a Context compatibility manifest and generic test runner. |
+| M1 | delivered via #413 | Workflow Integrity and Context Personalization are named as distinct tracks in public help and README. | Preserve the separate product boundary. |
+| M2 | delivered via #413 | `ph context` provides explicit, default-off local Context inspection and enablement. | Preserve no-overwrite initialization and non-activating inspection. |
+| M3 | delivered via #413; v2 follow-up open | A safe Team Profile v1 is resolved as a separate, local Context layer. | Preserve the no-follow, bounded profile boundary; #421 separately owns a semantic v2 schema and explicit resolver bridge without silently upgrading v1 files. |
+| M4 | delivered via #413 | Pure Core resolves the seven precedence layers and produces a deterministic `persona-context-envelope.v1`. | Keep Core host-neutral. |
+| M5 | implementation delivered; hosted residual | Core has no OpenCode or Java runtime import; the isolated OpenCode adapter is locally covered. | #410 may observe the real transform only after its own named Delivery Control predicate. |
+| M6 | implementation delivered; hosted residual | Context resolution, rendering, and delivery are separated from legacy workflow/authority behavior. | Preserve the isolated adapter boundary during #410. |
+| M7 | open | Historical version checks remain a maintenance concern. | #412 owns the generic Context compatibility manifest and runner. |
+| M8 | delivered via #413 | `npm test` now selects focused source evidence and installed packages receive a separate smoke. | Keep full protected verification separate. |
+| M9 | implementation delivered; hosted residual | Context CLI and doctor report bounded local state without claiming host delivery. | #410 remains the sole real-host observation route after #414. |
+| M10 | delivered by #411 source boundary | #411 provides a versioned three-arm protocol, strict ten-fixture manifest, and deterministic evaluator for Context OFF, legacy broad compatibility, and targeted layered envelopes. | Keep model, host, and operational measurements unavailable until a separately authorized observation; every local product verdict remains `INCONCLUSIVE`. |
+| M11 | open | Historical version-specific checks still need a version-neutral Context compatibility boundary. | #412 owns the manifest/runner work. |
 | M12 | verified-existing | CI critical-path optimization is already measured and active. | Preserve it and add only bounded Context checks to the correct lane. |
 
 ## Invariants
@@ -142,21 +142,18 @@ evidence rather than a description of current protected main.
 - No external value or adoption claim is made without independent users and
   repositories. Current product-value verdict: **INCONCLUSIVE**.
 
-## Historical Delivery Order
+## Current Delivery Order
 
-This was the delivery sequence before #413 and #414. The current gate order is
-recorded in the current audit below.
-
-1. **#390 P0 baseline and status:** this audit and canonical record.
-2. **Contributor test contract:** make default test names match what they
-   actually prove while preserving full protected verification.
-3. **Context Core:** versioned input, safe Team Profile, precedence, relevance,
-   character budget, shadowing, warnings, and digest.
-4. **Context CLI and OpenCode adapter:** explicit opt-in, read-only inspection,
-   thin host rendering, deduplication, and session cleanup.
-5. **Hosted, benchmark, and compatibility:** #410 observes the real OpenCode
-   boundary once; #411 measures OFF/targeted behavior; #412 adds a generic
-   compatibility manifest and runner.
+1. **Merged P0 implementation:** #390 through #403 merged and closed through
+   #413 on `a562331f9db321845b05da1e16edc4b83bf78ece`.
+2. **Release lineage:** #414 is delivered as stable `v0.8.33` through #437;
+   its immutable package/source binding remains historical release evidence.
+3. **Deterministic comparison:** #411 provides the fixture-only three-arm
+   protocol below. It does not initiate a host, model, workflow, or authority
+   action and cannot establish product value.
+4. **Remaining independent work:** #410 owns the sole real OpenCode-host
+   observation route; #421 owns Team Profile v2 and #412 owns the generic
+   installed-package compatibility boundary.
 
 Only one public command, schema, resolver, adapter, CI, script, or documentation
 boundary is changed per child issue. A child issue closes only when its stated
@@ -172,20 +169,22 @@ not assert direct closure causality.
 
 | Issue | State | Evidence |
 | --- | --- | --- |
-| #390 | locally complete, integration pending | Canonical status, current docs navigation, inventory, docs taxonomy, acceptance index, release notes, and release truth checks pass. |
-| #391 | locally complete, integration pending | `npm test` now owns a dual-surface contract: a source checkout runs the bounded fast suite, while an installed tarball runs a packaged CLI-help smoke through the same command. The generic runner is included in the tarball, and the package smoke proves the installed `npm test` contract rather than only calling help directly. Tests reject cycles, missing aliases/files, help-only source defaults, empty-test escape hatches, duplicate unit/integration files, and package-to-smoke collapse. The source suite, typecheck, scope/docs checks, isolated package smoke, and resource-sensitive repository contract pass locally. |
-| #392 | locally complete, integration pending | Root help and README name both product tracks. The independent import-free Context dispatcher exposes five commands, creates no files, keeps Context disabled, reports no shell/network use, and blocks preview/explain with `context-core-unavailable`. Routing, compatibility, fast test, typecheck, build, docs, and isolated package smoke checks pass. |
-| #393 | locally complete, integration pending | `src/context-core` now owns v1 rule types, strict input parsing, deterministic resolution, a frozen default budget, canonical SHA-256 digest, and envelope types. The legacy runtime module is a compatibility re-export. Import-boundary, resolver, profile store, runtime delivery, and public export checks pass (31 focused tests); fast tests, typecheck, build, docs, scope, diff, and isolated package smoke pass. |
-| #394 | locally complete, integration pending | The Core adds `invariant > task > project > team > personal > language > common` precedence, topic/file-role/language/skill/scope relevance, deterministic shadow explanations, winning-layer conflict blocking, and no-silent-truncation overflow handling. The v1 adapter maps starter defaults to common and preserves the public v1 output. Five focused files (26 tests), fast tests, typecheck, build, docs, scope, diff, and isolated package smoke pass. |
-| #395 | locally complete, integration pending | The Core constructs `persona-context-envelope.v1` from resolution-only input. It canonicalizes selected capsules, shadow/conflict metadata, budget use, and SHA-256 digest; it blocks malformed targets, untrusted/unsafe content, blocked resolution, and budget overflow without reflection or truncation. Envelope/Core focused tests, fast tests, typecheck, build, docs, scope, diff, and isolated package smoke pass. |
-| #396 | locally complete, integration pending | A read-only `.persona/team-profile.json` loader uses the existing no-follow project-file reader, exact schema validation, bounded rules/selectors, and finite diagnostics. It rejects unknown fields, duplicate ids/active topics, secret/shell/exfiltration/authority-shaped rules, and symlink paths. Valid rules become Core `teamContracts`, proven with project > team > personal fixture precedence. Fast tests, typecheck, build, docs, scope, diff, and isolated package smoke pass. |
-| #397 | locally complete, integration pending | `.persona/harness.jsonc` now has a separately typed `context` configuration with a frozen disabled `targeted` default and bounded capsule/character limits. Missing Context config stays off; explicit `context.enabled` is independent from legacy guidance switches; malformed, unknown, and out-of-range Context fields return a finite Context-only diagnostic and disabled effective Context config without rewriting files or disabling legacy harness behavior. `npm test` (8 files, 49 tests), typecheck, build, docs/scope/diff checks, and isolated `test:package` smoke pass locally. |
-| #398 | locally complete, integration pending | `ph context status` now uses only the existing config and safe Team Profile readers. It renders bounded configuration/enablement/budget/Team Profile state and diagnostics, never profile/rule content. It does not write files, activate an adapter, execute workflow/authority/evidence behavior, or call network/shell/process commands. Focused status/config/team tests, the built CLI invocation, and isolated tarball `context status` smoke pass locally. |
-| #399 | locally complete, integration pending | `ph context preview <target-file>` parses only a safe relative target path and optional explicit selectors, never opens the target, then combines product invariants, starter defaults, an optional Team Profile, and active personal rules through the pure Core. It emits either a deterministic `persona-context-envelope.v1` JSON envelope or bounded nonreflective diagnostics. The explicit default-off flag remains informational; preview does not activate any host. Focused CLI/Core/store tests, typecheck, and the isolated tarball smoke cover the public surface. |
-| #400 | locally complete, integration pending | `ph context explain <target-file>` reuses the preview read boundary and renders the deterministic envelope's selected and shadowed identifiers, finite selection reasons, resolution state, budget, and digest without rendering rule content. It accepts the same safe explicit selectors, keeps Context default-off, and does not read the target, write configuration, activate a host, or create workflow state. Focused CLI/Core/store tests and the isolated tarball smoke cover the public surface. |
-| #401 | locally complete, integration pending | Bare `ph context init` remains a no-write preview. Explicit `ph context init --enable` uses no-follow exclusive creation to write only a minimal `.persona/harness.jsonc` Context configuration in a fresh safe project. Existing regular config files, unsafe paths, and malformed arguments return finite errors without rewriting any configuration. It does not alter legacy feature flags, activate a host, or create completion state. Focused init/status/routing tests and the isolated tarball smoke cover the public surface. |
-| #402 | locally complete, integration pending | `ph context doctor` now reuses the safe status readers instead of emitting fixed placeholder state. It reports bounded config/enablement/mode/budget/Team Profile diagnostics and explicitly distinguishes available local Core/CLI inspection from unavailable host delivery. It does not load personal rule content, write state, activate a host, or use network/shell/process/completion behavior. Focused doctor/status/routing tests and the isolated tarball smoke cover the public surface. |
-| #403 | locally complete, integration pending | The isolated OpenCode adapter captures only safe observed targets, uses the local Context preview/envelope boundary, suppresses duplicate digests until session compaction/deletion, and mutates only the next matching user message. `context.enabled` is its sole feature switch; it does not inherit `runtimeInjection`. Adapter, actual plugin composition, status/doctor wording, type compatibility, and fail-closed target cases have focused RED-to-GREEN coverage. A real `experimental.chat.messages.transform` host observation remains separate. |
+| #390 | closed via #413 | Canonical status, current docs navigation, inventory, docs taxonomy, acceptance index, release notes, and release truth checks pass. |
+| #391 | closed via #413 | `npm test` now owns a dual-surface contract: a source checkout runs the bounded fast suite, while an installed tarball runs a packaged CLI-help smoke through the same command. The generic runner is included in the tarball, and the package smoke proves the installed `npm test` contract rather than only calling help directly. Tests reject cycles, missing aliases/files, help-only source defaults, empty-test escape hatches, duplicate unit/integration files, and package-to-smoke collapse. The source suite, typecheck, scope/docs checks, isolated package smoke, and resource-sensitive repository contract pass locally. |
+| #392 | closed via #413 | Root help and README name both product tracks. The independent import-free Context dispatcher exposes five commands, creates no files, keeps Context disabled, reports no shell/network use, and blocks preview/explain with `context-core-unavailable`. Routing, compatibility, fast test, typecheck, build, docs, and isolated package smoke checks pass. |
+| #393 | closed via #413 | `src/context-core` now owns v1 rule types, strict input parsing, deterministic resolution, a frozen default budget, canonical SHA-256 digest, and envelope types. The legacy runtime module is a compatibility re-export. Import-boundary, resolver, profile store, runtime delivery, and public export checks pass (31 focused tests); fast tests, typecheck, build, docs, scope, diff, and isolated package smoke pass. |
+| #394 | closed via #413 | The Core adds `invariant > task > project > team > personal > language > common` precedence, topic/file-role/language/skill/scope relevance, deterministic shadow explanations, winning-layer conflict blocking, and no-silent-truncation overflow handling. The v1 adapter maps starter defaults to common and preserves the public v1 output. Five focused files (26 tests), fast tests, typecheck, build, docs, scope, diff, and isolated package smoke pass. |
+| #395 | closed via #413 | The Core constructs `persona-context-envelope.v1` from resolution-only input. It canonicalizes selected capsules, shadow/conflict metadata, budget use, and SHA-256 digest; it blocks malformed targets, untrusted/unsafe content, blocked resolution, and budget overflow without reflection or truncation. Envelope/Core focused tests, fast tests, typecheck, build, docs, scope, diff, and isolated package smoke pass. |
+| #396 | closed via #413 | A read-only `.persona/team-profile.json` loader uses the existing no-follow project-file reader, exact schema validation, bounded rules/selectors, and finite diagnostics. It rejects unknown fields, duplicate ids/active topics, secret/shell/exfiltration/authority-shaped rules, and symlink paths. Valid rules become Core `teamContracts`, proven with project > team > personal fixture precedence. Fast tests, typecheck, build, docs, scope, diff, and isolated package smoke pass. |
+| #397 | closed via #413 | `.persona/harness.jsonc` now has a separately typed `context` configuration with a frozen disabled `targeted` default and bounded capsule/character limits. Missing Context config stays off; explicit `context.enabled` is independent from legacy guidance switches; malformed, unknown, and out-of-range Context fields return a finite Context-only diagnostic and disabled effective Context config without rewriting files or disabling legacy harness behavior. `npm test` (8 files, 49 tests), typecheck, build, docs/scope/diff checks, and isolated `test:package` smoke pass locally. |
+| #398 | closed via #413 | `ph context status` now uses only the existing config and safe Team Profile readers. It renders bounded configuration/enablement/budget/Team Profile state and diagnostics, never profile/rule content. It does not write files, activate an adapter, execute workflow/authority/evidence behavior, or call network/shell/process commands. Focused status/config/team tests, the built CLI invocation, and isolated tarball `context status` smoke pass locally. |
+| #399 | closed via #413 | `ph context preview <target-file>` parses only a safe relative target path and optional explicit selectors, never opens the target, then combines product invariants, starter defaults, an optional Team Profile, and active personal rules through the pure Core. It emits either a deterministic `persona-context-envelope.v1` JSON envelope or bounded nonreflective diagnostics. The explicit default-off flag remains informational; preview does not activate any host. Focused CLI/Core/store tests, typecheck, and the isolated tarball smoke cover the public surface. |
+| #400 | closed via #413 | `ph context explain <target-file>` reuses the preview read boundary and renders the deterministic envelope's selected and shadowed identifiers, finite selection reasons, resolution state, budget, and digest without rendering rule content. It accepts the same safe explicit selectors, keeps Context default-off, and does not read the target, write configuration, activate a host, or create workflow state. Focused CLI/Core/store tests and the isolated tarball smoke cover the public surface. |
+| #401 | closed via #413 | Bare `ph context init` remains a no-write preview. Explicit `ph context init --enable` uses no-follow exclusive creation to write only a minimal `.persona/harness.jsonc` Context configuration in a fresh safe project. Existing regular config files, unsafe paths, and malformed arguments return finite errors without rewriting any configuration. It does not alter legacy feature flags, activate a host, or create completion state. Focused init/status/routing tests and the isolated tarball smoke cover the public surface. |
+| #402 | closed via #413 | `ph context doctor` now reuses the safe status readers instead of emitting fixed placeholder state. It reports bounded config/enablement/mode/budget/Team Profile diagnostics and explicitly distinguishes available local Core/CLI inspection from unavailable host delivery. It does not load personal rule content, write state, activate a host, or use network/shell/process/completion behavior. Focused doctor/status/routing tests and the isolated tarball smoke cover the public surface. |
+| #403 | closed via #413 | The isolated OpenCode adapter captures only safe observed targets, uses the local Context preview/envelope boundary, suppresses duplicate digests until session compaction/deletion, and mutates only the next matching user message. `context.enabled` is its sole feature switch; it does not inherit `runtimeInjection`. Adapter, actual plugin composition, status/doctor wording, type compatibility, and fail-closed target cases have focused RED-to-GREEN coverage. A real `experimental.chat.messages.transform` host observation remains separate. |
+| #411 | delivered by this source boundary | `persona-context-comparison-manifest.1` fixes ten P0 fixtures and compares `off`, `legacy-broad`, and `targeted-layered` through `persona-context-comparison-result.1`. The repository runner requires an explicit candidate commit and package version, rejects a local identity mismatch before evaluation, and produces 30 deterministic records. It emits only rule ids/layers and digests; model/host/operational fields remain `null` and every local product verdict is `INCONCLUSIVE`. |
+| #414 | delivered through #437 | Stable `v0.8.33` binds a protected-main package/source release lineage. It is immutable historical release evidence and does not authorize #410, a host session, or any Context product claim by itself. |
 
 The heavy `test:installed-package-contract` and full protected repository suite
 remain unchanged. The generic package smoke is version-neutral and does not
@@ -198,14 +197,14 @@ or hosted action:
 
 - `npm test`, `npm run typecheck`, `npm run build`, `npm run check:docs`,
   `npm run check:scope:strict`, `npm run check:release-workflows`, and
-  `npm run check:injection-value` pass.
-- `npm run test:package` proves the canonical tarball can be installed in a
-  clean consumer and that its packaged `npm test` selects the installed smoke.
-- `npm run test:repository:resource-sensitive` passes with 10 files and 80
+  `npm run check:injection-value` passed.
+- `npm run test:package` proved the canonical tarball could be installed in a
+  clean consumer and that its packaged `npm test` selected the installed smoke.
+- `npm run test:repository:resource-sensitive` passed with 10 files and 80
   tests.
-- `npm run test:repository:parallel` reaches 2,619 passing tests and one
-  skip, then stops at two independent project-finish OIDC caller-pin failures.
-  The candidate does not touch the related workflow, producer, or diagnostic
+- `npm run test:repository:parallel` reached 2,619 passing tests and one skip,
+  then stopped at two independent project-finish OIDC caller-pin failures.
+  The candidate did not touch the related workflow, producer, or diagnostic
   boundary; the failures are tracked separately in #404 and are not reused as
   Context evidence.
 - A real OpenCode `experimental.chat.messages.transform` observation remains
@@ -233,10 +232,30 @@ was not modified.
 | P0 implementation | #413 merged at `a562331f9db321845b05da1e16edc4b83bf78ece`; #390 through #403 are observed closed after that merge. | No integration PR remains. |
 | Release lineage | #414 delivered as stable `v0.8.33` through #437 on current protected main. The immutable tag, GitHub Release, npm `latest`, canonical tar, and provenance bind to `9b80a45070be10659150095cf701a6f375bc6600`. | It does not prove live host delivery. |
 | Hosted Context delivery | The released package now satisfies #410's package/source prerequisite. | #410 still needs its own named Delivery Control start predicate and one bounded real OpenCode observation. |
-| Deterministic follow-ups | #421 owns Team Profile v2; #411 owns the three-arm comparison protocol; #412 owns the generic Context compatibility runner. | Each remains independently open and may not manufacture host or user-value evidence. |
+| Deterministic comparison | #411 provides the ten-fixture OFF / legacy broad / targeted layered protocol and repository runner. | It records only deterministic technical results; host/model/operational values remain unavailable and product verdicts remain `INCONCLUSIVE`. |
+| Other follow-ups | #421 owns Team Profile v2 and #412 owns the generic Context compatibility runner. | Each remains independently open and may not manufacture host or user-value evidence. |
 
 Product-value verdict remains **INCONCLUSIVE**. Local composition, package,
 release, and CI evidence do not establish host-session delivery or user benefit.
+
+## #411 Comparison Protocol
+
+The Context comparison runner is repository-side tooling, not an installed
+user command. It requires an explicit full candidate commit and package version
+so it can reject a checkout mismatch before it evaluates the fixed corpus:
+
+```bash
+npm run benchmark:context -- \
+  --candidate-commit <full-current-commit> \
+  --package-version <exact-package-version>
+```
+
+It produces one `persona-context-comparison-result.1` record for each of ten
+fixtures and three arms. It emits only rule identifiers, layers, and digests;
+host/model/operational measurements remain `null` and product verdicts remain
+`INCONCLUSIVE`. The runner never invokes a model, host adapter, network,
+workflow, authority, or evidence path. Its local Git read exists only to bind
+the declared candidate to the checkout.
 
 ## Owner Dogfooding Follow-up
 
@@ -252,6 +271,6 @@ expand the released Context delivery scope or change its default-off boundary.
 Do not reopen the completed #390–#403 integration or #414 release paths.
 Delivery Control must record #410's own named hosted start predicate before one
 real OpenCode `experimental.chat.messages.transform` observation can begin.
-#421, #411, and #412 remain independent follow-up boundaries. Do not infer
-host delivery or product value from local composition tests, catalog
-registration, release provenance, or historical evidence.
+#421 and #412 remain independent follow-up boundaries. Do not infer host
+delivery or product value from local composition tests, catalog registration,
+release provenance, or historical evidence.
