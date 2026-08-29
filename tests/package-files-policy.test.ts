@@ -761,6 +761,7 @@ describe("package files policy", () => {
       "docs/current/persona-shared-skills-core.md",
       "docs/current/personalization-profile-v1.md",
       "docs/current/context-program-status.md",
+      "docs/current/context-external-validation.md",
       "docs/current/context-team-profile-v2.md",
       "docs/current/measurement-scorecard.md",
       "docs/current/consumer-authority-v1-decision.md",
