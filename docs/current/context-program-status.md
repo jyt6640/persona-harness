@@ -22,7 +22,7 @@ Current compatibility package: [`persona-harness@0.8.36`](https://www.npmjs.com/
 Current compatibility lineage: [#412](https://github.com/jyt6640/persona-harness/issues/412) delivered through [#441](https://github.com/jyt6640/persona-harness/pull/441)
 Historical pre-integration audit source: `f677a635040ad55d8b7d25abab280c5703a153ea`
 Program issue: [#389](https://github.com/jyt6640/persona-harness/issues/389)
-Remaining bounded work: hosted residual [#410](https://github.com/jyt6640/persona-harness/issues/410) and the not-started independent-value protocol from [#429](https://github.com/jyt6640/persona-harness/issues/429). The deterministic local P0 boundaries integrated by #443 are closed.
+Remaining bounded work: the terminal, non-retryable hosted-observation record in [#410](https://github.com/jyt6640/persona-harness/issues/410) and the not-started independent-value protocol from [#429](https://github.com/jyt6640/persona-harness/issues/429). The deterministic local P0 boundaries integrated by #443 are closed.
 
 ## Purpose
 
@@ -167,12 +167,20 @@ evidence rather than a description of current protected main.
   released as `persona-harness@0.8.37` from
   `a82b85ddef7e9fd9518348bff16deb38f53b4676`.
 - **Product verdict: `INCONCLUSIVE`.** The release and local deterministic
-  evidence do not show a real OpenCode session receiving Context or an
-  independent user receiving value. The #429 status intentionally has no
-  observations.
-- **Next allowed step:** only #410's own named Delivery Control start predicate
-  can authorize one bounded real OpenCode observation. It is not an automatic
-  release follow-up, and it cannot be replaced with a synthetic or retry run.
+  evidence do not establish Context delivery or independent user value. #410
+  ran its one authorized real OpenCode session, but its privacy-preserving
+  observation could not classify delivery; the #429 status intentionally has
+  no independent-user observations.
+- **Hosted-observation verdict: `hosted-unavailable`.** The #410 one-shot
+  completed its safe read and same-session checks, then retained only a
+  sanitized OpenCode export. OpenCode `v1.17.16` redacts every text part in
+  `export --sanitize`, so the absence of a Context marker in that export does
+  not prove that the transform did not inject one. The run is terminal and
+  cannot be retried as a debugger.
+- **Next allowed step:** no Context host action starts automatically. Any
+  future observation needs its own explicit Delivery Control predicate and a
+  privacy-preserving host-side observation boundary that can report the needed
+  metadata without retaining transcript text. It cannot reuse or replay #410.
 
 ## Current Delivery Order
 
@@ -197,11 +205,13 @@ evidence rather than a description of current protected main.
    as stable `v0.8.37` on
    `a82b85ddef7e9fd9518348bff16deb38f53b4676`. The release does not create
    host-delivery or product-value evidence.
-7. **Remaining independent evidence:** #410 owns the sole real OpenCode-host
-   observation route and still requires its own named Delivery Control start
-   predicate. #429 owns the preregistered external-validation schema; its
-   current empty status remains `INCONCLUSIVE` until a future independent
-   observation meets the fixed protocol.
+7. **Remaining independent evidence:** #410's named predicate ran once on a
+   released `0.8.33` consumer and reached terminal `hosted-unavailable`.
+   Because the retained OpenCode `v1.17.16` `export --sanitize` result redacts
+   every text part, its marker count is not a delivery verdict; #410 cannot be
+   retried. #429 owns the preregistered external-validation schema; its current
+   empty status remains `INCONCLUSIVE` until a future independent observation
+   meets the fixed protocol.
 
 Only one public command, schema, resolver, adapter, CI, script, or documentation
 boundary is changed per child issue. A child issue closes only when its stated
@@ -283,7 +293,7 @@ was not modified.
 | P0 implementation release lineage | #414 delivered stable `v0.8.33` through #437. Its immutable tag, GitHub Release, npm `latest`, canonical tar, and provenance bind to `9b80a45070be10659150095cf701a6f375bc6600`. | Historical P0 implementation release evidence does not prove live host delivery. |
 | Deterministic comparison release lineage | #411 delivered stable `v0.8.34` through #439. Its immutable tag, GitHub Release, npm `latest`, canonical tar, and provenance bind to `19c397e4fed5b1cce7d024fbcc51350e9676105f`. | It records only deterministic technical results; host/model/operational values remain unavailable and product verdicts remain `INCONCLUSIVE`. |
 | Current P0 integration release | #442 delivered stable `v0.8.37` through #443. Its immutable tag, GitHub Release, npm `latest`, canonical tar, and provenance bind to `a82b85ddef7e9fd9518348bff16deb38f53b4676`. | It closes the deterministic local P0 boundaries, not #410's real host observation or external product-value evidence. |
-| Hosted Context delivery | The current program-status publication `0.8.38` retains the merged #403 adapter boundary, but no package/release record substitutes for the #410 start predicate. | #410 still needs its own named Delivery Control start predicate and one bounded real OpenCode observation. |
+| Hosted Context delivery | #410's named predicate was satisfied for a registry-installed `0.8.33` consumer bound to `9b80a45070be10659150095cf701a6f375bc6600`; one real OpenCode `v1.17.16` session completed its safe sequence. The retained `export --sanitize` redacts all text parts, so its zero marker count cannot establish delivery absence. | The one-shot is terminal `hosted-unavailable` and non-retryable. No Context delivery or product-value claim is supported; any future observation needs a separately authorized, metadata-only host-observer contract. |
 | Other follow-ups | #421 is delivered as stable `v0.8.35` through #440; #412 is delivered as stable `v0.8.36` through #441; the #429 protocol is released through #443 with zero observations. | None of these facts manufacture host or user-value evidence. |
 
 Product-value verdict remains **INCONCLUSIVE**. Local composition, package,
@@ -326,9 +336,9 @@ expand the released Context delivery scope or change its default-off boundary.
 
 No deterministic local Context P0 candidate remains open after #443. Do not
 reopen the completed #390–#403 integration, #414 release, or #442 integration
-paths. Delivery Control must record #410's own named hosted start predicate
-before one real OpenCode `experimental.chat.messages.transform` observation can
-begin. The #429 protocol remains `INCONCLUSIVE` with zero observations; do not
-infer host delivery or product value from local composition tests, catalog
+paths. #410's one real OpenCode observation is terminal and cannot be retried;
+its sanitized-export result is insufficient to attribute Context delivery or
+absence. The #429 protocol remains `INCONCLUSIVE` with zero observations; do
+not infer host delivery or product value from local composition tests, catalog
 registration, release provenance, an empty external-validation status, or
 historical evidence.

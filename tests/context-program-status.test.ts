@@ -35,7 +35,9 @@ describe("Context program status", () => {
     expect(status).toContain("#446")
     expect(status).toContain("TECHNICAL_GO")
     expect(status).toContain("#410")
-    expect(status).toContain("named Delivery Control start predicate")
+    expect(status).toContain("hosted-unavailable")
+    expect(status).toContain("non-retryable")
+    expect(status).toContain("export --sanitize")
     expect(status).toContain("#429")
     expect(status).toContain("external-validation")
     expect(status).toContain("#436")
@@ -43,6 +45,7 @@ describe("Context program status", () => {
     expect(status).toContain("clean-package-observer-gh-required")
     expect(matrix).not.toContain("local candidate")
     expect(delivery).not.toContain("Current local P0 candidates")
+    expect(status).not.toContain("#410 still needs its own named Delivery Control start predicate")
   })
 })
 
