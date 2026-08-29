@@ -77,13 +77,26 @@ describe("Context compatibility manifest runner", () => {
       tarballSha256: sha256(tarballBytes),
     })
 
+    const sourceRoot = join(subject.temporaryRoot, "source")
+    const sourceDist = join(sourceRoot, "dist")
+    mkdirSync(join(sourceDist, "cli"), { recursive: true })
+    mkdirSync(join(sourceDist, "context-core"), { recursive: true })
+    for (const path of [
+      "cli/context-command.js",
+      "cli/index.js",
+      "context-core/context-envelope-builder.js",
+      "context-core/index.js",
+    ]) {
+      writeFileSync(join(sourceDist, path), "export {}\n", { mode: 0o600 })
+    }
+
     rmSync(join(subject.installedPackageRoot, "dist"), { force: true, recursive: true })
-    symlinkSync(join(repositoryRoot, "dist"), join(subject.installedPackageRoot, "dist"), "dir")
+    symlinkSync(sourceDist, join(subject.installedPackageRoot, "dist"), "dir")
 
     expect(runContextCompatibilityManifest(manifest, {
       archivePath: subject.archivePath,
       installedPackageRoot: subject.installedPackageRoot,
-      sourceRoot: repositoryRoot,
+      sourceRoot,
       temporaryRoot: subject.temporaryRoot,
     })).toEqual({
       code: "context-compatibility-source-fallback-detected",
