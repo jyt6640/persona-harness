@@ -14,7 +14,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 ## Classification Counts
 
 - archived historical: 4
-- current active pointer/status: 44
+- current active pointer/status: 45
 - current compatibility doc: 21
 - current index: 1
 - current or historical decision/status: 15
@@ -28,7 +28,7 @@ This inventory classifies every file under `docs/**` as of the docs taxonomy cle
 - version-specific release note: 59
 - versioned durable: 26
 
-Total indexed files: 341
+Total indexed files: 342
 
 ## File Inventory
 
@@ -60,6 +60,7 @@ Total indexed files: 341
 | `docs/current/consumer-authority-v1-decision.md` | current active pointer/status | - | Issue #108 V1 decision: the only enabled authority behavior is explicit `workflow finish implement --assurance cooperative` within the same Finish invocation after fixed local verification and one-time in-memory consumption; it is non-persistent, status/fetch/later closure remain blocked, and default/external boundaries remain blocked. |
 | `docs/current/context-comparison-manifest.json` | current test fixture manifest | - | Exact ten-fixture source-only corpus for the Context OFF, legacy broad compatibility, and targeted layered comparison protocol. |
 | `docs/current/context-program-status.md` | current active pointer/status | - | Canonical P0 audit and isolated OpenCode delivery status for the default-off Context Personalization track and its separation from Workflow Integrity. |
+| `docs/current/context-team-profile-v2.md` | current active pointer/status | - | Read-only project-shareable Team Profile v2 schema, safety boundary, v1 separation, and pure resolver bridge. |
 | `docs/current/desktop-test-artifacts-index.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/diff-rules-classification.md` | current active pointer/status | - | T6 classification table for all `references/diff-rules` files; docs-only scope fixture for future T8/T7 decisions. |
 | `docs/current/diff-rules-distribution-retirement-acceptance-record.md` | current active pointer/status | - | Item 12 exact-main package/init diff-rules retirement, legacy advisory, and claim boundary record. |

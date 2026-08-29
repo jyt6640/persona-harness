@@ -18,6 +18,7 @@ describe("npm contributor test contract", () => {
     expect(selectedTestFiles(scripts["test:unit"])).toContain("tests/context-comparison.test.ts")
     expect(selectedTestFiles(scripts["test:unit"])).toContain("tests/context-comparison-runner.test.ts")
     expect(selectedTestFiles(scripts["test:integration"])).toContain("tests/opencode-context-delivery.test.ts")
+    expect(selectedTestFiles(scripts["test:integration"])).toContain("tests/team-profile-v2-store.test.ts")
     expect(validateTestContract(scripts)).toEqual([])
   })
 
