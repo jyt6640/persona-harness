@@ -17,7 +17,7 @@ Current compatibility package: [`persona-harness@0.8.36`](https://www.npmjs.com/
 Current compatibility lineage: [#412](https://github.com/jyt6640/persona-harness/issues/412) delivered through [#441](https://github.com/jyt6640/persona-harness/pull/441)
 Historical pre-integration audit source: `f677a635040ad55d8b7d25abab280c5703a153ea`
 Program issue: [#389](https://github.com/jyt6640/persona-harness/issues/389)
-Remaining bounded work: [#410](https://github.com/jyt6640/persona-harness/issues/410) and [#429](https://github.com/jyt6640/persona-harness/issues/429)
+Remaining bounded work: hosted residual [#410](https://github.com/jyt6640/persona-harness/issues/410), plus local integration candidates [#429](https://github.com/jyt6640/persona-harness/issues/429), [#430](https://github.com/jyt6640/persona-harness/issues/430), and [#433](https://github.com/jyt6640/persona-harness/issues/433)
 
 ## Purpose
 
@@ -134,6 +134,8 @@ evidence rather than a description of current protected main.
 | M10 | delivered and released via #411/#439 | #411 provides a versioned three-arm protocol, strict ten-fixture manifest, and deterministic evaluator for Context OFF, legacy broad compatibility, and targeted layered envelopes. | Keep model, host, and operational measurements unavailable until a separately authorized observation; every local product verdict remains `INCONCLUSIVE`. |
 | M11 | delivered and released via #412/#441 | The installed-package compatibility boundary uses a generic manifest and runner. | Keep version-specific acceptance scripts out of new Context changes. |
 | M12 | verified-existing | CI critical-path optimization is already measured and active. | Preserve it and add only bounded Context checks to the correct lane. |
+| M13 | mixed: #412 delivered, #430 local candidate | Stable `v0.8.36` provides the generic manifest/runner; the contributor map is a local candidate for a readable credential-free contributor route. | Preserve generic package/source-fallback checks and keep the route separate from hosted or release work. |
+| M14 | #433 local candidate | The README entrypoint makes Context activation, authority, host, evidence, and product-focus limits explicit, with usefulness still `INCONCLUSIVE`. | Preserve the public boundary without promoting local evidence to host delivery or product value. |
 
 ## Invariants
 
@@ -172,6 +174,10 @@ evidence rather than a description of current protected main.
 6. **Remaining independent work:** #410 owns the sole real OpenCode-host
    observation route. #429 owns a preregistered external-validation schema
    whose initial state remains `INCONCLUSIVE` without an observation.
+7. **Current local P0 candidates:** #429 records the external-validation
+   parser/evaluator and empty status, #430 records the contributor map, and
+   #433 records the README claim boundary. They are local integration
+   candidates only; none is release, host-delivery, or product-value evidence.
 
 Only one public command, schema, resolver, adapter, CI, script, or documentation
 boundary is changed per child issue. A child issue closes only when its stated
