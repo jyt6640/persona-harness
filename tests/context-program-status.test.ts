@@ -29,8 +29,10 @@ describe("Context program status", () => {
 
     expect(status).toContain("a82b85ddef7e9fd9518348bff16deb38f53b4676")
     expect(status).toContain("persona-harness@0.8.37")
+    expect(status).toContain("persona-harness@0.8.38")
     expect(status).toContain("#442")
     expect(status).toContain("#443")
+    expect(status).toContain("#446")
     expect(status).toContain("TECHNICAL_GO")
     expect(status).toContain("#410")
     expect(status).toContain("named Delivery Control start predicate")

@@ -3,9 +3,11 @@
 Status: current canonical program record.
 
 Last reconciled: 2026-08-30
-Current P0 integration release: `a82b85ddef7e9fd9518348bff16deb38f53b4676`
-Current P0 integration package: [`persona-harness@0.8.37`](https://www.npmjs.com/package/persona-harness/v/0.8.37)
-Current P0 integration lineage: [#442](https://github.com/jyt6640/persona-harness/issues/442) delivered through [#443](https://github.com/jyt6640/persona-harness/pull/443)
+P0 integration release: `a82b85ddef7e9fd9518348bff16deb38f53b4676`
+P0 integration package: [`persona-harness@0.8.37`](https://www.npmjs.com/package/persona-harness/v/0.8.37)
+P0 integration lineage: [#442](https://github.com/jyt6640/persona-harness/issues/442) delivered through [#443](https://github.com/jyt6640/persona-harness/pull/443)
+Current program-status publication: [`persona-harness@0.8.38`](https://www.npmjs.com/package/persona-harness/v/0.8.38)
+Program-status publication lineage: [#444](https://github.com/jyt6640/persona-harness/issues/444) reconciled through [#445](https://github.com/jyt6640/persona-harness/pull/445) and published by [#446](https://github.com/jyt6640/persona-harness/issues/446)
 P0 implementation release baseline: `9b80a45070be10659150095cf701a6f375bc6600`
 P0 implementation package: [`persona-harness@0.8.33`](https://www.npmjs.com/package/persona-harness/v/0.8.33)
 P0 implementation lineage: [#414](https://github.com/jyt6640/persona-harness/issues/414) delivered through [#437](https://github.com/jyt6640/persona-harness/pull/437)
@@ -281,7 +283,7 @@ was not modified.
 | P0 implementation release lineage | #414 delivered stable `v0.8.33` through #437. Its immutable tag, GitHub Release, npm `latest`, canonical tar, and provenance bind to `9b80a45070be10659150095cf701a6f375bc6600`. | Historical P0 implementation release evidence does not prove live host delivery. |
 | Deterministic comparison release lineage | #411 delivered stable `v0.8.34` through #439. Its immutable tag, GitHub Release, npm `latest`, canonical tar, and provenance bind to `19c397e4fed5b1cce7d024fbcc51350e9676105f`. | It records only deterministic technical results; host/model/operational values remain unavailable and product verdicts remain `INCONCLUSIVE`. |
 | Current P0 integration release | #442 delivered stable `v0.8.37` through #443. Its immutable tag, GitHub Release, npm `latest`, canonical tar, and provenance bind to `a82b85ddef7e9fd9518348bff16deb38f53b4676`. | It closes the deterministic local P0 boundaries, not #410's real host observation or external product-value evidence. |
-| Hosted Context delivery | The current published `0.8.37` package contains the merged #403 adapter boundary, but no package/release record substitutes for the #410 start predicate. | #410 still needs its own named Delivery Control start predicate and one bounded real OpenCode observation. |
+| Hosted Context delivery | The current program-status publication `0.8.38` retains the merged #403 adapter boundary, but no package/release record substitutes for the #410 start predicate. | #410 still needs its own named Delivery Control start predicate and one bounded real OpenCode observation. |
 | Other follow-ups | #421 is delivered as stable `v0.8.35` through #440; #412 is delivered as stable `v0.8.36` through #441; the #429 protocol is released through #443 with zero observations. | None of these facts manufacture host or user-value evidence. |
 
 Product-value verdict remains **INCONCLUSIVE**. Local composition, package,
