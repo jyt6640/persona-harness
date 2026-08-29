@@ -5,6 +5,11 @@ import { describe, expect, it } from "vitest"
 
 import { assertContextComparisonCandidate, parseContextComparisonArguments } from "../scripts/eval/run-context-comparison.mjs"
 
+const SYNTHETIC_CANDIDATE = {
+  commit: "0123456789abcdef0123456789abcdef01234567",
+  packageVersion: "1.2.3",
+} as const
+
 describe("Context comparison runner", () => {
   it("requires explicit candidate metadata instead of inferring a Git revision", () => {
     expect(() => parseContextComparisonArguments(["--manifest", "fixtures.json"])).toThrow("context-comparison-arguments-invalid")
@@ -15,21 +20,19 @@ describe("Context comparison runner", () => {
       "--manifest",
       "docs/current/context-comparison-manifest.json",
       "--candidate-commit",
-      "a562331f9db321845b05da1e16edc4b83bf78ece",
+      SYNTHETIC_CANDIDATE.commit,
       "--package-version",
-      "0.8.32",
+      SYNTHETIC_CANDIDATE.packageVersion,
     ])).toEqual({
-      candidate: { commit: "a562331f9db321845b05da1e16edc4b83bf78ece", packageVersion: "0.8.32" },
+      candidate: SYNTHETIC_CANDIDATE,
       manifestPath: "docs/current/context-comparison-manifest.json",
     })
   })
 
   it("rejects explicit metadata that does not bind the checked-out candidate", () => {
-    const candidate = { commit: "a562331f9db321845b05da1e16edc4b83bf78ece", packageVersion: "0.8.32" }
-
-    expect(() => assertContextComparisonCandidate(candidate, {
-      commit: "43b23da58de7b24f8875722c568cb52235e4419a",
-      packageVersion: "0.8.32",
+    expect(() => assertContextComparisonCandidate(SYNTHETIC_CANDIDATE, {
+      commit: "89abcdef0123456789abcdef0123456789abcdef",
+      packageVersion: SYNTHETIC_CANDIDATE.packageVersion,
     })).toThrow("context-comparison-candidate-mismatch")
   })
 

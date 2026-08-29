@@ -10,6 +10,10 @@ import {
 import type { ContextComparisonRecord, ContextComparisonResult } from "../src/context-comparison/index.js"
 
 const repositoryRoot = resolve(process.cwd())
+const SYNTHETIC_CANDIDATE = {
+  commit: "0123456789abcdef0123456789abcdef01234567",
+  packageVersion: "1.2.3",
+} as const
 
 describe("Context three-arm comparison", () => {
   it("evaluates the complete ten-fixture corpus across OFF, legacy broad, and targeted layered arms", () => {
@@ -73,7 +77,7 @@ describe("Context three-arm comparison", () => {
   })
 
   it("rejects a missing candidate binding before evaluating the fixture corpus", () => {
-    const result = evaluateContextComparison(loadManifest(), { commit: "", packageVersion: "0.8.32" })
+    const result = evaluateContextComparison(loadManifest(), { commit: "", packageVersion: SYNTHETIC_CANDIDATE.packageVersion })
 
     expect(result).toEqual({
       code: "context-comparison-candidate-invalid",
@@ -126,7 +130,7 @@ describe("Context three-arm comparison", () => {
 })
 
 function candidate(): { readonly commit: string; readonly packageVersion: string } {
-  return { commit: "a562331f9db321845b05da1e16edc4b83bf78ece", packageVersion: "0.8.32" }
+  return SYNTHETIC_CANDIDATE
 }
 
 function loadManifest(): unknown {
