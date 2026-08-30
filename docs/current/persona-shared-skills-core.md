@@ -74,6 +74,21 @@ recommendation plus its tradeoff. A user may answer, request a recommendation,
 defer, or stop. After the facts are complete, it renders a brief and requires
 an explicit `approve` before technical intake.
 
+While an interview is active, a natural-language request not to interview, a
+whole-task discovery defer, or a workflow feedback/dogfooding task switch ends
+that interview before the message can become an answer. The session remains
+suppressed until the user explicitly sends `/persona deep-interview`; another
+ambiguous product request does not restart it. A bare `defer` remains a
+per-topic answer. A clarification request holds the current topic and asks the
+host to explain only that question in plain language. At the final approval
+boundary only, an English token within one edit of `approve` is accepted once;
+it cannot advance an unresolved topic.
+
+The compact `[Persona Harness Skill Route]` marker is emitted only when
+`deep-interview` is actually selected. A stop or clarification carries the
+`[Persona Harness Product Interview]` control marker but is not a new skill
+activation or a claim that the complete skill body ran.
+
 Before that approval, the route creates no plan, ticket, workflow state,
 branch, issue, file, or agent. For a brownfield change, read the relevant
 existing code first and ask only product intent the code cannot establish.

@@ -1,4 +1,10 @@
 import { createOpenCodeSkillRoute } from "./opencode-skill-adapter.js"
+import {
+  isExplicitProductInterviewRequest,
+  isProductInterviewApproval,
+  isProductInterviewClarification,
+  isProductInterviewStop,
+} from "./product-interview-control.js"
 
 const TOPICS = [
   {
@@ -68,15 +74,15 @@ export type ProductDeepInterviewOptions = {
 export type ProductDeepInterviewResult =
   | { readonly kind: "question"; readonly topic: ProductInterviewTopic; readonly block: string }
   | { readonly kind: "recommendation"; readonly topic: ProductInterviewTopic; readonly block: string }
+  | { readonly kind: "clarification-required"; readonly topic: ProductInterviewTopic; readonly block: string }
   | { readonly kind: "approval-required"; readonly block: string }
   | { readonly kind: "approved"; readonly handoff: "technical-intake"; readonly block: string }
   | { readonly kind: "stopped"; readonly block: string }
 
 const START_PATTERN = /(만들래|만들고\s*싶|기획해|구상해|서비스\s*만들|웹\s*서비스|기존\s*(?:서비스|제품|앱|흐름).*(?:개선|변경)|product\s+idea|want\s+to\s+(?:build|create|make|explore)|(?:build|create|make)\s+(?:an?|the)\s+(?:app|service|product)|new\s+(?:app|service|product)|(?:app|service|product)\s+idea|(?:improve|change)\s+(?:an?\s+)?existing(?:\s+\w+){0,2}\s+(?:app|service|product|flow))/iu
-const APPROVAL_PATTERN = /^(?:승인|진행하자|시작하자|approve|proceed|go\s+ahead)$/iu
-const STOP_PATTERN = /^(?:stop|pause|그만|중단)$/iu
 const DEFER_PATTERN = /^(?:defer|skip|later|보류|넘겨)$/iu
 const RECOMMEND_PATTERN = /^(?:recommend|recommendation|추천)$/iu
+const STOPPED_BLOCK = "[Persona Harness Product Interview]\nProduct discovery is paused.\nNo project, workflow, issue, agent, or file state was changed."
 
 export function isProductDeepInterviewStart(message: string): boolean {
   return START_PATTERN.test(message.trim())
@@ -149,6 +155,26 @@ function renderRecommendation(session: ProductInterviewSession): ProductDeepInte
   }
 }
 
+function renderClarificationRequired(session: ProductInterviewSession): ProductDeepInterviewResult {
+  const topic = topicAt(session.topicIndex)
+  if (topic === undefined) {
+    return renderApprovalRequired(session)
+  }
+  return {
+    kind: "clarification-required",
+    topic: topic.id,
+    block: [
+      "[Persona Harness Product Interview]",
+      `Current topic: ${topic.id}`,
+      "The user's latest message is a clarification request, not a product decision.",
+      "Explain only the current question in plain language, then wait for the user's reply.",
+      "Do not record an answer, advance to another topic, or ask a neighbouring question.",
+      `Question to explain: ${topic.question}`,
+      "No project, workflow, issue, agent, or file state was changed.",
+    ].join("\n"),
+  }
+}
+
 function briefAnswer(session: ProductInterviewSession, topic: ProductInterviewTopic): string {
   return session.answers.get(topic) ?? "deferred"
 }
@@ -178,6 +204,7 @@ function startSession(mode: ProductDeepInterviewMode): ProductInterviewSession {
 
 export class ProductDeepInterviewTracker {
   private readonly sessions = new Map<string, ProductInterviewSession>()
+  private readonly suppressedSessions = new Set<string>()
 
   constructor(private readonly options: ProductDeepInterviewOptions = {}) {}
 
@@ -193,29 +220,34 @@ export class ProductDeepInterviewTracker {
 
     const current = this.sessions.get(sessionId)
     if (current === undefined) {
+      if (this.suppressedSessions.has(sessionId)) {
+        if (!isExplicitProductInterviewRequest(normalized)) {
+          return undefined
+        }
+        this.suppressedSessions.delete(sessionId)
+      }
       if (!isProductDeepInterviewStart(normalized)) {
-        return undefined
+        if (!isExplicitProductInterviewRequest(normalized)) {
+          return undefined
+        }
       }
       const started = startSession(this.options.mode ?? "new-product")
       this.sessions.set(sessionId, started)
       return renderQuestion(started)
     }
 
-    if (STOP_PATTERN.test(normalized)) {
+    if (isProductInterviewStop(normalized)) {
       this.sessions.delete(sessionId)
-      return {
-        kind: "stopped",
-        block: [
-          "[Persona Harness Product Interview]",
-          "Product discovery is paused.",
-          "No project, workflow, issue, agent, or file state was changed.",
-        ].join("\n"),
-      }
+      this.suppressedSessions.add(sessionId)
+      return { kind: "stopped", block: STOPPED_BLOCK }
     }
     if (RECOMMEND_PATTERN.test(normalized)) {
       return renderRecommendation(current)
     }
-    if (APPROVAL_PATTERN.test(normalized)) {
+    if (isProductInterviewClarification(normalized)) {
+      return renderClarificationRequired(current)
+    }
+    if (isProductInterviewApproval(normalized)) {
       if (current.topicIndex < TOPICS.length) {
         return renderQuestion(current, true)
       }
