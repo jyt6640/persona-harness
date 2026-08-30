@@ -1,5 +1,6 @@
 ---
 name: git
+description: Use only for an explicit Git operation with scoped status, diff, and transport discipline.
 persona-skill: core
 mutability: explicit-user-action
 handoff: none

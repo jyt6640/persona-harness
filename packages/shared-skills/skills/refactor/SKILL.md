@@ -1,5 +1,6 @@
 ---
 name: refactor
+description: Use only for an explicitly requested behavior-preserving structural improvement.
 persona-skill: core
 mutability: advisory
 handoff: review

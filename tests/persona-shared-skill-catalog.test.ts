@@ -184,6 +184,8 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(guide).toContain("does not inject the full skill body or catalog into every turn")
     expect(guide).toContain("OpenCode's native skill loader")
     expect(guide).toMatch(/does\s+not grant them authority/u)
+    expect(guide).toMatch(/current OpenCode native selection,\s+and host route delivery therefore remain \*\*unobserved\*\*/u)
+    expect(guide).toMatch(/never lists a skill\s+as active merely because the/u)
   })
 
   it("keeps the decision grill automatic only for concrete pressure-test requests", () => {

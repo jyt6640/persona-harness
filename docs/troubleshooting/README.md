@@ -31,6 +31,7 @@ agent follow the workflow you must turn on a driver and/or force the gate.
 | Profile not set up on an existing project | [existing-project-profile.md](existing-project-profile.md) |
 | `split` left the workflow stuck | [split-recovery.md](split-recovery.md) |
 | How to tell the rail is actually active | [check-rail-active.md](check-rail-active.md) |
+| Bootstrap or `attach --repair` says workspace intake failed | [workflow-intake.md](workflow-intake.md) |
 | PR CI is slow, a main-only package job is skipped, or the CI aggregate fails | [ci-fast-feedback.md](ci-fast-feedback.md) |
 
 See also: [Quick Demo](../QUICK-DEMO.md) · [Start Here](../START-HERE.md) ·

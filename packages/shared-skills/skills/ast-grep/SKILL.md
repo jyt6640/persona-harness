@@ -1,5 +1,6 @@
 ---
 name: ast-grep
+description: Use only when the user explicitly requests AST-aware search or rewrite and the tool is available.
 persona-skill: optional-extension
 mutability: advisory
 handoff: review

@@ -1,5 +1,6 @@
 ---
 name: plan
+description: Use after product and technical inputs are concrete enough to choose a bounded delivery plan.
 persona-skill: core
 mutability: explicit-user-action
 handoff: ralplan

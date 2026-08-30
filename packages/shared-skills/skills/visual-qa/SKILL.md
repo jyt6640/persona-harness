@@ -1,5 +1,6 @@
 ---
 name: visual-qa
+description: Use only when the user explicitly requests visual verification and a compatible host can render the UI.
 persona-skill: optional-extension
 mutability: advisory
 handoff: review

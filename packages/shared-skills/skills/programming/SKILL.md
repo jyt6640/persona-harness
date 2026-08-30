@@ -1,5 +1,6 @@
 ---
 name: programming
+description: Use for a clear scoped implementation request; inspect local conventions and verify only the requested change.
 persona-skill: core
 mutability: advisory
 handoff: tdd

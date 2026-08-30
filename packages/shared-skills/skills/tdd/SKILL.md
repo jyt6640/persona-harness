@@ -1,5 +1,6 @@
 ---
 name: tdd
+description: Use after an approved delivery boundary to define a focused failing behavior test before implementation.
 persona-skill: core
 mutability: explicit-user-action
 handoff: implementation

@@ -17,6 +17,24 @@ The store contains `profile.json`. `ph philosophy status` and `ph philosophy
 init` inspect the starter profile without creating the root or the file. A
 root must be absolute, regular, and free of symlink/reparse ancestors.
 
+## Status distinction
+
+`ph philosophy status` is read-only. Its personal-store counts and `store`
+field describe only the user-scoped personalization profile. They do not say
+whether a project-local convention exists.
+
+The same JSON result includes a nonreflective `project` summary:
+
+- `profileState` is `missing`, `draft`, `incomplete`, `invalid`, or `ready`.
+- `conventionState` is `configured`, `missing`, `not-ready`, or `unsafe`.
+- `injection` is the effective local `projectPhilosophyInjection` setting.
+- `hostDelivery` remains `unobserved`: a local CLI status command cannot prove
+  that an OpenCode host session received a system-context transform.
+
+The status never includes the convention text, creates either store, changes
+`runtimeInjection`, or enables delivery. A ready project convention can coexist
+with an uninitialized personal profile.
+
 ## Versioned records
 
 The document is `personalization-store.v1` and contains a

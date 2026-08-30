@@ -32,6 +32,11 @@ export type BackendProjectProfileState = {
   readonly message: string
 }
 
+export type BackendProjectPhilosophyStatus = {
+  readonly profileState: BackendProjectProfileState["status"]
+  readonly conventionState: "configured" | "missing" | "not-ready" | "unsafe"
+}
+
 type ProfileQuestion = {
   readonly id: string
   readonly answer: string | null
@@ -88,27 +93,36 @@ function readProjectNote(value: unknown): string | undefined {
 
 const UNSAFE_PROJECT_PHILOSOPHY_PATTERN = /(?:https?:\/\/|(?:api[_-]?key|access[_-]?token|password|secret|authorization)\s*[:=]|(?:ignore|disregard|override)\s+(?:(?:all|any)\s+)?(?:(?:previous|prior|earlier)\s+)?(?:instructions?|rules?|system\s+(?:prompt|message))|(?:이전|앞선|모든)\s*(?:지시|명령|규칙)\s*(?:을|를)?\s*무시|시스템\s*(?:프롬프트|메시지)\s*(?:을|를)?\s*(?:무시|덮어))/iu
 
-function normalizeSafeProjectPhilosophy(value: unknown): string | undefined {
+type ProjectPhilosophyInspection =
+  | { readonly state: "configured"; readonly philosophy: string }
+  | { readonly state: "missing" | "unsafe" }
+
+function inspectProjectPhilosophy(value: unknown): ProjectPhilosophyInspection {
   if (!isRecord(value) || !isRecord(value.philosophy) || typeof value.philosophy.project !== "string") {
-    return undefined
+    return { state: "missing" }
   }
 
   const rawPhilosophy = value.philosophy.project
   if (/[\u0000-\u001f\u007f]/u.test(rawPhilosophy)) {
-    return undefined
+    return { state: "unsafe" }
   }
 
   const philosophy = rawPhilosophy.trim().replace(/\s+/gu, " ")
   if (philosophy.length === 0 || philosophy.length > 1_000) {
-    return undefined
+    return { state: "unsafe" }
   }
   if (UNSAFE_PROJECT_PHILOSOPHY_PATTERN.test(philosophy)) {
-    return undefined
+    return { state: "unsafe" }
   }
   if (/(?:^|\s)(?:[A-Za-z]:[\\/]|[\\/]{1,2})[^\s]*/u.test(philosophy)) {
-    return undefined
+    return { state: "unsafe" }
   }
-  return philosophy
+  return { state: "configured", philosophy }
+}
+
+function normalizeSafeProjectPhilosophy(value: unknown): string | undefined {
+  const inspection = inspectProjectPhilosophy(value)
+  return inspection.state === "configured" ? inspection.philosophy : undefined
 }
 
 function hasReadyBackendAnswers(value: Record<string, unknown>): boolean {
@@ -202,11 +216,59 @@ export function loadBackendProjectPhilosophy(
   return normalizeSafeProjectPhilosophy(parsed)
 }
 
+/**
+ * Classifies local project convention readiness without reflecting convention
+ * text or inferring that any host session received it.
+ */
+export function readBackendProjectPhilosophyStatus(
+  projectDir: string,
+  projectBoundary?: ProfileReadBoundary,
+): BackendProjectPhilosophyStatus {
+  const profile = readBackendProjectProfileState(projectDir, projectBoundary)
+  if (profile.status !== "ready") {
+    return { conventionState: "not-ready", profileState: profile.status }
+  }
+
+  let text: string | undefined
+  try {
+    text = readProfileText(projectDir, projectBoundary)
+  } catch {
+    return { conventionState: "not-ready", profileState: "invalid" }
+  }
+  if (text === undefined) {
+    return { conventionState: "not-ready", profileState: "missing" }
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(stripJsonComments(text))
+  } catch {
+    return { conventionState: "not-ready", profileState: "invalid" }
+  }
+  if (!isSupportedBackendProfile(parsed) || !hasReadyBackendAnswers(parsed)) {
+    return { conventionState: "not-ready", profileState: "invalid" }
+  }
+
+  return {
+    conventionState: inspectProjectPhilosophy(parsed).state,
+    profileState: "ready",
+  }
+}
+
 export function readBackendProjectProfileState(
   projectDir: string,
   projectBoundary?: ProfileReadBoundary,
 ): BackendProjectProfileState {
-  const text = readProfileText(projectDir, projectBoundary)
+  let text: string | undefined
+  try {
+    text = readProfileText(projectDir, projectBoundary)
+  } catch {
+    return {
+      status: "invalid",
+      missingAnswers: [...SUMMARY_ORDER],
+      message: `${PROFILE_PATH} could not be read safely. Fix it before planning.`,
+    }
+  }
   if (text === undefined) {
     return {
       status: "missing",

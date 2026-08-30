@@ -28,6 +28,7 @@ import {
 } from "./attach-command-contract.js"
 import { runBootstrapCommand } from "./bootstrap.js"
 import { runInstructionsCommand } from "./instructions-infer.js"
+import { readWorkflowDiagnosis } from "./workflow-diagnostics.js"
 
 type AttachOptions = {
   readonly onAfterCommitFile?: (relativePath: string) => void
@@ -169,10 +170,11 @@ function runRepair(projectDir: string, options: AttachOptions): CliRunResult {
       "ph",
     )
     if (bootstrap.status !== 0) {
+      const diagnosis = readWorkflowDiagnosis(projectDir)
       return attachBlocked(
-        bootstrap.stderr.trim() || "staging repair failed.",
-        "Resolve the reported project configuration problem, then retry repair.",
-        "npx ph attach --repair --yes",
+        `Automatic repair stopped before commit. Workflow intake: ${diagnosis.workspaceIntake}.`,
+        "Inspect the read-only workflow diagnosis before changing existing files.",
+        "npx ph workflow diagnose",
       )
     }
     const inference = runInstructionsCommand(["infer", "backend"], { projectDir: stagingDir }, "ph")

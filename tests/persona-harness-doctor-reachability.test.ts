@@ -73,6 +73,18 @@ function doctor(projectDir: string) {
   })
 }
 
+function doctorJson(projectDir: string) {
+  return runPersonaCli(["doctor", "--json"], {
+    cwd: projectDir,
+    doctorSigstoreTrustInspector: inspectReadySigstoreTrust,
+    env: {
+      PH_DOCTOR_OPENCODE_VERSION: "1.0.0-test",
+      PH_DOCTOR_REGISTRY_DIST_TAGS: JSON.stringify({ latest: "0.6.0" }),
+    },
+    invocationName: "ph",
+  })
+}
+
 function lineCount(output: string, prefix: string): number {
   return output.split("\n").filter((line) => line.startsWith(prefix)).length
 }
@@ -159,6 +171,56 @@ describe("ph doctor session reachability", () => {
     expect(result.stdout).not.toContain("--strict")
     expect(lineCount(result.stdout, "Next action:")).toBe(0)
     expect(lineCount(result.stdout, "Next command:")).toBe(0)
+  })
+
+  it("separates OpenCode skill discovery from an unobserved live-session selection", () => {
+    const projectDir = createTempProject()
+    writeManagedAgents(projectDir)
+    writePluginConfig(projectDir)
+    writeProjectFile(
+      projectDir,
+      ".persona/harness.jsonc",
+      `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["workflow"] }, null, 2)}\n`,
+    )
+
+    const result = doctor(projectDir)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("OpenCode native shared-skill metadata: READY (17/17 described)")
+    expect(result.stdout).toContain("OpenCode plugin adapter reachability: UNOBSERVED")
+    expect(result.stdout).toContain("OpenCode automatic advisory route: CONFIGURED (not host-observed)")
+    expect(result.stdout).toContain("OpenCode current skill selection: UNOBSERVED")
+    expect(result.stdout).toContain("OpenCode host route delivery: UNOBSERVED")
+    expect(result.stdout).not.toContain("OpenCode active skill:")
+
+    const json = doctorJson(projectDir)
+    const payload = JSON.parse(json.stdout) as {
+      readonly sharedSkills: {
+        readonly adapterReachability: string
+        readonly automaticAdvisoryRoute: string
+        readonly hostDelivery: string
+        readonly hostSelection: string
+        readonly nativeCatalog: {
+          readonly describedSkillCount: number
+          readonly skillCount: number
+          readonly state: string
+        }
+        readonly schemaVersion: string
+      }
+    }
+    expect(json.status).toBe(0)
+    expect(payload.sharedSkills).toEqual({
+      adapterReachability: "unobserved",
+      automaticAdvisoryRoute: "configured",
+      hostDelivery: "unobserved",
+      hostSelection: "unobserved",
+      nativeCatalog: {
+        describedSkillCount: 17,
+        skillCount: 17,
+        state: "ready",
+      },
+      schemaVersion: "opencode-shared-skill-routing-status.1",
+    })
   })
 
   it("prioritizes one follow-up when multiple reachability blockers exist", () => {

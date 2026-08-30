@@ -1,5 +1,6 @@
 ---
 name: implementation
+description: Use after an approved, tested delivery boundary to implement it with focused verification.
 persona-skill: core
 mutability: explicit-user-action
 handoff: review

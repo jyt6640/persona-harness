@@ -1,5 +1,6 @@
 ---
 name: review
+description: Use to review a scoped implementation and report evidence-based findings before suggesting changes.
 persona-skill: core
 mutability: advisory
 handoff: none

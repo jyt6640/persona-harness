@@ -58,7 +58,7 @@ describe("public CLI discovery", () => {
     const dev = runPersonaCli(["dev", "--help"], { cwd: projectDir, env: {}, invocationName: "ph" })
 
     expect(workflow.status).toBe(0)
-    expect(workflow.stdout).toContain("workflow <check|implement|test|tdd|continue|loop|ralph-loop")
+    expect(workflow.stdout).toContain("workflow <check|diagnose|implement|test|tdd|continue|loop|ralph-loop")
     expect(workflow.stdout).toContain("workflow draft/approve/capture/split/next/archive")
     expect(dev.status).toBe(0)
     expect(dev.stdout).toContain("Usage: ph dev <evidence|smoke|feedback|ralph-loop|observe|bearshell|review|staged-package|staged-package-provenance>")

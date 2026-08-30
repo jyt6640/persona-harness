@@ -1,5 +1,6 @@
 ---
 name: frontend
+description: Use only for an explicitly requested scoped UI change with existing design constraints.
 persona-skill: optional-extension
 mutability: advisory
 handoff: tdd
