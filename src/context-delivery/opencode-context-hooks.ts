@@ -1,5 +1,4 @@
 import type { Hooks } from "@opencode-ai/plugin"
-import type { Part } from "@opencode-ai/sdk"
 
 import { readContextPreview, type ContextPreviewOptions } from "../cli/context-preview.js"
 import { resolveContainedPath } from "../io/bounded-path-walker.js"
@@ -7,6 +6,7 @@ import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "../io/t
 import { ContextDeliveryStore, type PendingContextDelivery } from "./context-delivery-store.js"
 
 const CONTEXT_DELIVERY_MARKER = "[Persona Harness Context]"
+const CONTEXT_DELIVERY_PART_ID = "persona-harness-context"
 
 type HookHandler<T> = NonNullable<T>
 type ContextEventInput = Parameters<HookHandler<Hooks["event"]>>[0]
@@ -81,13 +81,8 @@ function injectContextBlock(output: ContextMessagesOutput, sessionID: string, bl
   for (let index = output.messages.length - 1; index >= 0; index -= 1) {
     const message = output.messages[index]
     if (message?.info.role !== "user" || message.info.sessionID !== sessionID) continue
-    const textPart = message.parts.find(isTextPart)
-    if (textPart !== undefined) {
-      textPart.text = `${block}\n\n---\n\n${textPart.text}`
-      return true
-    }
     message.parts.unshift({
-      id: "persona-harness-context",
+      id: CONTEXT_DELIVERY_PART_ID,
       messageID: message.info.id,
       sessionID,
       synthetic: true,
@@ -119,8 +114,4 @@ function asRecord(value: unknown): Readonly<Record<string, unknown>> | undefined
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
-function isTextPart(part: Part): part is Extract<Part, { type: "text" }> {
-  return part.type === "text" && typeof part.text === "string"
 }

@@ -237,8 +237,12 @@ function installedContextDeliverySource() {
     "await hooks['tool.execute.after']?.({args:{filePath:targetFile},callID:'call-1',sessionID,tool:'read'},{metadata:{},output:'ok',title:'read'})",
     "const output={messages:[{info:{agent:'build',id:'message-1',model:{modelID:'test-model',providerID:'test'},role:'user',sessionID,time:{created:1}},parts:[{id:'part-1',messageID:'message-1',sessionID,text:'Create the service.',type:'text'}]}]}",
     "await hooks['experimental.chat.messages.transform']?.({},output)",
-    "const text=output.messages[0]?.parts[0]?.text",
-    "if(typeof text!=='string'||!text.includes('[Persona Harness Context]')||text.includes('[Persona Harness Runtime Context]'))process.exit(1)",
+    "const parts=output.messages[0]?.parts",
+    "const context=parts?.[0]",
+    "const user=parts?.[1]",
+    "if(parts?.length!==2)process.exit(1)",
+    "if(context?.id!=='persona-harness-context'||context?.synthetic!==true||context?.type!=='text'||typeof context.text!=='string'||context.text.length===0)process.exit(1)",
+    "if(user?.id!=='part-1'||user?.messageID!=='message-1'||user?.sessionID!==sessionID||user?.text!=='Create the service.'||user?.type!=='text')process.exit(1)",
     "process.stdout.write('installed-opencode-context-delivery: PASS\\n')",
   ].join(";")
 }
