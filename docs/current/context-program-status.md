@@ -6,8 +6,11 @@ Last reconciled: 2026-08-30
 P0 integration release: `a82b85ddef7e9fd9518348bff16deb38f53b4676`
 P0 integration package: [`persona-harness@0.8.37`](https://www.npmjs.com/package/persona-harness/v/0.8.37)
 P0 integration lineage: [#442](https://github.com/jyt6640/persona-harness/issues/442) delivered through [#443](https://github.com/jyt6640/persona-harness/pull/443)
-Current program-status publication: [`persona-harness@0.8.38`](https://www.npmjs.com/package/persona-harness/v/0.8.38)
+Prior program-status publication: [`persona-harness@0.8.38`](https://www.npmjs.com/package/persona-harness/v/0.8.38)
 Program-status publication lineage: [#444](https://github.com/jyt6640/persona-harness/issues/444) reconciled through [#445](https://github.com/jyt6640/persona-harness/pull/445) and published by [#446](https://github.com/jyt6640/persona-harness/issues/446)
+Current structural-observability release: [`persona-harness@0.8.39`](https://www.npmjs.com/package/persona-harness/v/0.8.39)
+Structural-observability lineage: [#449](https://github.com/jyt6640/persona-harness/issues/449) delivered through [#450](https://github.com/jyt6640/persona-harness/pull/450) on `ec3680bcceccf582521952dc77bf3cc9fb7cd874`
+Current lifecycle documentation merge: [#451](https://github.com/jyt6640/persona-harness/issues/451) delivered through [#452](https://github.com/jyt6640/persona-harness/pull/452) on `881be07b3e3baa443a66126ca94008499082b732`
 P0 implementation release baseline: `9b80a45070be10659150095cf701a6f375bc6600`
 P0 implementation package: [`persona-harness@0.8.33`](https://www.npmjs.com/package/persona-harness/v/0.8.33)
 P0 implementation lineage: [#414](https://github.com/jyt6640/persona-harness/issues/414) delivered through [#437](https://github.com/jyt6640/persona-harness/pull/437)
@@ -22,7 +25,7 @@ Current compatibility package: [`persona-harness@0.8.36`](https://www.npmjs.com/
 Current compatibility lineage: [#412](https://github.com/jyt6640/persona-harness/issues/412) delivered through [#441](https://github.com/jyt6640/persona-harness/pull/441)
 Historical pre-integration audit source: `f677a635040ad55d8b7d25abab280c5703a153ea`
 Program issue: [#389](https://github.com/jyt6640/persona-harness/issues/389)
-Remaining bounded work: the terminal, non-retryable hosted-observation record in [#410](https://github.com/jyt6640/persona-harness/issues/410), the metadata-only structural observer boundary in [#449](https://github.com/jyt6640/persona-harness/issues/449), and the not-started independent-value protocol from [#429](https://github.com/jyt6640/persona-harness/issues/429). The deterministic local P0 boundaries integrated by #443 are closed.
+Remaining bounded work: the terminal, non-retryable hosted-observation record in [#410](https://github.com/jyt6640/persona-harness/issues/410) and the not-started independent-value protocol from [#429](https://github.com/jyt6640/persona-harness/issues/429), whose real preregistered participant route is [#317](https://github.com/jyt6640/persona-harness/issues/317). [#449](https://github.com/jyt6640/persona-harness/issues/449) is a delivered metadata-only structural observer boundary; it does not replay #410, begin a host action, or establish product value. The deterministic local P0 boundaries integrated by #443 are closed.
 
 ## Purpose
 
@@ -170,17 +173,19 @@ evidence rather than a description of current protected main.
   evidence do not establish Context delivery or independent user value. #410
   ran its one authorized real OpenCode session, but its privacy-preserving
   observation could not classify delivery; the #429 status intentionally has
-  no independent-user observations.
+  no independent-user observations. The real preregistered independent
+  participant boundary remains #317.
 - **Hosted-observation verdict: `hosted-unavailable`.** The #410 one-shot
   completed its safe read and same-session checks, then retained only a
   sanitized OpenCode export. OpenCode `v1.17.16` redacts every text part in
   `export --sanitize`, so the absence of a Context marker in that export does
   not prove that the transform did not inject one. The run is terminal and
   cannot be retried as a debugger.
-- **Next allowed step:** no Context host action starts automatically. #449
-  introduces a metadata-only structural observer boundary, but any future
-  observation still needs its own explicit Delivery Control predicate and a
-  semantically new consumer/session. It cannot reuse or replay #410.
+- **Next allowed step:** no Context host action starts automatically. #449 is
+  delivered as a metadata-only structural observer boundary in `v0.8.39`, but
+  any future observation still needs its own explicit Delivery Control
+  predicate and a semantically new consumer/session. It cannot reuse or replay
+  #410.
 
 ## Current Delivery Order
 
@@ -205,13 +210,23 @@ evidence rather than a description of current protected main.
    as stable `v0.8.37` on
    `a82b85ddef7e9fd9518348bff16deb38f53b4676`. The release does not create
    host-delivery or product-value evidence.
-7. **Remaining independent evidence:** #410's named predicate ran once on a
+7. **Metadata-only structural-observability release:** #449 delivered through
+   #450 as stable `v0.8.39` on
+   `ec3680bcceccf582521952dc77bf3cc9fb7cd874`. It makes a separate synthetic
+   Context input part observable in sanitized OpenCode exports, but it does
+   not run a host observation or establish Context delivery or product value.
+8. **Explicit lifecycle documentation:** #451 delivered through #452 on
+   `881be07b3e3baa443a66126ca94008499082b732`. The guide documents inspection,
+   fresh-safe enablement, manual merge for an existing configuration,
+   disablement, Context-only removal, and VCS rollback without changing CLI or
+   runtime behavior.
+9. **Remaining independent evidence:** #410's named predicate ran once on a
    released `0.8.33` consumer and reached terminal `hosted-unavailable`.
    Because the retained OpenCode `v1.17.16` `export --sanitize` result redacts
    every text part, its marker count is not a delivery verdict; #410 cannot be
    retried. #429 owns the preregistered external-validation schema; its current
-   empty status remains `INCONCLUSIVE` until a future independent observation
-   meets the fixed protocol.
+   empty status remains `INCONCLUSIVE` until real preregistered participants
+   begin the separate #317 protocol.
 
 Only one public command, schema, resolver, adapter, CI, script, or documentation
 boundary is changed per child issue. A child issue closes only when its stated
