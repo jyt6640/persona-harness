@@ -88,4 +88,27 @@ describe("product interview hook activation", () => {
     expect(existsSync(join(projectDir, ".persona", "workflow"))).toBe(false)
     expect(existsSync(join(projectDir, ".persona", "evidence"))).toBe(false)
   })
+
+  it("does not automatically restart a stopped interview and only accepts an explicit deep-interview restart", async () => {
+    const projectDir = createProductProject()
+    const hooks = createPhase0Hooks({ projectDir })
+    const sessionID = "session-product-suppression"
+
+    // Given: a product interview was started and then explicitly stopped.
+    const started = outputWithText(sessionID, "Create an app for neighbours to exchange practical skills")
+    await hooks["experimental.chat.messages.transform"]?.({}, started)
+    const stopped = outputWithText(sessionID, "아니 지금 필요없는 인터뷰 하지마")
+    await hooks["experimental.chat.messages.transform"]?.({}, stopped)
+
+    // When: a later automatic product prompt appears, followed by an explicit command.
+    const automaticRestart = outputWithText(sessionID, "Create an app for neighbourhood bookings")
+    await hooks["experimental.chat.messages.transform"]?.({}, automaticRestart)
+    const explicitRestart = outputWithText(sessionID, "/persona deep-interview")
+    await hooks["experimental.chat.messages.transform"]?.({}, explicitRestart)
+
+    // Then: only the explicit command injects the interview route.
+    expect(latestText(automaticRestart)).not.toContain("[Persona Harness Product Interview]")
+    expect(latestText(explicitRestart)).toContain("[Persona Harness Product Interview]")
+    expect(latestText(explicitRestart)).toContain("Question:")
+  })
 })
