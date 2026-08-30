@@ -22,7 +22,7 @@ Current compatibility package: [`persona-harness@0.8.36`](https://www.npmjs.com/
 Current compatibility lineage: [#412](https://github.com/jyt6640/persona-harness/issues/412) delivered through [#441](https://github.com/jyt6640/persona-harness/pull/441)
 Historical pre-integration audit source: `f677a635040ad55d8b7d25abab280c5703a153ea`
 Program issue: [#389](https://github.com/jyt6640/persona-harness/issues/389)
-Remaining bounded work: the terminal, non-retryable hosted-observation record in [#410](https://github.com/jyt6640/persona-harness/issues/410) and the not-started independent-value protocol from [#429](https://github.com/jyt6640/persona-harness/issues/429). The deterministic local P0 boundaries integrated by #443 are closed.
+Remaining bounded work: the terminal, non-retryable hosted-observation record in [#410](https://github.com/jyt6640/persona-harness/issues/410), the metadata-only structural observer boundary in [#449](https://github.com/jyt6640/persona-harness/issues/449), and the not-started independent-value protocol from [#429](https://github.com/jyt6640/persona-harness/issues/429). The deterministic local P0 boundaries integrated by #443 are closed.
 
 ## Purpose
 
@@ -177,10 +177,10 @@ evidence rather than a description of current protected main.
   `export --sanitize`, so the absence of a Context marker in that export does
   not prove that the transform did not inject one. The run is terminal and
   cannot be retried as a debugger.
-- **Next allowed step:** no Context host action starts automatically. Any
-  future observation needs its own explicit Delivery Control predicate and a
-  privacy-preserving host-side observation boundary that can report the needed
-  metadata without retaining transcript text. It cannot reuse or replay #410.
+- **Next allowed step:** no Context host action starts automatically. #449
+  introduces a metadata-only structural observer boundary, but any future
+  observation still needs its own explicit Delivery Control predicate and a
+  semantically new consumer/session. It cannot reuse or replay #410.
 
 ## Current Delivery Order
 

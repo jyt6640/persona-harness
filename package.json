@@ -1,6 +1,6 @@
 {
   "name": "persona-harness",
-  "version": "0.8.38",
+  "version": "0.8.39",
   "private": false,
   "type": "module",
   "packageManager": "npm@10.8.2",

@@ -55,6 +55,35 @@ describe("OpenCode Context delivery", () => {
     expect(firstText(output)).not.toContain("[Persona Harness Runtime Context]")
   })
 
+  it("prepends a bounded synthetic Context part without mutating the user text part", async () => {
+    const projectDir = createProject({ context: { enabled: true } })
+    const hooks = createOpenCodeContextHooks({
+      personalization: { storeRoot: join(projectDir, "personalization-store") },
+      projectDir,
+    })
+    const sessionID = "context-sanitized-observer"
+    const originalText = "Create the service."
+
+    await observeTarget(hooks, sessionID, "src/main/java/example/CustomerService.java")
+    const output = modelInput(sessionID, originalText)
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    const parts = output.messages[0]?.parts
+    expect(parts).toHaveLength(2)
+    expect(parts?.[0]).toMatchObject({
+      id: "persona-harness-context",
+      synthetic: true,
+      type: "text",
+    })
+    expect(parts?.[1]).toEqual({
+      id: "part-1",
+      messageID: "message-1",
+      sessionID,
+      text: originalText,
+      type: "text",
+    })
+  })
+
   it("does not let legacy runtimeInjection enable Context delivery", async () => {
     const projectDir = createProject({
       context: { enabled: false },
