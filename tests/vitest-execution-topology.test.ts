@@ -12,6 +12,7 @@ const RESOURCE_SENSITIVE_TEST_FILES = [
   "tests/persona-harness-workflow-loop.test.ts",
   "tests/persona-harness-workflow-lifecycle-state-intake.test.ts",
   "tests/persona-harness-workflow-diagnostics.test.ts",
+  "tests/supported-node-surface-source-authority.test.ts",
   "tests/consumer-authority-v083-acceptance-schema.test.ts",
   "tests/consumer-authority-v084-acceptance-schema.test.ts",
   "tests/consumer-authority-v085-acceptance-schema.test.ts",
