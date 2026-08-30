@@ -2,6 +2,13 @@ import type { InitResult } from "./init.js"
 
 export function formatInitResult(result: InitResult): string {
   const backupLines = result.backups.length > 0 ? ["", "Backups:", ...result.backups.map((backup) => `- ${backup}`)] : []
+  const supportLines = result.decision === "apply"
+    ? [
+        "",
+        "Support Persona Harness:",
+        "- If this setup helped, consider starring: https://github.com/jyt6640/persona-harness",
+      ]
+    : []
   const decisionLines =
     result.decision === "dry-run"
       ? [
@@ -23,6 +30,7 @@ export function formatInitResult(result: InitResult): string {
     result.decision === "dry-run" ? "Persona Harness init dry-run." : "Persona Harness initialized.",
     "",
     ...decisionLines,
+    ...supportLines,
     "",
     "Installed:",
     ...result.installed.map((item) => `- ${item}`),

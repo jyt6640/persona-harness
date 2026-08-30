@@ -56,6 +56,22 @@ try {
 
   const help = run(process.execPath, [cliPath, "--help"], consumerRoot, "installed-cli-help")
   if (!help.stdout.includes("Usage: ph <command>")) throw new PackageSmokeError("installed-cli-help")
+  const initProject = join(temporaryRoot, "init-project")
+  mkdirSync(initProject, { recursive: true })
+  const initialized = run(process.execPath, [cliPath, "init"], initProject, "installed-cli-init")
+  if (!initialized.stdout.includes("https://github.com/jyt6640/persona-harness")) {
+    throw new PackageSmokeError("installed-cli-init-support-link")
+  }
+  const rerun = run(process.execPath, [cliPath, "init"], initProject, "installed-cli-init-rerun")
+  if (rerun.stdout.includes("https://github.com/jyt6640/persona-harness")) {
+    throw new PackageSmokeError("installed-cli-init-noop-support-link")
+  }
+  const initDryRunProject = join(temporaryRoot, "init-dry-run-project")
+  mkdirSync(initDryRunProject, { recursive: true })
+  const dryRun = run(process.execPath, [cliPath, "init", "--dry-run"], initDryRunProject, "installed-cli-init-dry-run")
+  if (dryRun.stdout.includes("https://github.com/jyt6640/persona-harness")) {
+    throw new PackageSmokeError("installed-cli-init-dry-run-support-link")
+  }
   const installedNpmTest = run(npmCommand, ["test"], installedRoot, "installed-npm-test")
   if (
     !installedNpmTest.stdout.includes("Persona Harness installed package smoke")

@@ -392,6 +392,18 @@ describe("persona-harness init", () => {
     expect(snapshotTree(projectDir)).toEqual(before)
   })
 
+  it("offers the GitHub Star link only after a committed init", () => {
+    const projectDir = createTempProject()
+
+    const fresh = runPersonaCli(["init"], { cwd: projectDir, packageRoot: process.cwd(), invocationName: "ph" })
+    const rerun = runPersonaCli(["init"], { cwd: projectDir, packageRoot: process.cwd(), invocationName: "ph" })
+
+    expect(fresh.status).toBe(0)
+    expect(fresh.stdout).toContain("https://github.com/jyt6640/persona-harness")
+    expect(rerun.status).toBe(0)
+    expect(rerun.stdout).not.toContain("https://github.com/jyt6640/persona-harness")
+  })
+
   it("performs a deterministic dry-run with zero writes", () => {
     const projectDir = createTempProject()
     const before = snapshotTree(projectDir)
@@ -405,6 +417,7 @@ describe("persona-harness init", () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("Dry run")
     expect(result.stdout).toContain("zero writes")
+    expect(result.stdout).not.toContain("https://github.com/jyt6640/persona-harness")
     expect(snapshotTree(projectDir)).toEqual(before)
   })
 
@@ -419,6 +432,7 @@ describe("persona-harness init", () => {
     })
 
     expect(result.status).toBe(1)
+    expect(result.stdout).not.toContain("https://github.com/jyt6640/persona-harness")
     expect(result.stderr).toContain("Unknown init option")
     expect(snapshotTree(projectDir)).toEqual(before)
   })
