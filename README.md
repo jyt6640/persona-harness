@@ -148,6 +148,47 @@ local configuration and Team Profile state, including the bundled OpenCode 1.x
 adapter. It cannot prove that a particular OpenCode session has loaded the
 project plugin.
 
+### Context Lifecycle
+
+Context configuration lives only in `.persona/harness.jsonc`. Inspect the
+current local state before changing it:
+
+```bash
+npx ph context status
+```
+
+For a safe project with no existing harness configuration, create the minimal
+opt-in configuration explicitly:
+
+```bash
+npx ph context init --enable
+```
+
+The command does not overwrite an existing `.persona/harness.jsonc`. For an
+existing harness configuration, review and preserve the file, then manually
+merge only this top-level `context` object using its existing JSONC style:
+
+```jsonc
+{
+  "context": {
+    "enabled": true,
+    "mode": "targeted",
+    "maxCapsules": 8,
+    "maxChars": 1600
+  }
+}
+```
+
+To disable Context while keeping its bounded settings for a later opt-in, set
+`context.enabled` to `false`. A missing `context` object is also disabled by
+default. Remove only the `context` object when it is no longer wanted; do not
+delete a shared `.persona/harness.jsonc` that contains other Persona Harness
+configuration. To roll back a tracked change, review local edits and restore
+the previous tracked configuration through your normal version-control flow.
+
+These lifecycle actions do not enable `features.runtimeInjection`, and they do
+not create workflow, evidence, or authority state or use network or GitHub.
+
 With Context enabled, the OpenCode adapter accepts only a safe observed
 project-relative target from a read or edit tool. It resolves the local
 envelope, rejects invalid/unsafe/budget-exceeding input without delivery, and
