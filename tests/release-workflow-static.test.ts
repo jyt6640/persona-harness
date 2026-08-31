@@ -37,6 +37,34 @@ describe("CI and release workflow policy surface", () => {
     expect(result.stdout).toContain("Release workflow policy: PASS")
   })
 
+  it("rejects a publish workflow with a shortened elapsed registry readback budget", () => {
+    // Given
+    const fixtureDir = mkdtempSync(join(tmpdir(), "release-workflow-registry-readback-budget-test-"))
+    try {
+      copyReleaseWorkflowCheckerFixture(fixtureDir)
+      for (const workflowPath of releaseWorkflowCheckerWorkflowPaths()) {
+        const sourcePath = join(process.cwd(), workflowPath)
+        const source = readFileSync(sourcePath, "utf8")
+        const unsafeSource = workflowPath === ".github/workflows/publish.yml"
+          ? source.replace("registry_readback_timeout_seconds=1200", "registry_readback_timeout_seconds=300")
+          : source
+        writeFileSync(join(fixtureDir, workflowPath), unsafeSource)
+      }
+
+      // When
+      const result = spawnSync(process.execPath, ["scripts/check-release-workflows.mjs"], {
+        cwd: fixtureDir,
+        encoding: "utf8",
+      })
+
+      // Then
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain("publish integrity readback")
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
   it("keeps the release static fixture and clean Git verifier fixture deliberately root-separated", () => {
     const staticFixturePaths = releaseWorkflowCheckerFixturePaths()
 
