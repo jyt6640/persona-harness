@@ -208,6 +208,21 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
     reason: "bounded package contract",
     skillId: "deep-interview",
   })
+  const capabilityManifest = (host, overrides = {}) => ({
+    schemaVersion: portableModule.HOST_CAPABILITY_MANIFEST_SCHEMA,
+    host,
+    hostVersion: "1.0.0",
+    adapterVersion: "0.9.0",
+    capabilities: portableModule.HOST_CAPABILITY_IDS.map((id) => ({
+      id,
+      state: overrides[id] ?? "supported",
+    })),
+  })
+  const capabilityBinding = (host) => ({
+    host,
+    hostVersion: "1.0.0",
+    adapterVersion: "0.9.0",
+  })
   const portableRoutes = [
     portableModule.createCodexSkillAdapter(),
     portableModule.createOpenCodeSkillAdapter(),
@@ -215,7 +230,8 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
     portableModule.createAntigravitySkillAdapter(),
   ].map((adapter) => adapter.consume({
     capsule: portableCapsule,
-    capabilities: portableModule.defaultPortableHostCapabilities(),
+    manifest: capabilityManifest(adapter.host),
+    binding: capabilityBinding(adapter.host),
   }))
   if (
     portableRoutes.length !== 4
@@ -225,9 +241,10 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
   }
   const unsupportedRoute = portableModule.createOpenCodeSkillAdapter().consume({
     capsule: portableCapsule,
-    capabilities: ["compact-reference"],
+    manifest: capabilityManifest("opencode", { "skill-discovery": "unavailable" }),
+    binding: capabilityBinding("opencode"),
   })
-  if (unsupportedRoute.status !== "unsupported" || unsupportedRoute.code !== "unsupported-capability") {
+  if (unsupportedRoute.status !== "unsupported" || unsupportedRoute.code !== "host-assurance-blocked") {
     throw new Error("installed portable shared-skill adapter did not fail closed")
   }
   const tracker = new interviewModule.ProductDeepInterviewTracker()

@@ -170,12 +170,28 @@ it never carries raw prompts, model output, credentials, source content, or
 absolute paths.
 
 Codex, OpenCode, Claude Code, and Antigravity consume the same capsule through
-thin adapters. A missing required capability returns the fixed
-`unsupported-capability` result and does not fall back to another host's
-semantics. Capability negotiation must be an explicit valid array; absent,
-malformed, or unknown entries also return `unsupported-capability`. This
-contract does not change selection, workflow authority, or the
-`runtimeInjection` default of `false`.
+thin adapters. Each adapter now requires a complete
+`persona-host-capability-manifest.1` and an exact host-version/adapter-version
+binding. The manifest records `supported`, `emulated`, or `unavailable` for
+skill discovery, input routing, philosophy injection, activation notice,
+pre-tool gate, completion gate, session persistence, and adapter update.
+
+Assurance is derived from that validated manifest, never from a host name. A
+complete direct capability set is `enforced`; a complete portable set with an
+emulated or unavailable enforcement capability is visibly `portable`. A
+project requiring `enforced` fails closed instead of silently degrading.
+Unknown schemas, hosts, capability ids or states, duplicate or missing
+capabilities, malformed input, and mismatched host bindings return bounded
+blocked results without reflecting raw input. There is no product path that
+assumes every capability by default.
+
+The current OpenCode compact route uses one explicit bounded manifest and
+remains portable because its notice/session behavior is emulated and its
+generic pre-tool/completion enforcement capabilities are unavailable. This is
+not evidence that Claude Code, Codex, or Antigravity adapters are installed or
+live; host-specific generation and probing remain separate 0.9.0 work.
+The contract does not change selection, workflow authority, Context's explicit
+default-off boundary, or the legacy `runtimeInjection` default of `false`.
 
 ## Package Boundary
 
