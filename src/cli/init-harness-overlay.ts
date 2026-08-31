@@ -21,8 +21,9 @@ export function mergeBootstrapHarnessOptIns(templateBytes: Buffer, currentBytes:
   const executeVerification = isRecord(current.enforce) && current.enforce.executeVerification === true
   const projectPhilosophyInjectionDisabled = isRecord(current.features) && current.features.projectPhilosophyInjection === false
   const runtimeInjection = isRecord(current.features) && current.features.runtimeInjection === true
+  const sharedSkillRoutingDisabled = isRecord(current.features) && current.features.sharedSkillRouting === false
   const multiAgent = isRecord(current.multiAgent) && current.multiAgent.enabled === true
-  if (!executeVerification && !projectPhilosophyInjectionDisabled && !runtimeInjection && !multiAgent) return templateBytes
+  if (!executeVerification && !projectPhilosophyInjectionDisabled && !runtimeInjection && !sharedSkillRoutingDisabled && !multiAgent) return templateBytes
 
   const next: Record<string, unknown> = { ...template }
   if (executeVerification) {
@@ -41,6 +42,12 @@ export function mergeBootstrapHarnessOptIns(templateBytes: Buffer, currentBytes:
     next.features = {
       ...(isRecord(next.features) ? next.features : {}),
       projectPhilosophyInjection: false,
+    }
+  }
+  if (sharedSkillRoutingDisabled) {
+    next.features = {
+      ...(isRecord(next.features) ? next.features : {}),
+      sharedSkillRouting: false,
     }
   }
   if (multiAgent) {

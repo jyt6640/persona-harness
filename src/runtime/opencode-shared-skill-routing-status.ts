@@ -16,7 +16,7 @@ export type OpenCodeSharedSkillRoutingConfig = {
   readonly enabled: boolean
   readonly enabledDomains: readonly string[]
   readonly pluginConfigured: boolean
-  readonly runtimeInjection: boolean
+  readonly sharedSkillRouting: boolean
 }
 
 export type OpenCodeNativeSkillCatalogStatus = {
@@ -137,7 +137,7 @@ function automaticRouteState(
     return "unavailable"
   }
   return config.enabled
-    && config.runtimeInjection
+    && config.sharedSkillRouting
     && (config.enabledDomains.includes("product") || config.enabledDomains.includes("workflow"))
     ? "configured"
     : "disabled"

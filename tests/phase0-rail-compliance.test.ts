@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
 import type { ToolAfterOutput, TransformMessagesOutput } from "../src/runtime/types.js"
+import { writeManagedInitFixture } from "./managed-init-fixture.js"
 
 const fixtureWorkspace = join(process.cwd(), ".persona-rail-compliance-test-fixtures")
 
@@ -16,6 +17,7 @@ beforeEach(() => {
     join(fixtureWorkspace, ".persona", "harness.jsonc"),
     `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
   )
+  writeManagedInitFixture(fixtureWorkspace)
 })
 
 function modelInputWithText(sessionID: string, text: string): TransformMessagesOutput {

@@ -260,4 +260,19 @@ describe("bootstrap-owned update state", () => {
       features: { projectPhilosophyInjection: false, runtimeInjection: false },
     })
   })
+
+  it("preserves an explicit shared-skill routing opt-out across init", () => {
+    const template = Buffer.from(`${JSON.stringify({
+      features: { runtimeInjection: false, sharedSkillRouting: true },
+    })}\n`)
+    const current = Buffer.from(`${JSON.stringify({
+      features: { runtimeInjection: false, sharedSkillRouting: false },
+    })}\n`)
+
+    const merged: unknown = JSON.parse(mergeBootstrapHarnessOptIns(template, current).toString("utf8"))
+
+    expect(merged).toEqual({
+      features: { runtimeInjection: false, sharedSkillRouting: false },
+    })
+  })
 })

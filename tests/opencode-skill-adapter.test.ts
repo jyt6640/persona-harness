@@ -14,7 +14,7 @@ function routingConfig(
     enabled: true,
     enabledDomains: ["workflow"],
     pluginConfigured: true,
-    runtimeInjection: false,
+    sharedSkillRouting: true,
     ...overrides,
   }
 }
@@ -55,12 +55,12 @@ describe("OpenCode skill adapter", () => {
     expect(route).toContain("Decision: explicit")
     expect(route).toContain("Skill: grill-me")
     expect(route).toContain("User-visible skill notice:")
-    expect(route).toContain("naming Persona Harness skill `grill-me`")
+    expect(route).toContain("naming `(PH) Decision Grill`")
     expect(route).not.toContain("# Decision Grill")
   })
 
   it("distinguishes a host-described catalog from automatic routing and unobserved session selection", () => {
-    const status = readOpenCodeSharedSkillRoutingStatus(routingConfig({ runtimeInjection: true }))
+    const status = readOpenCodeSharedSkillRoutingStatus(routingConfig())
 
     expect(status).toEqual({
       adapterReachability: "unobserved",
@@ -77,7 +77,7 @@ describe("OpenCode skill adapter", () => {
   })
 
   it("fails closed for malformed or unavailable native-skill metadata", () => {
-    const malformed = readOpenCodeSharedSkillRoutingStatus(routingConfig({ runtimeInjection: true }), {
+    const malformed = readOpenCodeSharedSkillRoutingStatus(routingConfig(), {
       readSkill: (skillId) => skillId === "programming"
         ? "---\nname: programming\n---\n\n# Programming\n"
         : describedSkill(skillId),
@@ -114,30 +114,26 @@ describe("OpenCode skill adapter", () => {
     expect(catalogUnavailable.automaticRoute).toBe("unavailable")
   })
 
-  it("keeps automatic advisory routing disabled unless configuration and an automatic routing domain both allow it", () => {
-    const runtimeDisabled = readOpenCodeSharedSkillRoutingStatus(routingConfig())
+  it("keeps automatic advisory routing disabled unless shared-skill routing and an automatic routing domain both allow it", () => {
+    const routingDisabled = readOpenCodeSharedSkillRoutingStatus(routingConfig({ sharedSkillRouting: false }))
     const workflowDisabled = readOpenCodeSharedSkillRoutingStatus(routingConfig({
       enabledDomains: ["programming"],
-      runtimeInjection: true,
     }))
     const productEnabled = readOpenCodeSharedSkillRoutingStatus(routingConfig({
       enabledDomains: ["product"],
-      runtimeInjection: true,
     }))
     const unsafeConfig = readOpenCodeSharedSkillRoutingStatus(routingConfig({
       configSafe: false,
-      runtimeInjection: true,
     }))
     const pluginUnavailable = readOpenCodeSharedSkillRoutingStatus(routingConfig({
       pluginConfigured: false,
-      runtimeInjection: true,
     }))
 
-    expect(runtimeDisabled.automaticRoute).toBe("disabled")
+    expect(routingDisabled.automaticRoute).toBe("disabled")
     expect(workflowDisabled.automaticRoute).toBe("disabled")
     expect(productEnabled.automaticRoute).toBe("configured")
     expect(unsafeConfig.automaticRoute).toBe("unavailable")
     expect(pluginUnavailable.automaticRoute).toBe("unavailable")
-    expect(runtimeDisabled.hostSelection).toBe("unobserved")
+    expect(routingDisabled.hostSelection).toBe("unobserved")
   })
 })

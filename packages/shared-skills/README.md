@@ -70,4 +70,5 @@ If a host lacks a required capability, the adapter returns the bounded
 `unsupported-capability` result and never falls back to another host's
 semantics. The capability list must be an explicit valid array; absent,
 malformed, or unknown entries are unsupported. The existing selector and
-`runtimeInjection` default remain unchanged.
+`runtimeInjection` default remain unchanged. `sharedSkillRouting` controls a
+separate compact OpenCode advisory route and does not enable runtime context.

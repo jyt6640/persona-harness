@@ -72,6 +72,7 @@ export function formatDoctorSummary(summary: DoctorSummary): string {
     `Project-local OpenCode plugin registration: ${summary.reachability.projectPluginState}`,
     `OpenCode native shared-skill metadata: ${formatNativeCatalog(summary)}`,
     "OpenCode plugin adapter reachability: UNOBSERVED (doctor does not inspect a running host session)",
+    `OpenCode shared-skill routing configuration: ${formatSharedSkillRouting(summary)}`,
     `OpenCode automatic advisory route: ${summary.opencodeSharedSkillRouting.automaticRoute === "configured" ? "CONFIGURED (not host-observed)" : summary.opencodeSharedSkillRouting.automaticRoute === "disabled" ? "OFF" : "UNAVAILABLE"}`,
     "OpenCode current skill selection: UNOBSERVED (doctor does not inspect a running host session)",
     "OpenCode host route delivery: UNOBSERVED (doctor does not inspect a running host session)",
@@ -155,6 +156,7 @@ export function doctorJson(summary: DoctorSummary): string {
     preview: {
       entrySteering: summary.entrySteeringEnabled,
       runtimeInjection: config.config.features.runtimeInjection,
+      sharedSkillRouting: config.config.features.sharedSkillRouting,
     },
     privacy: {
       diagnostics: "bounded",
@@ -188,6 +190,15 @@ function formatNativeCatalog(summary: DoctorSummary): string {
   return catalog.state === "ready"
     ? `READY (${catalog.describedSkillCount}/${catalog.skillCount} described)`
     : catalog.state.toUpperCase()
+}
+
+function formatSharedSkillRouting(summary: DoctorSummary): string {
+  const state = summary.opencodeSharedSkillRouting.automaticRoute
+  return state === "configured"
+    ? "ON (not host-observed)"
+    : state === "disabled"
+      ? "OFF"
+      : "UNAVAILABLE"
 }
 
 function formatRulePackDiagnostic(item: RuleDiagnosticReportItem): string {

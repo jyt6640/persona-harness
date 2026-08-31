@@ -50,6 +50,7 @@ describe("Phase 0 harness config", () => {
     expect(config.enabledDomains).toEqual(["backend", "programming", "workflow", "product"])
     expect(config.enforce.executeVerification).toBe(false)
     expect(config.features.runtimeInjection).toBe(false)
+    expect(config.features.sharedSkillRouting).toBe(true)
     expect(config.features.entrySteering).toBe(false)
     expect(config.enforce.compaction).toEqual({
       cooldownMs: 600_000,
@@ -157,6 +158,14 @@ describe("Phase 0 harness config", () => {
     const config = loadHarnessConfig(projectDir)
 
     expect(config.features.runtimeInjection).toBe(true)
+  })
+
+  it("defaults shared-skill routing on while allowing an explicit opt-out", () => {
+    const projectDir = createProject()
+    expect(loadHarnessConfig(projectDir).features.sharedSkillRouting).toBe(true)
+
+    writeHarnessConfig(projectDir, { features: { sharedSkillRouting: false } })
+    expect(loadHarnessConfig(projectDir).features.sharedSkillRouting).toBe(false)
   })
 
   it("defaults project philosophy injection on while allowing an explicit opt-out", () => {

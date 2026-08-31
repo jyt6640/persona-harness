@@ -9,7 +9,8 @@
   "features": {
     "entrySteering": false,
     "projectPhilosophyInjection": true,
-    "runtimeInjection": false
+    "runtimeInjection": false,
+    "sharedSkillRouting": true
   },
   "enforce": {
     "executeVerification": false,
