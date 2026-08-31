@@ -21,9 +21,13 @@ describe("host skill materializer", () => {
       const target = targets.find((candidate) => candidate.relativePath === path)
 
       expect(target).toBeDefined()
-      expect(target?.nextBytes.toString("utf8")).toContain(`name: ${layout.namePrefix}-deep-interview`)
-      expect(target?.nextBytes.toString("utf8")).toContain("persona-harness/canonical-skill: deep-interview")
-      expect(target?.nextBytes.toString("utf8")).toContain("# Product Deep Interview")
+      const source = target?.nextBytes.toString("utf8")
+
+      expect(source).toContain("name: ph-deep-interview")
+      expect(source).toContain('description: "(PH) ')
+      expect(source).toContain('persona-harness/display-name: "(PH) ')
+      expect(source).toContain("persona-harness/canonical-skill: deep-interview")
+      expect(source).toContain("# (PH) ")
     }
   })
 
