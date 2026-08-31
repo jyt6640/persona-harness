@@ -18,6 +18,7 @@ export const CANONICAL_RUNNER_LABEL = "ubuntu-latest"
 const CANONICAL_RUNNER_ENVIRONMENT = "github-hosted"
 const CANONICAL_RUNNER_OS = "Linux"
 const COMMAND_TIMEOUT_MS = 300_000
+const RESOURCE_SENSITIVE_TEST_COMMAND_TIMEOUT_MS = 420_000
 const COMMAND_TERMINATION_GRACE_MS = 5_000
 const COMMAND_MAX_STDOUT_BYTES = 1024 * 1024
 const COMMAND_MAX_STDERR_BYTES = 1024 * 1024
@@ -52,6 +53,7 @@ export const FIXED_COMMANDS = [
   {
     id: "tests-resource-sensitive",
     executable: "node",
+    timeoutMs: RESOURCE_SENSITIVE_TEST_COMMAND_TIMEOUT_MS,
     args: [
       "node_modules/vitest/vitest.mjs",
       "run",
@@ -177,7 +179,7 @@ export function readCanonicalRunnerContext(env = process.env) {
 
 export function runBoundedBuilderCommand(command, workspaceRoot, options = {}) {
   const executable = command.executable === "node" ? process.execPath : command.executable
-  const timeoutMs = positiveInteger(options.timeoutMs, COMMAND_TIMEOUT_MS)
+  const timeoutMs = positiveInteger(options.timeoutMs, commandTimeoutMs(command))
   const graceMs = positiveInteger(options.graceMs, COMMAND_TERMINATION_GRACE_MS)
 
   return new Promise((resolve, reject) => {
@@ -491,6 +493,10 @@ function requiredEnvFrom(env, name) {
 
 function positiveInteger(value, fallback) {
   return Number.isInteger(value) && value > 0 ? value : fallback
+}
+
+function commandTimeoutMs(command) {
+  return positiveInteger(command?.timeoutMs, COMMAND_TIMEOUT_MS)
 }
 
 function createBoundedOutputCapture(limit) {

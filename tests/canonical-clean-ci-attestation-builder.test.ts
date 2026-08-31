@@ -120,10 +120,14 @@ describe("canonical clean CI attestation builder contract", () => {
     expect(workflow).toContain("predicate-type: https://github.com/jyt6640/persona-harness/attestations/finish-attestation.1")
   })
 
-  it("pins the hosted-CI Vitest timeout in the immutable test command", () => {
+  it("pins the hosted-CI Vitest and bounded builder timeouts in the immutable test commands", () => {
     const testCommand = FIXED_COMMANDS.find((command) => command.id === "tests")
+    const resourceSensitiveCommand = FIXED_COMMANDS.find((command) => command.id === "tests-resource-sensitive")
 
     expect(testCommand?.args ?? []).toContain("--testTimeout=15000")
+    expect(testCommand?.timeoutMs).toBeUndefined()
+    expect(resourceSensitiveCommand?.args ?? []).toContain("--testTimeout=15000")
+    expect(resourceSensitiveCommand?.timeoutMs).toBe(420_000)
   })
 
   it("runs each configured Vitest project through its own bounded fixed command", () => {
@@ -149,6 +153,7 @@ describe("canonical clean CI attestation builder contract", () => {
         ]),
         executable: "node",
         id: "tests-resource-sensitive",
+        timeoutMs: 420_000,
       }),
     ])
   })

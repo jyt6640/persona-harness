@@ -8,6 +8,7 @@ export type BuilderCommand = {
   readonly args: readonly string[]
   readonly executable: string
   readonly id: string
+  readonly timeoutMs?: number
 }
 
 export type BuilderCommandRunOptions = {
