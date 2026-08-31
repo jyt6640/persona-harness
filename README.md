@@ -6,7 +6,7 @@
 
 # Persona Harness
 
-**Evidence-first completion gates for AI coding agents building Java/Spring backends.**
+**Evidence-first workflow gates and portable skill adapters for AI coding agents building Java/Spring backends.**
 
 [![npm version](https://img.shields.io/npm/v/persona-harness?color=369eff&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
 [![npm downloads](https://img.shields.io/npm/dt/persona-harness?color=ff6b35&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
@@ -45,9 +45,10 @@ completion in 5/5 measured runs. Runtime injection did not improve the paired
 OpenCode measurements and added cost, so it remains default-off.
 
 **Built for:** Java/Spring/Gradle projects with explicit workflow gates and
-evidence checks. `ph init` also materializes portable skill adapters for Codex,
-Claude Code, OpenCode, and Antigravity; live host selection and delivery remain
-separate observation boundaries.
+evidence checks. `ph init` materializes portable, project-local skill adapters
+for Codex, Claude Code, OpenCode, and Antigravity. Static adapter installation
+is package behavior; a host's live skill selection and delivery are separate
+observation boundaries.
 
 **Not a promise of:** automatic implementation, generated-app quality,
 production readiness, token savings, or broad security guarantees.
@@ -105,8 +106,9 @@ Persona Harness exposes two deliberately separate tracks:
   verification authority.
 - **Isolation:** Context-only paths do not execute project commands or contact
   GitHub/network.
-- **Host:** OpenCode is the only implemented delivery adapter; live host
-  delivery remains a separate, unobserved boundary.
+- **Host:** `ph init` installs static skill adapters for Codex, Claude Code,
+  OpenCode, and Antigravity. Context delivery is currently implemented only by
+  the optional OpenCode adapter and remains a separate, unobserved boundary.
 - **Evidence:** Context usefulness remains `INCONCLUSIVE` until independent
   external evidence exists.
 - **Product focus:** the productized workflow focus is Java/Spring. The
@@ -214,17 +216,21 @@ earned by measurement first — see [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).
 
 ## Install
 
-Requires Node.js ^20.17.0 || >=22.9.0 (Node 21 is unsupported), Java 21+ / Gradle, and the OpenCode CLI with a configured provider.
+Requires Node.js ^20.17.0 || >=22.9.0 (Node 21 is unsupported). Java 21+ /
+Gradle are required for the Java/Spring workflow rail. Install the coding-agent
+host you already use separately; OpenCode is optional unless you want its
+plugin-only Context delivery.
 
 ```bash
-# OpenCode
-curl -fsSL https://opencode.ai/install | bash   # or: npm install -g opencode-ai
-opencode auth login
-
-# Persona Harness
+# Any supported host project
 npm install -D persona-harness
-npx ph --help && npx ph doctor
+npx ph init
+npx ph doctor
 ```
+
+`ph init` installs host-native discovery files without requiring a
+Persona-specific launch command. See the [portable host adapter guide](docs/current/portable-host-adapters.md)
+for the generated paths, host-specific limits, and safe update procedure.
 
 ## Quick Start
 
@@ -241,7 +247,9 @@ npx ph go "Add a task creation endpoint."
 
 `ph init` writes manifest-owned shared-skill adapters beneath `.agents/skills`,
 `.claude/skills`, and `.opencode/skills`. It refuses a modified, user-owned, or
-symlinked generated target instead of overwriting it.
+symlinked generated target instead of overwriting it. The generated files make
+the catalog discoverable to the host; they do not prove that a running session
+selected a skill or grant a workflow command any authority.
 
 For an existing Java/Spring/Gradle project, inspect the inferred draft first,
 then accept it explicitly:
@@ -307,6 +315,11 @@ specifier and rebinds the manifest to the current project. It preserves other
 OpenCode configuration and never overwrites changed rules, profiles, workflow
 state, or `.gitignore`; malformed, symlinked, foreign, or ordinary projects are
 left unchanged.
+
+This automatic update path is OpenCode-plugin-specific. It does not rewrite the
+portable host adapter trees. After upgrading the npm package, run `npx ph init`
+to refresh only unchanged Persona-owned adapters; modified, user-owned, or
+symlinked adapter files stay blocked rather than being overwritten.
 
 > [!NOTE]
 > If `workflow finish` fails, the agent must fix the reported blocker before claiming completion. **That failure is the product working, not a bug.**
@@ -396,6 +409,23 @@ do not change the P0-3 root CLI discovery contract.
 
 ## Platform And Host Support
 
+### Portable host adapters
+
+`ph init` materializes the same catalog into each host's project-local discovery
+layout. This proves the installed package produced safe static files, not that a
+specific live session loaded or followed one.
+
+| Host | Project-local adapter path | What the package establishes |
+| --- | --- | --- |
+| Codex and Antigravity | `.agents/skills/persona-harness-<skill-id>/SKILL.md` | Manifest-owned, host-neutral skill discovery metadata. |
+| Claude Code | `.claude/skills/persona-harness-claude-<skill-id>/SKILL.md` | Manifest-owned, host-neutral skill discovery metadata. |
+| OpenCode | `.opencode/skills/persona-harness-opencode-<skill-id>/SKILL.md` | Manifest-owned discovery metadata; the optional plugin remains a separate runtime boundary. |
+
+The `.agents` and `.claude` adapters explicitly opt out of OpenCode automatic
+discovery so an OpenCode project receives one native candidate rather than
+duplicates. For the full ownership, upgrade, and non-claim boundary, read the
+[portable host adapter guide](docs/current/portable-host-adapters.md).
+
 ### Node runtime floor
 
 The packaged CLI and its product-owned Sigstore authority verifiers require
@@ -424,12 +454,11 @@ or provide a credential fallback. When more than one repository is enrolled,
 pass the selected enrolled `owner/repository` to `fetch github`. Neither
 command publishes a package, moves a channel, or consumes Finish authority.
 
-| Surface | Status | Evidence boundary |
+| CLI/runtime surface | Status | Evidence boundary |
 | --- | --- | --- |
-| Linux + OpenCode | Product: Node ^20.17.0 || >=22.9.0; source checks: Node 20.19.0 | Required Verify repository aggregates PR fast feedback and main package integration. Pull requests run policy, typecheck, build, and the two Vitest projects; main pushes additionally run Linux Node 20.19.0 source-built, packed-tarball, and fresh local-tarball installed checks. The dispatch-only support matrix retains exact product-floor Linux Node 20.17.0 and 22.9.0 imports plus latest Linux Node 20, 22, and 24 on demand. |
-| macOS + OpenCode | Manual limited smoke | The dispatch-only support matrix retains macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |
+| Linux CLI/package | Product: Node ^20.17.0 || >=22.9.0; source checks: Node 20.19.0 | Required Verify repository aggregates PR fast feedback and main package integration. Pull requests run policy, typecheck, build, and the two Vitest projects; main pushes additionally run Linux Node 20.19.0 source-built, packed-tarball, and fresh local-tarball installed checks. The dispatch-only support matrix retains exact product-floor Linux Node 20.17.0 and 22.9.0 imports plus latest Linux Node 20, 22, and 24 on demand. |
+| macOS CLI/package | Manual limited smoke | The dispatch-only support matrix retains macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |
 | Windows | Unverified / nonblocking | No Windows matrix job or support claim. Lock identity device/inode behavior and stale-lock/concurrency conclusions are not measured or verified. |
-| Codex adapter | Planned | No current Codex adapter or Codex product evidence; this is a planned adapter only. |
 
 Automatic CI boundary: Verify repository is the required PR/main aggregate. Pull requests require only the fast feedback lanes; main pushes also require Linux Node 20.19.0 package integration. The dispatch-only support matrix is deferred multi-runtime evidence, not a required PR/main gate. It is distinct from the canonical clean-CI builder's main-push signed evidence and the ordinary path-filtered diagnostic selftest.
 
@@ -439,8 +468,8 @@ Evidence answers one bounded question — *"What did this PH workflow observe fo
 this defined gate?"* — and nothing more. PH does **not** promise app-quality
 certification, token savings, Clean Code guarantees, broad AST/linter
 enforcement, a full TDD framework, closure guarantees, strong anti-forgery
-integrity before P3, or a complete workflow without OpenCode. The canonical list
-is in [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).
+integrity before P3, or a proven live workflow route on every host. The
+canonical list is in [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).
 
 > [!WARNING]
 > `ph bearshell` is **not a sandbox**. It limits runtime and output size, but commands still run on your machine with your permissions. See [SECURITY](SECURITY.md).
@@ -448,6 +477,7 @@ is in [MEASURED-CLAIMS](docs/MEASURED-CLAIMS.md).
 ## Docs
 
 - **New users** → [Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)
+- **Codex, Claude Code, OpenCode, or Antigravity** → [portable host adapter guide](docs/current/portable-host-adapters.md)
 - **Agent not following the rail?** → [Troubleshooting](docs/troubleshooting/README.md)
 - **Install & backend shape** → [MVP install guide](docs/current/java-backend-mvp-install-guide.md)
 - **Contributors** → [CONTRIBUTING](CONTRIBUTING.md) · [ROADMAP](ROADMAP.md) · [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)

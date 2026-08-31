@@ -1,8 +1,14 @@
 # Persona Harness Detailed Usage Notes
 
-This document preserves the previous root README details after the public-facing README was simplified. Use this for local install, tarball verification, release readiness, plugin wiring, and development-oriented notes.
+This document preserves previous root README details after the public-facing
+README was simplified. It includes historical OpenCode-only experiments and
+alpha-era setup instructions; do not use it as the current first-run or
+host-support guide.
 
-The root [README.md](../../README.md) is now focused on first-time users.
+Start with the root [README.md](../../README.md),
+[Start Here](../START-HERE.md), and [Portable Host
+Adapters](portable-host-adapters.md). Use the retained notes below only when an
+older maintenance or experiment record is specifically relevant.
 
 ---
 
