@@ -2,6 +2,7 @@ import fs, {
   chmodSync,
   existsSync,
   mkdirSync,
+  readFileSync,
   realpathSync,
   mkdtempSync,
   renameSync,
@@ -47,7 +48,13 @@ const BOOTSTRAP_ARTIFACT_PATHS = [
   "workflow/workflow-loop-state.json",
   "workflow/ralph-loop-state.json",
 ] as const
-const ROOT_INIT_FILES = [".gitignore", ".opencode/opencode.json"] as const
+const ROOT_INIT_FILES = [
+  ".gitignore",
+  ".agents/skills/persona-harness-deep-interview/SKILL.md",
+  ".claude/skills/persona-harness-claude-deep-interview/SKILL.md",
+  ".opencode/opencode.json",
+  ".opencode/skills/persona-harness-opencode-deep-interview/SKILL.md",
+] as const
 const CAPTURED_BOOTSTRAP_WRITE_STAGES = [
   { kind: "atomic", leaf: "harness.jsonc" },
   { kind: "atomic", leaf: "project-profile.jsonc" },
@@ -105,6 +112,40 @@ describe("bootstrap workspace intake", () => {
         renameSync(preserved, personaDir)
       }
     }
+  })
+
+  it("rebuilds init ownership for an unchanged initialized checkout whose ignored manifest is absent", () => {
+    const projectDir = createProject()
+    expect(runBootstrap(projectDir).status).toBe(0)
+
+    const manifestPath = join(projectDir, ".persona", ".ph-init-manifest.json")
+    const adapterPath = join(projectDir, ".agents", "skills", "persona-harness-deep-interview", "SKILL.md")
+    expect(existsSync(adapterPath)).toBe(true)
+    unlinkSync(manifestPath)
+
+    const rerun = runBootstrap(projectDir)
+
+    expect(rerun.status).toBe(0)
+    expect(existsSync(manifestPath)).toBe(true)
+    expect(existsSync(adapterPath)).toBe(true)
+    expect(authorityEvidenceExists(projectDir)).toBe(false)
+  })
+
+  it("fails closed when an excluded init manifest leaves a modified host skill adapter", () => {
+    const projectDir = createProject()
+    expect(runBootstrap(projectDir).status).toBe(0)
+
+    const manifestPath = join(projectDir, ".persona", ".ph-init-manifest.json")
+    const adapterPath = join(projectDir, ".agents", "skills", "persona-harness-deep-interview", "SKILL.md")
+    unlinkSync(manifestPath)
+    writeFileSync(adapterPath, "# user-owned adapter\n")
+
+    const rerun = runBootstrap(projectDir)
+
+    expect(rerun.status).toBe(1)
+    expect(existsSync(manifestPath)).toBe(false)
+    expect(readFileSync(adapterPath, "utf8")).toBe("# user-owned adapter\n")
+    expect(authorityEvidenceExists(projectDir)).toBe(false)
   })
 
   it("blocks a project-root replacement before fresh initialization writes any root artifact", () => {
@@ -201,7 +242,10 @@ describe("bootstrap workspace intake", () => {
   it("keeps every captured bootstrap output stage inside the reserved project transaction", () => {
     expect(BOOTSTRAP_TRANSACTION_OUTPUT_MANIFEST).toEqual(expect.arrayContaining([
       ".gitignore",
+      ".agents/skills/**",
+      ".claude/skills/**",
       ".opencode/opencode.json",
+      ".opencode/skills/**",
       "AGENTS.md",
       ".persona/.ph-init-manifest.json",
       ".persona/harness.jsonc",

@@ -47,6 +47,11 @@ function createPackageRoot(version: string, maxRulesPerInjection: number): strin
     filter: (source) => relative(sourcePersona, source) !== "evidence",
     recursive: true,
   })
+  cpSync(
+    join(process.cwd(), "packages", "shared-skills"),
+    join(packageRoot, "packages", "shared-skills"),
+    { recursive: true },
+  )
   const packageJson: unknown = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"))
   if (!isRecord(packageJson)) throw new TypeError("package.json must be an object")
   writeFileSync(join(packageRoot, "package.json"), `${JSON.stringify({ ...packageJson, version }, null, 2)}\n`)

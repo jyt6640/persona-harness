@@ -37,7 +37,7 @@ describe("OpenCode plugin entrypoint", () => {
     })
   })
 
-  it("registers the packaged shared-skill catalog without replacing valid user settings", async () => {
+  it("leaves host skill settings unchanged because ph init materializes project adapters", async () => {
     const config: Record<string, unknown> = {
       skills: {
         paths: ["/tmp/custom-skills"],
@@ -49,47 +49,10 @@ describe("OpenCode plugin entrypoint", () => {
 
     expect(config).toEqual({
       skills: {
-        paths: ["/tmp/custom-skills", join(process.cwd(), "packages", "shared-skills", "skills")],
+        paths: ["/tmp/custom-skills"],
         urls: ["https://example.test/skills"],
       },
     })
-  })
-
-  it("also appends the catalog to a future array-shaped skill source setting", async () => {
-    const config: Record<string, unknown> = {
-      skills: ["/tmp/custom-skills", "https://example.test/skills"],
-    }
-
-    await applyPluginConfig(config)
-
-    expect(config).toEqual({
-      skills: [
-        "/tmp/custom-skills",
-        "https://example.test/skills",
-        join(process.cwd(), "packages", "shared-skills", "skills"),
-      ],
-    })
-  })
-
-  it("creates a native OpenCode skill path when the consumer has none", async () => {
-    const config: Record<string, unknown> = {}
-
-    await applyPluginConfig(config)
-
-    expect(config).toEqual({
-      skills: {
-        paths: [join(process.cwd(), "packages", "shared-skills", "skills")],
-      },
-    })
-  })
-
-  it("does not duplicate the packaged shared-skill catalog", async () => {
-    const packagedSkillsPath = join(process.cwd(), "packages", "shared-skills", "skills")
-    const config: Record<string, unknown> = { skills: { paths: [packagedSkillsPath] } }
-
-    await applyPluginConfig(config)
-
-    expect(config).toEqual({ skills: { paths: [packagedSkillsPath] } })
   })
 
   it.each([

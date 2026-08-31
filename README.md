@@ -44,8 +44,10 @@ ignored and `finish` exits `1`; the opt-in TDD rail blocked green-only
 completion in 5/5 measured runs. Runtime injection did not improve the paired
 OpenCode measurements and added cost, so it remains default-off.
 
-**Built for:** Java/Spring/Gradle projects using OpenCode, with explicit
-workflow gates and evidence checks.
+**Built for:** Java/Spring/Gradle projects with explicit workflow gates and
+evidence checks. `ph init` also materializes portable skill adapters for Codex,
+Claude Code, OpenCode, and Antigravity; live host selection and delivery remain
+separate observation boundaries.
 
 **Not a promise of:** automatic implementation, generated-app quality,
 production readiness, token savings, or broad security guarantees.
@@ -199,8 +201,8 @@ catalog, access the network, execute shell commands, or write workflow,
 evidence, or authority records. The adapter's actual behavior in a live
 OpenCode release remains a separate host-observation boundary.
 
-The optional runtime adapter also registers the bundled portable Persona-owned
-shared-skill catalog with OpenCode. Product ideas start with a one-question
+`ph init` materializes the bundled Persona-owned shared-skill catalog at each
+host's project-local discovery path. Product ideas start with a one-question
 interview and explicit brief approval; adapters advise only and never create
 workflow state or invoke host agents automatically. See [Persona Shared Skills
 Core](docs/current/persona-shared-skills-core.md).
@@ -236,6 +238,10 @@ npx ph init                 # minimal integration files only
 npx ph bootstrap backend    # AGENTS.md, profile, plan, report templates
 npx ph go "Add a task creation endpoint."
 ```
+
+`ph init` writes manifest-owned shared-skill adapters beneath `.agents/skills`,
+`.claude/skills`, and `.opencode/skills`. It refuses a modified, user-owned, or
+symlinked generated target instead of overwriting it.
 
 For an existing Java/Spring/Gradle project, inspect the inferred draft first,
 then accept it explicitly:

@@ -1,4 +1,13 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -188,6 +197,40 @@ describe("ph attach", () => {
     expect({ status: repair.status, stderr: repair.stderr }).toEqual({ status: 0, stderr: "" })
     expect(readInitManifest(projectDir)?.project.realPath).toBe(realpathSync(projectDir))
     expect(cli(projectDir, ["bootstrap", "backend", "--strict"]).status).toBe(0)
+  })
+
+  it("refuses to overwrite a user-authored host skill adapter during attach", () => {
+    const projectDir = createJavaProject()
+    const adapterPath = join(
+      projectDir,
+      ".agents",
+      "skills",
+      "persona-harness-deep-interview",
+      "SKILL.md",
+    )
+    mkdirSync(join(projectDir, ".agents", "skills", "persona-harness-deep-interview"), { recursive: true })
+    writeFileSync(adapterPath, "# User-owned adapter\n")
+
+    const result = cli(projectDir, ["attach", "--yes"])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Attach host skill adapter conflicts")
+    expect(readFileSync(adapterPath, "utf8")).toBe("# User-owned adapter\n")
+    expect(existsSync(join(projectDir, ".persona"))).toBe(false)
+  })
+
+  it("fails closed before attach writes when a host skill root is symlinked", () => {
+    const projectDir = createJavaProject()
+    const outside = mkdtempSync(join(tmpdir(), "persona-attach-host-skill-outside-"))
+    projects.push(outside)
+    symlinkSync(outside, join(projectDir, ".agents"), "dir")
+
+    const result = cli(projectDir, ["attach", "--yes"])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("Attach host skill adapter contains a symbolic link")
+    expect(existsSync(join(projectDir, ".persona"))).toBe(false)
+    expect(existsSync(join(outside, "skills"))).toBe(false)
   })
 
   it("preserves user-authored text outside a recognized managed AGENTS block during repair", () => {

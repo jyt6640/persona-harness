@@ -122,12 +122,7 @@ function parseSkill(value: unknown, index: number): PersonaSharedSkill {
   }
 }
 
-function readPersonaSharedSkillCatalog(): PersonaSharedSkillCatalog {
-  if (cachedCatalog !== undefined) {
-    return cachedCatalog
-  }
-
-  const parsed: unknown = JSON.parse(readFileSync(join(packageRoot(), CATALOG_PATH), "utf8"))
+function parsePersonaSharedSkillCatalog(parsed: unknown): PersonaSharedSkillCatalog {
   if (!isRecord(parsed) || parsed.schemaVersion !== "persona-shared-skill-catalog.1" || parsed.packageName !== "@persona-harness/shared-skills" || !Array.isArray(parsed.skills)) {
     throw new Error("Malformed Persona shared-skill catalog")
   }
@@ -140,16 +135,29 @@ function readPersonaSharedSkillCatalog(): PersonaSharedSkillCatalog {
     throw new Error("Persona shared-skill catalog contains duplicate skill ids")
   }
 
-  cachedCatalog = {
+  return {
     schemaVersion: parsed.schemaVersion,
     packageName: parsed.packageName,
     skills,
   }
+}
+
+function readPersonaSharedSkillCatalog(): PersonaSharedSkillCatalog {
+  if (cachedCatalog !== undefined) {
+    return cachedCatalog
+  }
+  const parsed: unknown = JSON.parse(readFileSync(join(packageRoot(), CATALOG_PATH), "utf8"))
+  cachedCatalog = parsePersonaSharedSkillCatalog(parsed)
   return cachedCatalog
 }
 
 export function listPersonaSharedSkills(): readonly PersonaSharedSkill[] {
   return readPersonaSharedSkillCatalog().skills
+}
+
+export function listPersonaSharedSkillsFromPackageRoot(packageRootPath: string): readonly PersonaSharedSkill[] {
+  const parsed: unknown = JSON.parse(readFileSync(join(resolve(packageRootPath), CATALOG_PATH), "utf8"))
+  return parsePersonaSharedSkillCatalog(parsed).skills
 }
 
 export function resolvePersonaSharedSkill(id: PersonaSharedSkillId): PersonaSharedSkill {

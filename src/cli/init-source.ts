@@ -6,6 +6,7 @@ import { sha256Bytes, sha256Text } from "./init-manifest.js"
 import type { InitPackageBinding } from "./init-manifest.js"
 import type { InitTarget } from "./init-transaction.js"
 import { InitManifestError } from "./init-manifest.js"
+import { buildHostSkillAdapterTargets } from "./host-skill-materializer.js"
 import {
   activePersonaHarnessPluginIndex,
   isPersonaHarnessNpmPluginSpecifier,
@@ -248,6 +249,7 @@ export function buildTargets(
     const relativePath = normalizeTemplateRelativePath(sourcePath, sourceRulesDir)
     targets.push({ relativePath: `.persona/rules/${relativePath}`, nextBytes: readFileSync(sourcePath) })
   }
+  targets.push(...buildHostSkillAdapterTargets(packageRoot))
   const opencodePath = join(projectDir, OPENCODE_CONFIG_PATH)
   const mergedConfig = mergePluginPath(readOpencodeConfig(opencodePath), pluginSpecifier, legacyOwnedPluginPaths)
   targets.push({
