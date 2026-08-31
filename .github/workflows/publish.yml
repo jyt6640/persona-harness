@@ -216,7 +216,9 @@ jobs:
           registry_readback_path="${RUNNER_TEMP}/persona-harness-registry-readback.json"
           test ! -e "$registry_readback_path"
           registry_readback_verified=false
-          for attempt in {1..30}; do
+          registry_readback_timeout_seconds=1200
+          registry_readback_started_at="$(date +%s)"
+          while :; do
             if node scripts/release-registry-readback.mjs \
               --dist-tag "$DIST_TAG" \
               --package-facts "$CANONICAL_PACKAGE_FACTS" \
@@ -226,8 +228,14 @@ jobs:
               registry_readback_verified=true
               break
             fi
-            echo "Waiting for npm registry package metadata, attempt $attempt..."
-            sleep 10
+            registry_readback_elapsed_seconds=$(( $(date +%s) - registry_readback_started_at ))
+            if (( registry_readback_elapsed_seconds >= registry_readback_timeout_seconds )); then
+              break
+            fi
+            registry_readback_remaining_seconds=$(( registry_readback_timeout_seconds - registry_readback_elapsed_seconds ))
+            registry_readback_sleep_seconds=$(( registry_readback_remaining_seconds < 10 ? registry_readback_remaining_seconds : 10 ))
+            echo "Waiting for npm registry package metadata; ${registry_readback_elapsed_seconds}s elapsed..."
+            sleep "$registry_readback_sleep_seconds"
           done
 
           test -s "$registry_readback_path"

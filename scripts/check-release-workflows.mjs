@@ -386,6 +386,14 @@ const requirements = [
     && text.includes("release-registry-readback.mjs")
     && text.includes('--package-facts "$CANONICAL_PACKAGE_FACTS"')
     && text.includes('registry_readback_path="${RUNNER_TEMP}/persona-harness-registry-readback.json"')
+    && text.includes("registry_readback_timeout_seconds=1200")
+    && text.includes('registry_readback_started_at="$(date +%s)"')
+    && text.includes("while :; do")
+    && text.includes("registry_readback_elapsed_seconds=$(( $(date +%s) - registry_readback_started_at ))")
+    && text.includes("if (( registry_readback_elapsed_seconds >= registry_readback_timeout_seconds )); then")
+    && text.includes("registry_readback_remaining_seconds=$(( registry_readback_timeout_seconds - registry_readback_elapsed_seconds ))")
+    && text.includes("registry_readback_sleep_seconds=$(( registry_readback_remaining_seconds < 10 ? registry_readback_remaining_seconds : 10 ))")
+    && text.includes('sleep "$registry_readback_sleep_seconds"')
     && text.includes('path: ${{ runner.temp }}/persona-harness-registry-readback.json')
     && text.includes("id: registry-evidence")
     && text.includes("if: always()")
@@ -393,6 +401,7 @@ const requirements = [
     && text.includes("steps.registry-evidence.outputs.artifact-digest")
     && text.includes("workflow source head")
     && !text.includes("- gitHead: ${EXPECTED_GIT_HEAD}")
+    && !text.includes("for attempt in {1..30}; do")
     && !text.includes("npm audit signatures")],
   ["publish canonical package tar", ".github/workflows/publish.yml", (text) =>
     text.includes("node-version: 20.19.0")
