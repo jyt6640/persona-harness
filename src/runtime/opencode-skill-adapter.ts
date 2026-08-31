@@ -5,13 +5,39 @@ import {
 import { createOpenCodeSkillAdapter } from "./portable-skill-adapters.js"
 import {
   createPortableSkillCapsule,
-  defaultPortableHostCapabilities,
   type PortableSkillActivationInput,
 } from "./portable-skill-contract.js"
+import {
+  HOST_CAPABILITY_IDS,
+  HOST_CAPABILITY_MANIFEST_SCHEMA,
+  type HostCapabilityManifest,
+} from "./host-capability-manifest.js"
 
 export type OpenCodeSkillRouteDecision = PortableSkillActivationInput["decision"]
 
 export type OpenCodeSkillRouteInput = PortableSkillActivationInput
+
+const OPENCODE_HOST_VERSION = "1.x"
+const OPENCODE_ADAPTER_VERSION = "1.0.0"
+const OPENCODE_CAPABILITY_MANIFEST: HostCapabilityManifest = {
+  schemaVersion: HOST_CAPABILITY_MANIFEST_SCHEMA,
+  host: "opencode",
+  hostVersion: OPENCODE_HOST_VERSION,
+  adapterVersion: OPENCODE_ADAPTER_VERSION,
+  capabilities: HOST_CAPABILITY_IDS.map((id) => ({
+    id,
+    state: id === "pre-tool-gate" || id === "completion-gate"
+      ? "unavailable"
+      : id === "activation-notice" || id === "session-persistence"
+        ? "emulated"
+        : "supported",
+  })),
+}
+const OPENCODE_CAPABILITY_BINDING = {
+  host: "opencode",
+  hostVersion: OPENCODE_HOST_VERSION,
+  adapterVersion: OPENCODE_ADAPTER_VERSION,
+} as const
 
 function boundedReason(reason: string): string {
   return reason.replace(/[\r\n]+/gu, " ").trim().slice(0, 180) || "The current request matches this Persona procedure."
@@ -28,7 +54,8 @@ export function createOpenCodeSkillRoute(input: OpenCodeSkillRouteInput): string
   const capsule = createPortableSkillCapsule(input)
   const result = createOpenCodeSkillAdapter().consume({
     capsule,
-    capabilities: defaultPortableHostCapabilities(),
+    manifest: OPENCODE_CAPABILITY_MANIFEST,
+    binding: OPENCODE_CAPABILITY_BINDING,
   })
   if (result.status === "unsupported") {
     return createOpenCodeUnavailableSkillRoute("unavailable-explicit-skill")

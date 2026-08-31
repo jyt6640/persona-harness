@@ -3,12 +3,18 @@ import {
   type PersonaSharedSkillId,
 } from "./persona-shared-skill-catalog.js"
 import type { PersonaSharedSkillActivation } from "./persona-shared-skill-activation.js"
+import {
+  PORTABLE_HOSTS,
+  evaluateHostAssurance,
+  type HostAssuranceRequirement,
+  type PortableHost,
+} from "./host-capability-manifest.js"
+
+export { PORTABLE_HOSTS }
+export type { PortableHost }
 
 export const PORTABLE_SKILL_CONTRACT_VERSION = "persona-portable-skill-contract.1" as const
 export const PORTABLE_SKILL_CAPSULE_VERSION = "persona-skill-capsule.1" as const
-
-export const PORTABLE_HOSTS = ["codex", "opencode", "claude-code", "antigravity"] as const
-export type PortableHost = (typeof PORTABLE_HOSTS)[number]
 
 export const PORTABLE_SKILL_CAPABILITIES = [
   "compact-reference",
@@ -59,6 +65,7 @@ export type PortableSkillHostResult =
       readonly host: PortableHost
       readonly transport: PortableHostTransport
       readonly contractVersion: typeof PORTABLE_SKILL_CONTRACT_VERSION
+      readonly assurance: HostAssuranceRequirement
       readonly capsule: PortableSkillCapsule
     }
   | {
@@ -66,13 +73,15 @@ export type PortableSkillHostResult =
       readonly host: PortableHost
       readonly transport: PortableHostTransport
       readonly contractVersion: typeof PORTABLE_SKILL_CONTRACT_VERSION
-      readonly code: "unsupported-capability"
+      readonly code: "host-adapter-mismatch" | "host-assurance-blocked" | "unsupported-capability"
     }
 
 export type PortableSkillNegotiationInput = {
   readonly host: PortableHost
   readonly capsule: PortableSkillCapsule
-  readonly capabilities: unknown
+  readonly manifest: unknown
+  readonly binding: unknown
+  readonly requiredAssurance?: HostAssuranceRequirement
 }
 
 const PORTABLE_HOST_TRANSPORTS: Readonly<Record<PortableHost, PortableHostTransport>> = {
@@ -81,8 +90,6 @@ const PORTABLE_HOST_TRANSPORTS: Readonly<Record<PortableHost, PortableHostTransp
   "claude-code": "prompt-adapter",
   antigravity: "guide",
 }
-
-const DEFAULT_HOST_CAPABILITIES: readonly PortableSkillCapability[] = PORTABLE_SKILL_CAPABILITIES
 
 function reasonCodeFor(input: PortableSkillActivationInput): PortableSkillReasonCode {
   if (input.decision === "explicit") {
@@ -141,30 +148,25 @@ export function portableHostTransport(host: PortableHost): PortableHostTransport
   return PORTABLE_HOST_TRANSPORTS[host]
 }
 
-export function defaultPortableHostCapabilities(): readonly PortableSkillCapability[] {
-  return [...DEFAULT_HOST_CAPABILITIES]
-}
-
-function isPortableSkillCapability(value: unknown): value is PortableSkillCapability {
-  return typeof value === "string" && PORTABLE_SKILL_CAPABILITY_SET.has(value)
-}
-
-function isPortableSkillCapabilityList(value: unknown): value is readonly PortableSkillCapability[] {
-  return Array.isArray(value) && value.every(isPortableSkillCapability)
-}
-
 export function negotiatePortableSkill(input: PortableSkillNegotiationInput): PortableSkillHostResult {
-  const capabilities = input.capabilities
   const base = {
     host: input.host,
     transport: portableHostTransport(input.host),
     contractVersion: PORTABLE_SKILL_CONTRACT_VERSION,
   }
-  if (!isPortableSkillCapabilityList(capabilities)) {
-    return { ...base, status: "unsupported", code: "unsupported-capability" }
+  const assurance = evaluateHostAssurance({
+    manifest: input.manifest,
+    binding: input.binding,
+    requiredAssurance: input.requiredAssurance,
+  })
+  if (assurance.kind === "blocked") {
+    return { ...base, status: "unsupported", code: "host-assurance-blocked" }
   }
-  const supported = input.capsule.requiredCapabilities.every((capability) => capabilities.includes(capability))
-  return supported
-    ? { ...base, status: "ready", capsule: input.capsule }
+  if (assurance.host !== input.host) {
+    return { ...base, status: "unsupported", code: "host-adapter-mismatch" }
+  }
+  const validCapsuleCapabilities = input.capsule.requiredCapabilities.every((capability) => PORTABLE_SKILL_CAPABILITY_SET.has(capability))
+  return validCapsuleCapabilities
+    ? { ...base, status: "ready", assurance: assurance.assurance, capsule: input.capsule }
     : { ...base, status: "unsupported", code: "unsupported-capability" }
 }
