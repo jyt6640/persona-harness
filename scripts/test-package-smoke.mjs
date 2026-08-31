@@ -14,9 +14,9 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = realpathSync(mkdtempSync(join(tmpdir(), "persona-package-smoke-")))
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm"
 const HOST_ADAPTER_LAYOUTS = [
-  { namePrefix: "persona-harness", openCodeAutoinvoke: false, root: ".agents/skills" },
-  { namePrefix: "persona-harness-claude", openCodeAutoinvoke: false, root: ".claude/skills" },
-  { namePrefix: "persona-harness-opencode", openCodeAutoinvoke: true, root: ".opencode/skills" },
+  { directoryPrefix: "persona-harness", openCodeAutoinvoke: false, root: ".agents/skills", skillNamePrefix: "ph" },
+  { directoryPrefix: "persona-harness-claude", openCodeAutoinvoke: false, root: ".claude/skills", skillNamePrefix: "ph" },
+  { directoryPrefix: "persona-harness-opencode", openCodeAutoinvoke: true, root: ".opencode/skills", skillNamePrefix: "ph" },
 ]
 
 class PackageSmokeError extends Error {
@@ -254,12 +254,12 @@ function assertInstalledHostSkillAdapters(projectRoot, installedRoot) {
       throw new PackageSmokeError("installed-host-skill-catalog")
     }
     for (const layout of HOST_ADAPTER_LAYOUTS) {
-      const relativePath = join(layout.root, `${layout.namePrefix}-${skill.id}`, "SKILL.md").replace(/\\/g, "/")
+      const relativePath = join(layout.root, `${layout.directoryPrefix}-${skill.id}`, "SKILL.md").replace(/\\/g, "/")
       const adapterPath = join(projectRoot, relativePath)
       assertRegularFile(adapterPath, "installed-host-skill-adapter")
       const adapter = readFileSync(adapterPath, "utf8")
       if (
-        !adapter.includes(`name: ${layout.namePrefix}-${skill.id}`)
+        !adapter.includes(`name: ${layout.skillNamePrefix}-${skill.id}`)
         || !adapter.includes(`persona-harness/canonical-skill: ${skill.id}`)
         || !adapter.includes(`opencode/autoinvoke: \"${layout.openCodeAutoinvoke ? "true" : "false"}\"`)
         || !ownedPaths.has(relativePath)

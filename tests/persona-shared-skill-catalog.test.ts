@@ -211,7 +211,7 @@ describe("Persona-owned shared-skill catalog", () => {
     expect(route).toContain("Decision: activate")
     expect(route).toContain("Skill: deep-interview")
     expect(route).toContain("User-visible skill notice:")
-    expect(route).toContain("naming Persona Harness skill `deep-interview`")
+    expect(route).toContain("naming `(PH) Product Deep Interview`")
     expect(route).toContain("does not create plans, tickets, branches, files, agents, or workflow state")
     expect(route).not.toContain("npx ph workflow")
     expect(route).not.toContain("# Product Deep Interview")

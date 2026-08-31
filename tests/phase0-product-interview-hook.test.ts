@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
 import type { TransformMessagesOutput } from "../src/runtime/types.js"
+import { writeManagedInitFixture } from "./managed-init-fixture.js"
 
 const workspaces: string[] = []
 
@@ -18,6 +19,7 @@ function createProductProject(): string {
     join(projectDir, ".persona", "harness.jsonc"),
     `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["workflow", "product"] }, null, 2)}\n`,
   )
+  writeManagedInitFixture(projectDir)
   return projectDir
 }
 

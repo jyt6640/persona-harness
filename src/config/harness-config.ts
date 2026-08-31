@@ -75,6 +75,12 @@ export type HarnessFeaturesConfig = {
    */
   readonly runtimeInjection: boolean
   /**
+   * Enables the compact OpenCode shared-skill advisory route. This is
+   * independent from runtimeInjection: it selects at most one bounded
+   * procedure and never delivers rule, profile, or tool-output context.
+   */
+  readonly sharedSkillRouting: boolean
+  /**
    * Surfaces the observer's own findings for the file that was just written.
    * Independent of {@link runtimeInjection} so the measured-negative guidance
    * injection does not hold this surface hostage; it carries a different cost
@@ -158,6 +164,7 @@ const DEFAULT_CONFIG: HarnessConfig = {
     entrySteering: false,
     projectPhilosophyInjection: true,
     runtimeInjection: false,
+    sharedSkillRouting: true,
     observerFindings: false,
   },
   enforce: {
@@ -208,6 +215,7 @@ const FAIL_CLOSED_CONFIG: HarnessConfig = {
     entrySteering: false,
     projectPhilosophyInjection: false,
     runtimeInjection: false,
+    sharedSkillRouting: false,
     observerFindings: false,
   },
   enforce: {
@@ -301,6 +309,7 @@ function validConfigShape(value: Record<string, unknown>): boolean {
       !isBooleanIfPresent(value.features, "entrySteering")
       || !isBooleanIfPresent(value.features, "projectPhilosophyInjection")
       || !isBooleanIfPresent(value.features, "runtimeInjection")
+      || !isBooleanIfPresent(value.features, "sharedSkillRouting")
       || !isBooleanIfPresent(value.features, "observerFindings")
     ) {
       return false
@@ -424,6 +433,7 @@ function readFeaturesConfig(value: unknown): HarnessFeaturesConfig {
       DEFAULT_CONFIG.features.projectPhilosophyInjection,
     ),
     runtimeInjection: readBoolean(value.runtimeInjection, DEFAULT_CONFIG.features.runtimeInjection),
+    sharedSkillRouting: readBoolean(value.sharedSkillRouting, DEFAULT_CONFIG.features.sharedSkillRouting),
     observerFindings: readBoolean(value.observerFindings, DEFAULT_CONFIG.features.observerFindings),
   }
 }
@@ -580,6 +590,10 @@ export function loadHarnessConfig(projectDir: string, projectReadBoundary?: Harn
 
 export function isRuntimeInjectionEnabled(config: HarnessConfig): boolean {
   return config.enabled && config.features.runtimeInjection
+}
+
+export function isSharedSkillRoutingEnabled(config: HarnessConfig): boolean {
+  return config.enabled && config.features.sharedSkillRouting
 }
 
 export function isContextPersonalizationEnabled(configResult: HarnessConfigLoadResult): boolean {

@@ -49,8 +49,12 @@ requests suppress a new interview start. Clear direct work bypasses discovery.
 decision, design, or plan and also asks to pressure-test it through assumptions,
 alternatives, risks, trade-offs, or failure modes. It asks one question at a
 time, gives a recommendation with its trade-off, and remains conversational.
-Like every automatic route, it requires `runtimeInjection` and the workflow
-domain to be enabled in the consumer configuration.
+Like every automatic route, it requires `features.sharedSkillRouting` and the
+workflow domain to be enabled in a project with the regular managed init
+manifest created by `ph init`. Shared-skill routing defaults on, while the
+broader `runtimeInjection` surface remains off. A Context-only or partial
+`.persona` directory does not satisfy that initialization boundary and remains
+outside automatic routing.
 It does not replace `deep-interview` or `ralplan`: product ambiguity still uses
 the interview, and an explicit high-risk delivery-plan review still uses
 `ralplan`. Generic code review, debugging, refactoring, Git work, and direct
@@ -63,9 +67,10 @@ and `review`.
 
 When a compact route selects a Persona skill, it also requires one short
 user-visible notice at the beginning of the next assistant response. The notice
-names the selected skill, whether it was automatic or explicit, and the bounded
-selection reason in the user's language. It is a conversational status line,
-not a claim that the full skill body was injected or a host-native UI toast.
+uses the `(PH) <skill title>` form, names whether activation was automatic or
+explicit, and gives the bounded selection reason in the user's language. It is
+a conversational status line, not a claim that the full skill body was injected
+or a host-native UI toast.
 
 ## Product Discovery
 
@@ -151,6 +156,18 @@ otherwise clean checkout has no init manifest, an exactly byte-identical adapter
 can be re-owned; any difference still fails closed. Neighboring user skills are
 neither adopted nor rewritten.
 
+First-run, host-level setup is a separate distribution boundary: any host that
+offers `npx ph init` must wait for the user's explicit acceptance before
+running it. In an uninitialized project, OpenCode's advisory route first emits
+one `(PH) Setup` recommendation for a relevant Persona request instead of
+starting an interview or another workflow skill. The proposal asks whether to
+initialize, but it must not create `.persona`, change host config, run a
+command, or start a workflow by itself. Only a later clear acceptance may
+authorize the existing, single `npx ph init` command; it does not imply
+`bootstrap`, `attach`, workflow, Git, or network work. After init succeeds, a
+fresh host session is required before claiming host-native discovery or routing
+is active.
+
 OpenCode's native skill loader can discover all of these conventional project
 directories. To avoid duplicate automatic candidates, the generated `.agents`
 and `.claude` adapters declare `opencode/autoinvoke: "false"`; only the
@@ -171,7 +188,7 @@ as active merely because the catalog or plugin is present. A host-native
 selection remains host evidence; Persona's own automatic advisory route emits
 its compact user-visible notice only after that route has actually been
 injected. The automatic route is reported as configured only when the local
-plugin registration, safe harness configuration, `runtimeInjection`, and a
+plugin registration, safe harness configuration, `sharedSkillRouting`, and a
 `workflow` or `product` domain are all present.
 
 ## Portable Host Contract
@@ -209,7 +226,8 @@ selection and delivery remain separate observation boundaries. See [Portable
 Host Adapters](portable-host-adapters.md) for the generated layouts, ownership,
 and upgrade boundary. The contract does not change selection, workflow
 authority, Context's explicit default-off boundary, or the legacy
-`runtimeInjection` default of `false`.
+`runtimeInjection` default of `false`. `sharedSkillRouting` is a separate
+default-on OpenCode advisory route and never enables that broader context path.
 
 ## Package Boundary
 

@@ -180,7 +180,7 @@ describe("ph doctor session reachability", () => {
     writeProjectFile(
       projectDir,
       ".persona/harness.jsonc",
-      `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["workflow"] }, null, 2)}\n`,
+      `${JSON.stringify({ features: { runtimeInjection: false, sharedSkillRouting: true }, enabledDomains: ["workflow"] }, null, 2)}\n`,
     )
 
     const result = doctor(projectDir)
@@ -188,6 +188,7 @@ describe("ph doctor session reachability", () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain("OpenCode native shared-skill metadata: READY (17/17 described)")
     expect(result.stdout).toContain("OpenCode plugin adapter reachability: UNOBSERVED")
+    expect(result.stdout).toContain("OpenCode shared-skill routing configuration: ON (not host-observed)")
     expect(result.stdout).toContain("OpenCode automatic advisory route: CONFIGURED (not host-observed)")
     expect(result.stdout).toContain("OpenCode current skill selection: UNOBSERVED")
     expect(result.stdout).toContain("OpenCode host route delivery: UNOBSERVED")

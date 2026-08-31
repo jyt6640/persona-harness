@@ -42,7 +42,9 @@ npx ph workflow finish implement
 **What has actually been observed:** a simple forged-evidence fixture is
 ignored and `finish` exits `1`; the opt-in TDD rail blocked green-only
 completion in 5/5 measured runs. Runtime injection did not improve the paired
-OpenCode measurements and added cost, so it remains default-off.
+OpenCode measurements and added cost, so it remains default-off. Compact
+shared-skill routing is separate, defaults on after `ph init`, and can be
+disabled with `features.sharedSkillRouting: false`.
 
 **Built for:** Java/Spring/Gradle projects with explicit workflow gates and
 evidence checks. `ph init` materializes portable, project-local skill adapters
@@ -106,6 +108,10 @@ Persona Harness exposes two deliberately separate tracks:
   verification authority.
 - **Isolation:** Context-only paths do not execute project commands or contact
   GitHub/network.
+- **No inferred skill route:** a Context-only or partial `.persona` directory
+  without the regular manifest created by `ph init` does not enable automatic
+  shared-skill routing or an interview. Resolve the project state explicitly
+  before enabling those routes.
 - **Host:** `ph init` installs static skill adapters for Codex, Claude Code,
   OpenCode, and Antigravity. Context delivery is currently implemented only by
   the optional OpenCode adapter and remains a separate, unobserved boundary.
@@ -206,8 +212,12 @@ OpenCode release remains a separate host-observation boundary.
 `ph init` materializes the bundled Persona-owned shared-skill catalog at each
 host's project-local discovery path. Product ideas start with a one-question
 interview and explicit brief approval; adapters advise only and never create
-workflow state or invoke host agents automatically. See [Persona Shared Skills
-Core](docs/current/persona-shared-skills-core.md).
+workflow state or invoke host agents automatically. When an installed host
+integration sees a relevant request in a new project, it may first show a
+single `(PH) Setup` recommendation instead of starting a skill. The proposal
+does not write files or run commands; only a later explicit acceptance permits
+the existing `npx ph init` command to create `.persona` and its managed host
+registration. See [Persona Shared Skills Core](docs/current/persona-shared-skills-core.md).
 
 It is **not** a code-quality guarantee, a token-saving product, a broad linter,
 proof that generated apps are production-ready, or a strong completion-integrity

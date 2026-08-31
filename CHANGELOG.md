@@ -8,6 +8,20 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [0.10.0] - 2026-09-01
+
+- Add a separate, default-on `features.sharedSkillRouting` boundary for the
+  compact OpenCode `(PH)` advisory route. It no longer depends on legacy
+  `runtimeInjection`, which remains default-off.
+- In a new project where an installed host integration is already available,
+  show one `(PH) Setup` recommendation for a relevant Persona request before
+  starting an interview or workflow route. The proposal cannot write files or
+  run commands; only an explicit later acceptance can authorize the existing
+  `npx ph init` command.
+- Preserve explicit `sharedSkillRouting: false` through managed init updates,
+  and report its configuration separately from unobserved OpenCode catalog
+  selection and host delivery in `ph doctor`.
+
 ## [0.9.2] - 2026-08-31
 
 - Make portable host skills immediately recognizable as Persona Harness: their

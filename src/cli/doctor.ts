@@ -90,7 +90,7 @@ export function readDoctorSummary(options: DoctorOptions = {}): DoctorSummary {
     enabled: harnessConfig.enabled,
     enabledDomains: harnessConfig.enabledDomains,
     pluginConfigured: reachability.projectPluginState === "configured",
-    runtimeInjection: harnessConfig.features.runtimeInjection,
+    sharedSkillRouting: harnessConfig.features.sharedSkillRouting,
   })
   const packageVersionValue = packageVersion()
   const registryDetails = registrySummary(packageVersionValue, options)

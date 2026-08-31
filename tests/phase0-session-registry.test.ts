@@ -8,6 +8,7 @@ import { createPhase0Hooks } from "../src/runtime/hooks.js"
 import { opaqueEvidenceKey } from "../src/runtime/evidence-file.js"
 import type { IdleContinuationClient, IdlePromptAsyncOptions } from "../src/runtime/idle-continuation.js"
 import type { TextCompleteOutput, TransformMessagesOutput } from "../src/runtime/types.js"
+import { writeManagedInitFixture } from "./managed-init-fixture.js"
 
 const fixtureWorkspace = join(process.cwd(), ".persona-session-registry-test-fixtures")
 const fixtureRoot = join(fixtureWorkspace, "src", "main", "java", "com", "example")
@@ -24,6 +25,7 @@ function writeHarnessConfig(config: Record<string, unknown>): void {
   mkdirSync(join(fixtureWorkspace, ".persona"), { recursive: true })
   cpSync(join(process.cwd(), ".persona", "rules"), join(fixtureWorkspace, ".persona", "rules"), { recursive: true })
   writeFileSync(join(fixtureWorkspace, ".persona", "harness.jsonc"), `${JSON.stringify(config, null, 2)}\n`)
+  writeManagedInitFixture(fixtureWorkspace)
 }
 
 function writeRuntimeMultiAgentConfig(extra: Record<string, unknown> = {}): void {

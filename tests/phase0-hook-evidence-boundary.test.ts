@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
 import type { TextCompleteOutput, ToolAfterOutput, TransformMessagesOutput } from "../src/runtime/types.js"
+import { writeManagedInitFixture } from "./managed-init-fixture.js"
 
 const tempProjects: string[] = []
 
@@ -27,6 +28,7 @@ function createProjectWithBlockedEvidence(): string {
       2,
     )}\n`,
   )
+  writeManagedInitFixture(projectDir)
   return projectDir
 }
 

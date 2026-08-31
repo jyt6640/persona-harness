@@ -9,6 +9,7 @@ import { createInjectionBlock } from "../src/runtime/injection.js"
 import { loadRulesForRole } from "../src/rules/rule-loader.js"
 import { PendingInjectionStore } from "../src/runtime/store.js"
 import type { EventInput, FileRole, TransformMessagesOutput } from "../src/runtime/types.js"
+import { writeManagedInitFixture } from "./managed-init-fixture.js"
 
 const fixtureRoot = join(process.cwd(), ".persona-test-fixtures", "src", "main", "java", "com", "example")
 const fixtureWorkspace = join(process.cwd(), ".persona-test-fixtures")
@@ -89,6 +90,7 @@ function writeOptInHarnessConfig(projectDir: string): void {
     join(projectDir, ".persona", "harness.jsonc"),
     `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["backend", "programming", "workflow", "product"] }, null, 2)}\n`,
   )
+  writeManagedInitFixture(projectDir)
 }
 
 function firstText(output: TransformMessagesOutput): string {
@@ -132,7 +134,7 @@ function selectedRulePaths(
 }
 
 describe("Phase 0 OpenCode hook feasibility", () => {
-  it("does not inject target-file guidance by default", async () => {
+  it("proposes bounded setup instead of target-file guidance in an uninitialized project", async () => {
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
     const sessionID = "session-default-off"
     const targetFile = fixturePath("ReservationController.java")
@@ -145,7 +147,9 @@ describe("Phase 0 OpenCode hook feasibility", () => {
     const output = modelInput(sessionID)
     await hooks["experimental.chat.messages.transform"]?.({}, output)
 
-    expect(firstText(output)).toBe("예약 생성 API 추가해줘.")
+    expect(firstText(output)).toContain("[Persona Harness Setup Recommendation]")
+    expect(firstText(output)).not.toContain("[Persona Harness Injection]")
+    expect(existsSync(join(fixtureWorkspace, ".persona"))).toBe(false)
     expect(evidencePayloads(fixtureWorkspace)).toEqual([])
   })
 

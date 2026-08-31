@@ -8,6 +8,7 @@ import { AUTH_DESIGN_DECISION_SLOTS } from "../src/runtime/auth-design-decision.
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
 import type { TopLevelIntentKind } from "../src/runtime/top-level-intent-router.js"
 import type { TransformMessagesOutput } from "../src/runtime/types.js"
+import { writeManagedInitFixture } from "./managed-init-fixture.js"
 
 const fixtureWorkspace = join(process.cwd(), ".persona-intent-workflow-hook-fixtures")
 
@@ -16,8 +17,9 @@ beforeEach(() => {
   mkdirSync(join(fixtureWorkspace, ".persona"), { recursive: true })
   writeFileSync(
     join(fixtureWorkspace, ".persona", "harness.jsonc"),
-    `${JSON.stringify({ features: { runtimeInjection: true }, enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
+    `${JSON.stringify({ features: { runtimeInjection: false }, enabledDomains: ["backend", "programming", "workflow"] }, null, 2)}\n`,
   )
+  writeManagedInitFixture(fixtureWorkspace)
 })
 
 function modelInputWithText(sessionID: string, text: string): TransformMessagesOutput {
@@ -111,7 +113,7 @@ describe("intent workflow hook boundary", () => {
   it("advises a one-question product interview without creating workflow or evidence state before approval", async () => {
     writeFileSync(
       join(fixtureWorkspace, ".persona", "harness.jsonc"),
-      `${JSON.stringify({ features: { entrySteering: true, runtimeInjection: true }, enabledDomains: ["workflow", "product"] }, null, 2)}\n`,
+      `${JSON.stringify({ features: { entrySteering: true, runtimeInjection: false }, enabledDomains: ["workflow", "product"] }, null, 2)}\n`,
     )
     const hooks = createPhase0Hooks({ projectDir: fixtureWorkspace })
 
@@ -121,7 +123,7 @@ describe("intent workflow hook boundary", () => {
     expect(first).toContain("Recommendation:")
     expect(first).toContain("Decision: activate")
     expect(first).toContain("User-visible skill notice:")
-    expect(first).toContain("naming Persona Harness skill `deep-interview`")
+    expect(first).toContain("naming `(PH) Product Deep Interview`")
     expect(first).not.toContain("npx ph workflow")
     expect(existsSync(join(fixtureWorkspace, ".persona", "workflow"))).toBe(false)
     expect(existsSync(join(fixtureWorkspace, ".persona", "evidence"))).toBe(false)
@@ -231,10 +233,10 @@ describe("intent workflow hook boundary", () => {
     expect(freshSession).toContain("Next decision slot: provider")
   })
 
-  it("does not enable the auth design hold from entry steering alone", async () => {
+  it("respects an explicit shared-skill routing opt-out even when entry steering is enabled", async () => {
     writeFileSync(
       join(fixtureWorkspace, ".persona", "harness.jsonc"),
-      `${JSON.stringify({ features: { entrySteering: true, runtimeInjection: false }, enabledDomains: ["workflow", "product"] }, null, 2)}\n`,
+      `${JSON.stringify({ features: { entrySteering: true, runtimeInjection: false, sharedSkillRouting: false }, enabledDomains: ["workflow", "product"] }, null, 2)}\n`,
     )
 
     const text = await transformPrompt("session-auth-design-entry-steering-only", "Implement OAuth login for the service")

@@ -9,6 +9,7 @@ import {
   isObserverFindingsEnabled,
   isProjectPhilosophyInjectionEnabled,
   isRuntimeInjectionEnabled,
+  isSharedSkillRoutingEnabled,
   loadHarnessConfigResult,
   resolveSafeEvidenceRootResult,
 } from "../config/harness-config.js"
@@ -24,6 +25,7 @@ import {
   maybeInjectIntentWorkflow,
   maybeInjectProductDeepInterview,
 } from "./intent-workflow.js"
+import { hasManagedPersonaInitialization, PersonaSetupTracker } from "./persona-setup.js"
 import { injectSystemConstitution } from "./system-constitution.js"
 import { injectProjectPhilosophy } from "./project-philosophy.js"
 import { TokenCompactionTracker } from "./token-compaction.js"
@@ -224,9 +226,11 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
   const productInterviewMode = existsSync(join(projectDir, "src")) ? "brownfield-change-discovery" : "new-product"
   const productInterview = new ProductDeepInterviewTracker({ mode: productInterviewMode })
   const authDesignDecision = new AuthDesignDecisionTracker()
+  const setup = new PersonaSetupTracker()
   const continuation = new ContinuationTracker({ evidenceDir })
   const entrySteering = new EntrySteeringTracker(projectDir, config)
   const runtimeInjectionEnabled = isRuntimeInjectionEnabled(config)
+  const sharedSkillRoutingEnabled = isSharedSkillRoutingEnabled(config)
   const projectPhilosophyInjectionEnabled = isProjectPhilosophyInjectionEnabled(config)
   const effectiveProfile = runtimeInjectionEnabled
     ? loadPersonalizationInjectionProfile(projectDir, projectPhilosophyInjectionEnabled)
@@ -523,24 +527,31 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           return
         }
 
-        if (runtimeInjectionEnabled && allowsRuntimeInjection(sessionId, "intent-workflow")) {
-          const authDesignResult = maybeInjectAuthDesignDecision(output, sessionId, authDesignDecision)
-          if (authDesignResult === "injected" || authDesignResult === "blocked") {
+        if (sharedSkillRoutingEnabled && allowsMainSession(sessionId, "intent-workflow")) {
+          const setupResult = setup.route(output, projectDir, sessionId)
+          if (setupResult === "injected") {
             store.take(sessionId)
             return
           }
+          if (hasManagedPersonaInitialization(projectDir)) {
+            const authDesignResult = maybeInjectAuthDesignDecision(output, sessionId, authDesignDecision)
+            if (authDesignResult === "injected" || authDesignResult === "blocked") {
+              store.take(sessionId)
+              return
+            }
 
-          const productInterviewInjected = authDesignResult !== "released"
-            && config.enabledDomains.includes("product")
-            && maybeInjectProductDeepInterview(output, sessionId, productInterview, productInterviewMode)
-          if (productInterviewInjected) {
-            store.take(sessionId)
-            return
+            const productInterviewInjected = authDesignResult !== "released"
+              && config.enabledDomains.includes("product")
+              && maybeInjectProductDeepInterview(output, sessionId, productInterview, productInterviewMode)
+            if (productInterviewInjected) {
+              store.take(sessionId)
+              return
+            }
+            maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance, {
+              authDesignApproved: authDesignResult === "released",
+              evidenceDir,
+            })
           }
-          maybeInjectIntentWorkflow(output, projectDir, sessionId, config, compliance, {
-            authDesignApproved: authDesignResult === "released",
-            evidenceDir,
-          })
         }
 
         entrySteering.apply(sessionId, output)

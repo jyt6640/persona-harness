@@ -38,6 +38,13 @@ Use your host's normal project-skill discovery mechanism after initialization.
 Persona Harness does not add a host-specific launch command or turn static
 discovery into a claim that the host selected a skill in the current session.
 
+When an already installed host integration sees a relevant Persona request in a
+project without `.persona`, it may show a single `(PH) Setup` recommendation.
+That recommendation is advisory: it cannot write configuration, invoke a
+command, or start a workflow. Only a later explicit acceptance may authorize
+the existing `npx ph init` command. It still does not imply `bootstrap`,
+`attach`, workflow, Git, or network work.
+
 ## What Is Shared
 
 Every generated adapter points to the same Persona-owned catalog. Its
@@ -94,10 +101,17 @@ enable it. Context delivery is currently implemented only by the optional
 OpenCode adapter, and even there a local configuration or package check cannot
 prove a live session received a Context block.
 
-The legacy `runtimeInjection` setting also remains default-off. Portable
-adapters make skills discoverable; they do not silently enable runtime hooks,
-pre-tool enforcement, completion enforcement, session persistence, or automatic
-adapter updates on a host that lacks those controls.
+The legacy `runtimeInjection` setting remains default-off. In an initialized
+OpenCode project, the separate `features.sharedSkillRouting` setting defaults
+on and permits one compact advisory skill route; set it to `false` to opt out.
+Here, initialized means that `ph init` created its regular managed manifest.
+A Context-only or partial `.persona` directory is deliberately not treated as
+initialized, so it cannot infer an interview or another automatic skill route.
+That route does not deliver rule/profile context, create project state, run a
+command, or advance a workflow. Portable adapters otherwise make skills
+discoverable; they do not silently enable runtime hooks, pre-tool enforcement,
+completion enforcement, session persistence, or automatic adapter updates on a
+host that lacks those controls.
 
 ## Updating A Project
 

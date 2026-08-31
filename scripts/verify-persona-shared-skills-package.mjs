@@ -159,11 +159,75 @@ function assertInstalledCatalog(packageRoot, expectedVersion) {
   }
 }
 
+function firstRunMessages(sessionID, text) {
+  const messageID = `message-${sessionID}`
+  return {
+    messages: [{
+      info: {
+        id: messageID,
+        sessionID,
+        role: "user",
+        time: { created: Date.now() },
+        agent: "build",
+        model: { providerID: "installed-package-contract", modelID: "test" },
+      },
+      parts: [{
+        id: `part-${sessionID}`,
+        sessionID,
+        messageID,
+        type: "text",
+        text,
+      }],
+    }],
+  }
+}
+
+function latestMessageText(output) {
+  const part = output.messages[0]?.parts[0]
+  return part?.type === "text" ? part.text : undefined
+}
+
+async function assertInstalledFirstRunSetupRoute(hooksModule, consumerRoot) {
+  const projectRoot = join(consumerRoot, "first-run-project")
+  mkdirSync(projectRoot, { recursive: true })
+  const hooks = hooksModule.createPhase0Hooks({ projectDir: projectRoot })
+  const transform = hooks["experimental.chat.messages.transform"]
+  if (typeof transform !== "function") {
+    throw new Error("installed shared-skill package did not expose the first-run route")
+  }
+
+  const proposed = firstRunMessages("installed-first-run", "I want to build a small product")
+  await transform({}, proposed)
+  const proposalText = latestMessageText(proposed)
+  if (
+    typeof proposalText !== "string"
+    || !proposalText.includes("[Persona Harness Setup Recommendation]")
+    || proposalText.includes("[Persona Harness Product Interview]")
+    || existsSync(join(projectRoot, ".persona"))
+    || existsSync(join(projectRoot, ".opencode"))
+  ) {
+    throw new Error("installed shared-skill package did not keep first-run setup advisory")
+  }
+
+  const accepted = firstRunMessages("installed-first-run", "yes, initialize it")
+  await transform({}, accepted)
+  const acceptanceText = latestMessageText(accepted)
+  if (
+    typeof acceptanceText !== "string"
+    || !acceptanceText.includes("[Persona Harness Setup Approval]")
+    || existsSync(join(projectRoot, ".persona"))
+    || existsSync(join(projectRoot, ".opencode"))
+  ) {
+    throw new Error("installed shared-skill package did not preserve explicit first-run setup")
+  }
+}
+
 async function assertInstalledRuntime(packageRoot, consumerRoot) {
   const pluginModule = await import(pathToFileURL(join(packageRoot, "dist", "index.js")).href)
   const catalogModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "persona-shared-skill-catalog.js")).href)
   const intentModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "top-level-intent-router.js")).href)
   const adapterModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "opencode-skill-adapter.js")).href)
+  const hooksModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "hooks.js")).href)
   const portableModule = await import(pathToFileURL(join(packageRoot, "dist", "portable-skill.js")).href)
   const interviewModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "product-deep-interview.js")).href)
   const provenanceModule = await import(pathToFileURL(join(packageRoot, "scripts", "staged-package-artifact-provenance-network.mjs")).href)
@@ -255,6 +319,7 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
   if (existsSync(join(consumerRoot, ".persona"))) {
     throw new Error("installed product interview created consumer workflow state")
   }
+  await assertInstalledFirstRunSetupRoute(hooksModule, consumerRoot)
 
   const originalEnvironment = new Map(
     ["PATH", "PH_AST_GREP_BIN", "PH_CODEGRAPH_BIN", "PH_LSP_MCP_BIN", "PH_LSP_JAVA_SERVER"].map((name) => [name, process.env[name]]),
