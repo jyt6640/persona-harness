@@ -38,7 +38,9 @@
 
 ## 이게 뭔가요
 
-AI 에이전트가 수행하는 Java/Spring 백엔드 작업을 위한 workflow + evidence CLI(`ph`)와 선택적 OpenCode 플러그인입니다. 하는 일:
+AI 에이전트가 수행하는 Java/Spring 백엔드 작업을 위한 workflow + evidence CLI(`ph`),
+그리고 Codex·Claude Code·OpenCode·Antigravity용 portable shared-skill adapter입니다.
+OpenCode 플러그인은 선택적 runtime 경계입니다. 하는 일:
 
 - 프로젝트 아이디어나 README를 구현 ticket으로 분할
 - 에이전트를 반복 가능한 백엔드 workflow 위에 유지
@@ -50,17 +52,21 @@ AI 에이전트가 수행하는 Java/Spring 백엔드 작업을 위한 workflow 
 
 ## 설치
 
-Node.js ^20.17.0 || >=22.9.0 (Node 21은 지원하지 않음), Java 21+ / Gradle, 그리고 프로바이더가 설정된 OpenCode CLI가 필요합니다.
+Node.js ^20.17.0 || >=22.9.0 (Node 21은 지원하지 않음)가 필요합니다. Java/Spring
+workflow rail을 쓸 때만 Java 21+ / Gradle이 필요하며, 코딩 에이전트 host는 이미
+쓰는 것을 별도로 설치하면 됩니다. OpenCode는 plugin-only Context delivery가
+필요할 때만 선택 사항입니다.
 
 ```bash
-# OpenCode
-curl -fsSL https://opencode.ai/install | bash   # 또는: npm install -g opencode-ai
-opencode auth login
-
-# Persona Harness
+# 지원 host 프로젝트에서
 npm install -D persona-harness
-npx ph --help && npx ph doctor
+npx ph init
+npx ph doctor
 ```
+
+`ph init`은 host별 discovery 파일을 만들며 Persona 전용 실행 명령을 추가하지
+않습니다. 생성 경로와 안전한 갱신 방식은 [portable host adapter
+guide](portable-host-adapters.md)를 보세요.
 
 ## 빠른 시작
 
@@ -74,6 +80,11 @@ npx ph init                 # 최소 통합 파일만 생성
 npx ph bootstrap backend    # AGENTS.md, profile, plan, report 템플릿
 npx ph workflow check
 ```
+
+`ph init`은 `.agents/skills`, `.claude/skills`, `.opencode/skills` 아래에
+manifest-owned shared-skill adapter도 만듭니다. 이 파일은 host가 catalog를
+발견할 수 있게 할 뿐, 실행 중인 세션이 skill을 선택했거나 workflow authority를
+얻었다는 뜻은 아닙니다.
 
 기존 Java/Spring/Gradle 프로젝트에서는 먼저 추론된 draft를 확인한 뒤 명시적으로
 승인하세요.
@@ -96,7 +107,9 @@ bootstrap workspace intake 또는 `attach --repair --yes`가 멈추면 같은 re
 전용이며 workspace 소유권, 활성 workflow 산출물, history, 현재 source-read
 전제를 분류합니다. 자세한 분기표는 [workflow intake troubleshooting](../troubleshooting/workflow-intake.md)에 있습니다.
 
-그다음 OpenCode에서 에이전트에게 당신의 `README.md`를 구현하도록 요청하세요. 에이전트는 스스로 rail을 돌리고 `npx ph workflow finish implement`로 끝내야 합니다.
+그다음 사용하는 coding-agent host에서 에이전트에게 당신의 `README.md`를 구현하도록
+요청하세요. 에이전트는 스스로 rail을 돌리고 `npx ph workflow finish implement`로
+끝내야 합니다. host-native skill 선택과 실제 전달은 별도 host evidence입니다.
 
 > [!NOTE]
 > `workflow finish`가 실패하면 에이전트는 완료를 주장하기 전에 보고된 blocker를 고쳐야 합니다. **그 실패는 버그가 아니라 제품이 작동하는 것입니다.**
@@ -139,15 +152,30 @@ preview wrapper는 외부 도구가 없으면 성공을 위조하지 않고 **un
 
 ## 플랫폼 및 호스트 지원
 
-| 표면 | 상태 | 근거 범위 |
+### Portable host adapter
+
+`ph init`은 같은 Persona shared-skill catalog를 각 host의 project-local
+discovery 경로에 regular file로 만듭니다. 이는 설치된 package가 static adapter를
+만들었다는 근거이지, 실제 세션이 skill을 선택·로드·준수했다는 근거는 아닙니다.
+
+| Host | 생성 경로 |
+| --- | --- |
+| Codex 및 Antigravity | `.agents/skills/persona-harness-<skill-id>/SKILL.md` |
+| Claude Code | `.claude/skills/persona-harness-claude-<skill-id>/SKILL.md` |
+| OpenCode | `.opencode/skills/persona-harness-opencode-<skill-id>/SKILL.md` |
+
+Context와 legacy runtime injection은 default-off입니다. Context delivery는 여전히
+선택적 OpenCode adapter의 별도 runtime 경계입니다. adapter 소유권, 충돌, 갱신 방식은
+[portable host adapter guide](portable-host-adapters.md)를 보세요.
+
+| CLI/runtime 표면 | 상태 | 근거 범위 |
 | --- | --- | --- |
-| macOS / Linux + OpenCode | 검증됨 | 현재 Persona Harness 호스트 어댑터와 제품 근거는 macOS/Linux의 OpenCode에 한정됩니다. |
+| macOS / Linux CLI/package | 제한된 검증 | host의 live delivery와 별개로 CLI/package 범위를 확인합니다. |
 | Windows | 미검증 | Windows 지원 주장은 없습니다. 잠금 identity의 device/inode 동작과 stale-lock/concurrency 결론은 측정되거나 검증되지 않았습니다. |
-| Codex 어댑터 | 계획됨 | 현재 Codex 어댑터나 Codex 제품 근거는 없습니다. 계획된 어댑터일 뿐입니다. |
 
 ## 경계와 안전
 
-Evidence는 하나의 질문에만 답합니다 — *"에이전트가 기대된 rail을 보고 따랐는가?"* — 그 이상은 아닙니다. PH는 앱 품질 인증, 토큰 절약, Clean Code 보장, broad AST/linter 강제, full TDD 프레임워크, closure 보장, OpenCode 없는 완전한 workflow를 **약속하지 않습니다**. 정본 목록은 [MEASURED-CLAIMS](../MEASURED-CLAIMS.md)에 있습니다.
+Evidence는 하나의 질문에만 답합니다 — *"에이전트가 기대된 rail을 보고 따랐는가?"* — 그 이상은 아닙니다. PH는 앱 품질 인증, 토큰 절약, Clean Code 보장, broad AST/linter 강제, full TDD 프레임워크, closure 보장, 모든 host에서 입증된 live workflow route를 **약속하지 않습니다**. 정본 목록은 [MEASURED-CLAIMS](../MEASURED-CLAIMS.md)에 있습니다.
 
 > [!WARNING]
 > `ph bearshell`은 **샌드박스가 아닙니다**. 실행 시간과 출력 크기를 제한하지만, 명령은 여전히 당신의 머신에서 당신의 권한으로 실행됩니다. [SECURITY](../../SECURITY.md) 참고.
@@ -155,6 +183,7 @@ Evidence는 하나의 질문에만 답합니다 — *"에이전트가 기대된 
 ## 문서
 
 - **새 사용자** → [Start Here](../START-HERE.md) · [Quick Demo](../QUICK-DEMO.md) · [Measured Claims](../MEASURED-CLAIMS.md)
+- **Codex · Claude Code · OpenCode · Antigravity** → [portable host adapter guide](portable-host-adapters.md)
 - **설치 & 백엔드 형태** → [MVP 설치 가이드](java-backend-mvp-install-guide.md)
 - **기여자** → [CONTRIBUTING](../../CONTRIBUTING.md) · [ROADMAP](../../ROADMAP.md) · [CODE_OF_CONDUCT](../../CODE_OF_CONDUCT.md)
 - **릴리스 & 측정** → [릴리스 운영](release/README.md) · [버전별 릴리스 문서](../releases/README.md) · [패키지 인덱스](../releases/package-index.md) · [Changelog](../../CHANGELOG.md)

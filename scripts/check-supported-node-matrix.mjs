@@ -17,11 +17,16 @@ const expectedMatrixRows = [
 ].sort()
 
 const supportTable = [
-  "| Linux + OpenCode | Product: Node ^20.17.0 || >=22.9.0; source checks: Node 20.19.0 | Required Verify repository aggregates PR fast feedback and main package integration. Pull requests run policy, typecheck, build, and the two Vitest projects; main pushes additionally run Linux Node 20.19.0 source-built, packed-tarball, and fresh local-tarball installed checks. The dispatch-only support matrix retains exact product-floor Linux Node 20.17.0 and 22.9.0 imports plus latest Linux Node 20, 22, and 24 on demand. |",
-  "| macOS + OpenCode | Manual limited smoke | The dispatch-only support matrix retains macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |",
+  "| Linux CLI/package | Product: Node ^20.17.0 || >=22.9.0; source checks: Node 20.19.0 | Required Verify repository aggregates PR fast feedback and main package integration. Pull requests run policy, typecheck, build, and the two Vitest projects; main pushes additionally run Linux Node 20.19.0 source-built, packed-tarball, and fresh local-tarball installed checks. The dispatch-only support matrix retains exact product-floor Linux Node 20.17.0 and 22.9.0 imports plus latest Linux Node 20, 22, and 24 on demand. |",
+  "| macOS CLI/package | Manual limited smoke | The dispatch-only support matrix retains macOS Node 22 smoke only; this is not a promise of macOS Node 20/24 coverage. |",
   "| Windows | Unverified / nonblocking | No Windows matrix job or support claim. Lock identity device/inode behavior and stale-lock/concurrency conclusions are not measured or verified. |",
-  "| Codex adapter | Planned | No current Codex adapter or Codex product evidence; this is a planned adapter only. |",
 ].join("\n")
+
+const portableHostAdapterRows = [
+  "| Codex and Antigravity | `.agents/skills/persona-harness-<skill-id>/SKILL.md` |",
+  "| Claude Code | `.claude/skills/persona-harness-claude-<skill-id>/SKILL.md` |",
+  "| OpenCode | `.opencode/skills/persona-harness-opencode-<skill-id>/SKILL.md` |",
+]
 
 const automaticSupportBoundary = "Automatic CI boundary: Verify repository is the required PR/main aggregate. Pull requests require only the fast feedback lanes; main pushes also require Linux Node 20.19.0 package integration. The dispatch-only support matrix is deferred multi-runtime evidence, not a required PR/main gate. It is distinct from the canonical clean-CI builder's main-push signed evidence and the ordinary path-filtered diagnostic selftest."
 
@@ -181,7 +186,11 @@ function validateMatrixWorkflow(workflow, diagnostics) {
 }
 
 function validateSupportDocument(path, content, diagnostics) {
-  if (!content.includes(supportTable) || !content.includes(automaticSupportBoundary)) {
+  if (
+    !content.includes(supportTable)
+    || !content.includes(automaticSupportBoundary)
+    || !portableHostAdapterRows.every((row) => content.includes(row))
+  ) {
     diagnostics.push(`${path} support table`)
   }
 }

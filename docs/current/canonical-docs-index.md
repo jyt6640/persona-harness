@@ -12,7 +12,8 @@ Start with [Current Docs](README.md) unless you need a specific decision.
 | Workflow lifecycle projection | `docs/current/workflow-closure-state-machine-design.md` | The current fail-closed `workflow-lifecycle.1` state model. |
 | Workflow state concurrency | `docs/current/workflow-state-concurrency.md` | Writer ownership and safe state handling. |
 | Public product boundary | `docs/MEASURED-CLAIMS.md` | What Persona Harness may and may not claim. |
-| Install and usage | `docs/current/persona-harness-detailed-usage.md` | Detailed local install and maintenance-oriented usage. |
+| Install and usage | `docs/START-HERE.md` | Current first-run path for the workflow rail and host-neutral installation. |
+| Portable host adapters | `docs/current/portable-host-adapters.md` | Static adapter layouts, init ownership, update boundary, and host-evidence limits. |
 | Portable shared-skill and product-discovery contract | `docs/current/persona-shared-skills-core.md` | Catalog ownership, interview approval, capability-derived host assurance, explicit handoffs, and packaged surface. |
 | Personalization profile store | `docs/current/personalization-profile-v1.md` | Versioned local profile records, append-only lifecycle, privacy, and fail-closed storage. |
 | Context Personalization program | `docs/current/context-program-status.md` | Canonical P0 audit, isolated OpenCode delivery boundary, separation invariants, and claim status. |

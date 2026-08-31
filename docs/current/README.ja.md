@@ -38,7 +38,9 @@
 
 ## これは何か
 
-AI エージェントが行う Java/Spring バックエンド作業のための workflow + evidence CLI（`ph`）と、任意の OpenCode プラグインです。行うこと:
+AI エージェントが行う Java/Spring バックエンド作業のための workflow + evidence CLI（`ph`）、
+および Codex、Claude Code、OpenCode、Antigravity 向けの portable shared-skill adapter です。
+OpenCode プラグインは任意の runtime 境界です。行うこと:
 
 - プロジェクトのアイデアや README を実装 ticket に分割
 - エージェントを反復可能なバックエンド workflow に乗せ続ける
@@ -50,17 +52,21 @@ AI エージェントが行う Java/Spring バックエンド作業のための 
 
 ## インストール
 
-Node.js ^20.17.0 || >=22.9.0（Node 21 は未対応）、Java 21+ / Gradle、そしてプロバイダーが設定済みの OpenCode CLI が必要です。
+Node.js ^20.17.0 || >=22.9.0（Node 21 は未対応）が必要です。Java/Spring
+workflow rail には Java 21+ / Gradle が必要です。利用する coding-agent host は別途
+インストールしてください。OpenCode は plugin-only Context delivery が必要な場合だけ
+任意です。
 
 ```bash
-# OpenCode
-curl -fsSL https://opencode.ai/install | bash   # または: npm install -g opencode-ai
-opencode auth login
-
-# Persona Harness
+# 対応 host のプロジェクトで
 npm install -D persona-harness
-npx ph --help && npx ph doctor
+npx ph init
+npx ph doctor
 ```
+
+`ph init` は host ごとの discovery ファイルを作成し、Persona 専用の起動コマンドは
+追加しません。生成パスと安全な更新方法は [Portable Host
+Adapters](portable-host-adapters.md) を参照してください。
 
 ## クイックスタート
 
@@ -74,6 +80,11 @@ npx ph init                 # 最小限の統合ファイルのみ
 npx ph bootstrap backend    # AGENTS.md, profile, plan, report テンプレート
 npx ph workflow check
 ```
+
+`ph init` は `.agents/skills`、`.claude/skills`、`.opencode/skills` にも
+manifest-owned shared-skill adapter を作成します。これらは host が catalog を
+発見できるようにするだけで、実行中の session が skill を選択したことや workflow
+authority を得たことを示しません。
 
 既存の Java/Spring/Gradle プロジェクトでは、まず推論された draft を確認してから
 明示的に受け入れます。
@@ -91,7 +102,9 @@ npx ph attach --repair --yes
 PH-run verification を有効にしますが、`runtimeInjection`、`systemConstitution`、
 `idleContinuation`、Ralph loop は off のままです。
 
-その後、OpenCode でエージェントにあなたの `README.md` を実装するよう依頼します。エージェントは自分で rail を回し、`npx ph workflow finish implement` で終えるはずです。
+その後、使う coding-agent host でエージェントにあなたの `README.md` を実装するよう
+依頼します。エージェントは自分で rail を回し、`npx ph workflow finish implement` で
+終えるはずです。host-native skill の選択と実際の delivery は別の host evidence です。
 
 > [!NOTE]
 > `workflow finish` が失敗した場合、エージェントは完了を主張する前に報告された blocker を修正しなければなりません。**その失敗はバグではなく、プロダクトが機能している証拠です。**
@@ -134,15 +147,31 @@ preview wrapper は外部ツールがない場合、成功を偽装せず **unav
 
 ## プラットフォームとホストのサポート
 
-| サーフェス | 状態 | 根拠の範囲 |
+### Portable host adapter
+
+`ph init` は同じ Persona shared-skill catalog を各 host の project-local discovery
+パスに regular file として作成します。これはインストール済み package が static
+adapter を作成した根拠であり、実際の session が skill を選択、load、または従った
+根拠ではありません。
+
+| Host | 生成パス |
+| --- | --- |
+| Codex と Antigravity | `.agents/skills/persona-harness-<skill-id>/SKILL.md` |
+| Claude Code | `.claude/skills/persona-harness-claude-<skill-id>/SKILL.md` |
+| OpenCode | `.opencode/skills/persona-harness-opencode-<skill-id>/SKILL.md` |
+
+Context と legacy runtime injection は default-off です。Context delivery は依然として
+任意の OpenCode adapter の別 runtime 境界です。adapter の所有権、衝突、更新は
+[Portable Host Adapters](portable-host-adapters.md) を参照してください。
+
+| CLI/runtime サーフェス | 状態 | 根拠の範囲 |
 | --- | --- | --- |
-| macOS / Linux + OpenCode | 検証済み | 現在の Persona Harness のホストアダプターとプロダクトの根拠は、macOS/Linux 上の OpenCode に限定されます。 |
+| macOS / Linux CLI/package | 限定的に検証済み | host の live delivery とは別に CLI/package の範囲を確認します。 |
 | Windows | 未検証 | Windows のサポートを主張しません。ロック identity の device/inode 動作と stale-lock/concurrency に関する結論は、測定も検証もされていません。 |
-| Codex adapter | 計画中 | 現在の Codex adapter または Codex プロダクトの根拠はありません。計画中の adapter にすぎません。 |
 
 ## 境界と安全
 
-Evidence は一つの質問にのみ答えます — *「エージェントは期待された rail を見て従ったか？」* — それ以上ではありません。PH はアプリ品質認証、トークン節約、Clean Code 保証、broad AST/linter 強制、full TDD フレームワーク、closure 保証、OpenCode なしの完全な workflow を**約束しません**。正規のリストは [MEASURED-CLAIMS](../MEASURED-CLAIMS.md) にあります。
+Evidence は一つの質問にのみ答えます — *「エージェントは期待された rail を見て従ったか？」* — それ以上ではありません。PH はアプリ品質認証、トークン節約、Clean Code 保証、broad AST/linter 強制、full TDD フレームワーク、closure 保証、すべての host で実証された live workflow route を**約束しません**。正規のリストは [MEASURED-CLAIMS](../MEASURED-CLAIMS.md) にあります。
 
 > [!WARNING]
 > `ph bearshell` は**サンドボックスではありません**。実行時間と出力サイズを制限しますが、コマンドはあなたのマシン上であなたの権限で実行されます。[SECURITY](../../SECURITY.md) を参照。
@@ -150,6 +179,7 @@ Evidence は一つの質問にのみ答えます — *「エージェントは�
 ## ドキュメント
 
 - **新規ユーザー** → [Start Here](../START-HERE.md) · [Quick Demo](../QUICK-DEMO.md) · [Measured Claims](../MEASURED-CLAIMS.md)
+- **Codex · Claude Code · OpenCode · Antigravity** → [Portable Host Adapters](portable-host-adapters.md)
 - **インストール & バックエンド形状** → [MVP インストールガイド](java-backend-mvp-install-guide.md)
 - **コントリビューター** → [CONTRIBUTING](../../CONTRIBUTING.md) · [ROADMAP](../../ROADMAP.md) · [CODE_OF_CONDUCT](../../CODE_OF_CONDUCT.md)
 - **リリース & 測定** → [リリース運用](release/README.md) · [バージョン別リリース文書](../releases/README.md) · [パッケージインデックス](../releases/package-index.md) · [Changelog](../../CHANGELOG.md)

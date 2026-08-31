@@ -38,7 +38,9 @@
 
 ## 这是什么
 
-为 AI 智能体执行的 Java/Spring 后端工作提供的 workflow + evidence CLI（`ph`），以及可选的 OpenCode 插件。它：
+为 AI 智能体执行的 Java/Spring 后端工作提供的 workflow + evidence CLI（`ph`），
+以及面向 Codex、Claude Code、OpenCode 和 Antigravity 的 portable shared-skill
+adapter。OpenCode 插件是可选的 runtime 边界。它：
 
 - 把项目想法或 README 拆分为实现 ticket
 - 让智能体保持在可重复的后端 workflow 上
@@ -50,17 +52,19 @@
 
 ## 安装
 
-需要 Node.js ^20.17.0 || >=22.9.0（不支持 Node 21）、Java 21+ / Gradle，以及已配置供应商的 OpenCode CLI。
+需要 Node.js ^20.17.0 || >=22.9.0（不支持 Node 21）。只有使用 Java/Spring
+workflow rail 时才需要 Java 21+ / Gradle；请单独安装你已经在使用的 coding-agent
+host。只有需要 plugin-only Context delivery 时才需要 OpenCode。
 
 ```bash
-# OpenCode
-curl -fsSL https://opencode.ai/install | bash   # 或：npm install -g opencode-ai
-opencode auth login
-
-# Persona Harness
+# 在任意支持的 host 项目中
 npm install -D persona-harness
-npx ph --help && npx ph doctor
+npx ph init
+npx ph doctor
 ```
+
+`ph init` 会创建各 host 的 discovery 文件，但不会增加 Persona 专用启动命令。生成
+路径和安全更新方式请见 [Portable Host Adapters](portable-host-adapters.md)。
 
 ## 快速开始
 
@@ -74,6 +78,10 @@ npx ph init                 # 仅创建最小集成文件
 npx ph bootstrap backend    # AGENTS.md、profile、plan、report 模板
 npx ph workflow check
 ```
+
+`ph init` 还会在 `.agents/skills`、`.claude/skills` 和 `.opencode/skills` 下创建
+manifest-owned shared-skill adapter。这些文件只让 host 发现 catalog，并不证明正在
+运行的 session 选择了 skill 或获得了 workflow authority。
 
 对于已有的 Java/Spring/Gradle 项目，先查看推断出的 draft，再明确接受它：
 
@@ -90,7 +98,9 @@ npx ph attach --repair --yes
 同时保持 `runtimeInjection`、`systemConstitution`、`idleContinuation` 和
 Ralph loop 为关闭状态。
 
-然后在 OpenCode 中请求智能体实现你的 `README.md`。它应当自行驱动 rail，并以 `npx ph workflow finish implement` 结束。
+然后在你使用的 coding-agent host 中请求智能体实现你的 `README.md`。它应当自行驱动
+rail，并以 `npx ph workflow finish implement` 结束。host-native skill 的选择和实际
+delivery 是单独的 host evidence。
 
 > [!NOTE]
 > 如果 `workflow finish` 失败，智能体必须先修复报告的 blocker，才能声明完成。**这个失败不是 bug，而是产品在正常工作。**
@@ -133,15 +143,30 @@ preview wrapper 在外部工具缺失时报告 **unavailable** 状态，而不�
 
 ## 平台与主机支持
 
-| 适用面 | 状态 | 证据边界 |
+### Portable host adapter
+
+`ph init` 会把同一份 Persona shared-skill catalog 作为 regular file 创建在每个 host
+的 project-local discovery 路径中。这证明已安装的 package 创建了 static adapter，
+并不证明真实 session 选择、加载或遵循了 skill。
+
+| Host | 生成路径 |
+| --- | --- |
+| Codex 和 Antigravity | `.agents/skills/persona-harness-<skill-id>/SKILL.md` |
+| Claude Code | `.claude/skills/persona-harness-claude-<skill-id>/SKILL.md` |
+| OpenCode | `.opencode/skills/persona-harness-opencode-<skill-id>/SKILL.md` |
+
+Context 和 legacy runtime injection 保持 default-off。Context delivery 仍然是可选
+OpenCode adapter 的独立 runtime 边界。有关 adapter 所有权、冲突和更新，请参阅
+[Portable Host Adapters](portable-host-adapters.md)。
+
+| CLI/runtime 适用面 | 状态 | 证据边界 |
 | --- | --- | --- |
-| macOS / Linux + OpenCode | 已验证 | 当前 Persona Harness 的主机适配器和产品证据仅限于 macOS/Linux 上的 OpenCode。 |
+| macOS / Linux CLI/package | 有限验证 | CLI/package 范围与 host 的 live delivery 分开确认。 |
 | Windows | 未验证 | 不主张 Windows 支持。锁 identity 的 device/inode 行为以及 stale-lock/concurrency 结论尚未测量或验证。 |
-| Codex 适配器 | 计划中 | 当前没有 Codex 适配器或 Codex 产品证据；它仅是计划中的适配器。 |
 
 ## 边界与安全
 
-Evidence 只回答一个问题 —— *"智能体是否看到并遵循了预期的 rail？"* —— 仅此而已。PH **不**承诺应用质量认证、token 节省、Clean Code 保证、broad AST/linter 强制、full TDD 框架、closure 保证，或没有 OpenCode 的完整 workflow。规范列表见 [MEASURED-CLAIMS](../MEASURED-CLAIMS.md)。
+Evidence 只回答一个问题 —— *"智能体是否看到并遵循了预期的 rail？"* —— 仅此而已。PH **不**承诺应用质量认证、token 节省、Clean Code 保证、broad AST/linter 强制、full TDD 框架、closure 保证，或在每个 host 上都已证明的 live workflow route。规范列表见 [MEASURED-CLAIMS](../MEASURED-CLAIMS.md)。
 
 > [!WARNING]
 > `ph bearshell` **不是沙箱**。它限制运行时间和输出大小，但命令仍以你的权限在你的机器上执行。见 [SECURITY](../../SECURITY.md)。
@@ -149,6 +174,7 @@ Evidence 只回答一个问题 —— *"智能体是否看到并遵循了预期�
 ## 文档
 
 - **新用户** → [Start Here](../START-HERE.md) · [Quick Demo](../QUICK-DEMO.md) · [Measured Claims](../MEASURED-CLAIMS.md)
+- **Codex · Claude Code · OpenCode · Antigravity** → [Portable Host Adapters](portable-host-adapters.md)
 - **安装 & 后端形态** → [MVP 安装指南](java-backend-mvp-install-guide.md)
 - **贡献者** → [CONTRIBUTING](../../CONTRIBUTING.md) · [ROADMAP](../../ROADMAP.md) · [CODE_OF_CONDUCT](../../CODE_OF_CONDUCT.md)
 - **发布 & 测量** → [发布运营](release/README.md) · [版本化发布文档](../releases/README.md) · [包索引](../releases/package-index.md) · [Changelog](../../CHANGELOG.md)

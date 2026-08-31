@@ -115,6 +115,7 @@ Total indexed files: 342
 | `docs/current/npm-beta-publish-preparation.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/omo-steal-measurement-report.md` | current or historical decision/status | - | Decision/status document; active only if named by docs/current/README.md, otherwise historical reference. |
 | `docs/current/persona-harness-detailed-usage.md` | operational stable | - | Stable non-versioned guide or index. |
+| `docs/current/portable-host-adapters.md` | current active pointer/status | - | Current portable static-adapter layouts, ownership, update, and host-evidence boundary. |
 | `docs/current/persona-harness-state-and-version.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/persona-workflow-roles-v0.3.md` | current compatibility doc | - | Compatibility/current-era doc retained in place; migrate by summary and pointer before moving. |
 | `docs/current/p0-finish-next-action-acceptance-record.md` | current active pointer/status | - | P0-2 exact-main finish follow-up, report-transition, package evidence, and claim boundary record. |

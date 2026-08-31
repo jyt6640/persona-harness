@@ -201,11 +201,15 @@ assumes every capability by default.
 
 The current OpenCode compact route uses one explicit bounded manifest and
 remains portable because its notice/session behavior is emulated and its
-generic pre-tool/completion enforcement capabilities are unavailable. This is
-not evidence that Claude Code, Codex, or Antigravity adapters are installed or
-live; host-specific generation and probing remain separate 0.9.0 work.
-The contract does not change selection, workflow authority, Context's explicit
-default-off boundary, or the legacy `runtimeInjection` default of `false`.
+generic pre-tool/completion enforcement capabilities are unavailable. The 0.9.0
+package materializes static adapters for Claude Code, Codex, and Antigravity as
+well as OpenCode; that package fact is not evidence that any host adapter is
+installed in a particular project or live in a particular session. Host-native
+selection and delivery remain separate observation boundaries. See [Portable
+Host Adapters](portable-host-adapters.md) for the generated layouts, ownership,
+and upgrade boundary. The contract does not change selection, workflow
+authority, Context's explicit default-off boundary, or the legacy
+`runtimeInjection` default of `false`.
 
 ## Package Boundary
 

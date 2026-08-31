@@ -14,6 +14,20 @@ preparation alone does not establish stable support or channel state.
   explicit subsequent `ph update enable --yes` can opt in; malformed, foreign,
   symlinked, or user-diverged state remains fail-closed and unchanged.
 
+## [0.9.1] - 2026-08-31
+
+- Publish the canonical portable-host guide for the static adapters generated
+  by `ph init` in Codex, Claude Code, OpenCode, and Antigravity projects.
+  It distinguishes package-created discovery files from a live host session's
+  selection or delivery of a skill.
+- Document safe adapter ownership and update behavior: a later `ph init` may
+  refresh only unchanged Persona-owned files, while modified, user-owned, or
+  symlinked targets remain fail-closed. `ph update enable` remains the separate
+  optional OpenCode plugin-pin path.
+- Keep Context and legacy runtime injection default-off, and state that current
+  Context delivery is an optional OpenCode-specific runtime boundary rather
+  than a portable-host claim.
+
 ## [0.8.31] - 2026-08-25
 
 - Clarify `ph workflow finish implement` source-read runtime failures with a

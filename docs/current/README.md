@@ -19,8 +19,8 @@ history but do not become a current product or release claim.
 
 | I need to... | Start here |
 | --- | --- |
-| Install or understand the product | [Detailed usage](persona-harness-detailed-usage.md) and [workflow lifecycle](workflow-closure-state-machine-design.md) |
-| Use the portable shared-skill or product-discovery guidance | [Persona Shared Skills Core](persona-shared-skills-core.md) |
+| Install or understand the product | [Portable host adapters](portable-host-adapters.md) and [workflow lifecycle](workflow-closure-state-machine-design.md) |
+| Use the portable shared-skill or product-discovery guidance | [Persona Shared Skills Core](persona-shared-skills-core.md); use the portable-host guide above for host layouts. |
 | Maintain a local personalization profile | [Personalization Profile V1](personalization-profile-v1.md) |
 | Follow the Context Personalization program | [Context Personalization Program Status](context-program-status.md) |
 | Contribute to Context Personalization safely | [Context contributor map](context-contributor-map.json) |

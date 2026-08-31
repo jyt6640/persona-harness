@@ -756,7 +756,7 @@ describe("package files policy", () => {
       "docs/QUICK-DEMO.md",
       "docs/MEASURED-CLAIMS.md",
       "docs/current/canonical-docs-index.md",
-      "docs/current/persona-harness-detailed-usage.md",
+      "docs/current/portable-host-adapters.md",
       "docs/current/workflow-closure-state-machine-design.md",
       "docs/current/persona-shared-skills-core.md",
       "docs/current/personalization-profile-v1.md",

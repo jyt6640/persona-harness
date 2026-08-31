@@ -37,6 +37,26 @@ metadata and Persona's optional automatic advisory-route configuration
 separately, and leaves adapter reachability, current host-native selection, and
 host route delivery as `UNOBSERVED` unless the host itself provides evidence.
 
+## Project-local host layouts
+
+`npx ph init` materializes this catalog as regular, manifest-owned adapters in
+each supported host layout:
+
+| Host | Adapter path |
+| --- | --- |
+| Codex and Antigravity | `.agents/skills/persona-harness-<skill-id>/SKILL.md` |
+| Claude Code | `.claude/skills/persona-harness-claude-<skill-id>/SKILL.md` |
+| OpenCode | `.opencode/skills/persona-harness-opencode-<skill-id>/SKILL.md` |
+
+Init may refresh only an unchanged Persona-owned adapter. User-owned, modified,
+or symlinked targets fail closed rather than being overwritten. The adapters
+make the catalog discoverable but do not enable Context, legacy runtime
+injection, workflow commands, shell, network, authority, or completion state.
+The generated OpenCode-native path is the only one eligible for OpenCode
+automatic discovery, preventing duplicate candidates from the other compatible
+layouts. See [Portable Host Adapters](../../docs/current/portable-host-adapters.md)
+for the full upgrade and host-evidence boundary.
+
 ## Portable Contract
 
 The root package exposes `persona-portable-skill-contract.1` through its

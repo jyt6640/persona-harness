@@ -84,6 +84,26 @@ describe("supported Node matrix policy", () => {
     }
   })
 
+  it("rejects a portable host adapter row drift", async () => {
+    const fixtureRoot = createPolicyFixture()
+    try {
+      const readmePath = join(fixtureRoot, "README.md")
+      writeFileSync(
+        readmePath,
+        readFileSync(readmePath, "utf8").replace(
+          "| Claude Code | `.claude/skills/persona-harness-claude-<skill-id>/SKILL.md` |",
+          "| Claude Code | `.claude/skills/custom-skill/SKILL.md` |",
+        ),
+      )
+
+      const diagnostics = await collectSupportedNodeMatrixDiagnostics(fixtureRoot)
+
+      expect(diagnostics).toContain("README.md support table")
+    } finally {
+      rmSync(fixtureRoot, { force: true, recursive: true })
+    }
+  })
+
   it("rejects a package engine drift from the fixed Sigstore runtime floor", async () => {
     const fixtureRoot = createPolicyFixture()
     try {

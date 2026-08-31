@@ -4,6 +4,11 @@
 
 Persona Harness의 현재 productized MVP는 Java/Spring backend Clean Code injection이다.
 
+이 문서는 선택적 OpenCode plugin 경로를 위한 Java/Spring guide다. `ph init`이
+Codex, Claude Code, OpenCode, Antigravity에 만드는 static shared-skill adapter의
+설치·소유권·갱신 경계는 [Portable Host Adapters](portable-host-adapters.md)를 먼저
+보세요. 이 문서의 OpenCode 예시는 다른 host가 지원되지 않는다는 뜻이 아니다.
+
 목표는 같은 요구사항에서 Gradle 기반, 계층 분리, DTO boundary, Repository boundary, Service orchestration-only backend product code shape가 더 균일하게 나오도록 Java target file에 rule context를 주입하는 것이다.
 
 frontend, infra, multi-domain shared skill은 후속 확장 후보이며 현재 release-facing MVP 범위가 아니다.
