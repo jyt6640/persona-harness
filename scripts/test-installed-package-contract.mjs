@@ -1429,7 +1429,9 @@ function assertInstalledHostSkillAdapters(installedPackage, fixtureRoot, manifes
   ]
   const ownedPaths = new Set(manifest.files.map((entry) => entry?.path))
   for (const skill of catalog.skills) {
-    if (typeof skill?.id !== "string") throw new Error("installed host skill catalog is invalid")
+    if (typeof skill?.id !== "string" || typeof skill.title !== "string") {
+      throw new Error("installed host skill catalog is invalid")
+    }
     for (const layout of layouts) {
       const relativePath = join(layout.root, `${layout.namePrefix}-${skill.id}`, "SKILL.md").replace(/\\/g, "/")
       const adapterPath = join(fixtureRoot, relativePath)
@@ -1438,7 +1440,9 @@ function assertInstalledHostSkillAdapters(installedPackage, fixtureRoot, manifes
       }
       const adapter = readFileSync(adapterPath, "utf8")
       if (
-        !adapter.includes(`name: ${layout.namePrefix}-${skill.id}`)
+        !adapter.includes(`name: ph-${skill.id}`)
+        || !adapter.includes(`persona-harness/display-name: "(PH) ${skill.title}"`)
+        || !adapter.includes(`# (PH) ${skill.title}`)
         || !adapter.includes(`persona-harness/canonical-skill: ${skill.id}`)
         || !adapter.includes(`opencode/autoinvoke: \"${layout.openCodeAutoinvoke ? "true" : "false"}\"`)
         || !ownedPaths.has(relativePath)
