@@ -8,6 +8,12 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [0.9.2] - 2026-08-31
+
+- Make portable host skills immediately recognizable as Persona Harness: their
+  host-facing names are now `ph-<skill-id>`, and their visible descriptions and
+  headings start with `(PH)`. Existing generated adapter paths and ownership
+  protections remain unchanged.
 - Add `ph update repair --yes` for a narrowly recognized legacy attach
   manifest that still points at a disposable staging directory. It rebinds only
   the OpenCode Persona Harness plugin entry and ownership manifest so an

@@ -5,10 +5,10 @@
   "version": 1,
   "metadata": {
     "component": {
-      "bom-ref": "pkg:npm/persona-harness@0.9.1",
+      "bom-ref": "pkg:npm/persona-harness@0.9.2",
       "type": "application",
       "name": "persona-harness",
-      "version": "0.9.1",
+      "version": "0.9.2",
       "licenses": [
         {
           "license": {

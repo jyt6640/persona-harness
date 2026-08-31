@@ -124,21 +124,23 @@ function renderHostSkillAdapter(
   source: CanonicalSkillSource,
   packageVersion: string,
 ): Buffer {
-  const name = `${layout.namePrefix}-${skill.id}`
+  const hostSkillName = `ph-${skill.id}`
+  const displayName = `(PH) ${skill.title}`
   return Buffer.from([
     "---",
-    `name: ${name}`,
-    `description: ${JSON.stringify(source.description)}`,
+    `name: ${hostSkillName}`,
+    `description: ${JSON.stringify(`(PH) ${source.description}`)}`,
     'license: "Apache-2.0"',
     `compatibility: ${JSON.stringify(layout.id === "agents" ? "Codex and Antigravity" : layout.id === "claude" ? "Claude Code" : "OpenCode")}`,
     "metadata:",
     `  persona-harness/canonical-skill: ${skill.id}`,
+    `  persona-harness/display-name: ${JSON.stringify(displayName)}`,
     `  persona-harness/adapter-layout: ${layout.id}`,
     `  persona-harness/adapter-version: ${packageVersion}`,
     `  opencode/autoinvoke: \"${layout.openCodeAutoinvoke ? "true" : "false"}\"`,
     "---",
     "",
-    `# Persona Harness Adapter: ${skill.title}`,
+    `# ${displayName}`,
     "",
     "This adapter exposes the canonical Persona Harness skill to this host only. Discovery alone does not authorize workflow, shell, network, GitHub, authority, evidence, or external actions.",
     "",

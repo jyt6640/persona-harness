@@ -40,11 +40,13 @@ discovery into a claim that the host selected a skill in the current session.
 
 ## What Is Shared
 
-Every generated adapter points to the same Persona-owned catalog. It carries a
-short `name` and `description`, catalog identity, adapter layout, and package
-version. The catalog can advise one compact reference, such as
-`deep-interview`, `grill-me`, `programming`, `debug`, or `review`; discovery
-does not load every skill body.
+Every generated adapter points to the same Persona-owned catalog. Its
+host-facing machine name is `ph-<skill-id>`, while the description and visible
+heading begin with `(PH)`. This makes Persona-owned skills recognizable without
+using punctuation that can violate a host's skill-name rules. Each adapter also
+carries catalog identity, adapter layout, and package version. The catalog can
+advise one compact reference, such as `deep-interview`, `grill-me`,
+`programming`, `debug`, or `review`; discovery does not load every skill body.
 
 The adapter does not, merely by being discovered:
 
