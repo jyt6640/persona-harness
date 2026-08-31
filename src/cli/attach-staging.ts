@@ -12,8 +12,12 @@ const STAGING_CONTEXT = [
   ".opencode/opencode.json",
 ] as const
 
-export function copyAttachContext(projectDir: string, stagingDir: string): void {
-  for (const relativePath of STAGING_CONTEXT) {
+export function copyAttachContext(
+  projectDir: string,
+  stagingDir: string,
+  ownedHostSkillAdapterPaths: readonly string[] = [],
+): void {
+  for (const relativePath of [...STAGING_CONTEXT, ...ownedHostSkillAdapterPaths]) {
     const source = join(projectDir, relativePath)
     if (existsSync(source)) {
       const target = join(stagingDir, relativePath)

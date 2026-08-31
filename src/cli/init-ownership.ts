@@ -6,7 +6,15 @@ import {
   type InitPackageBinding,
 } from "./init-manifest.js"
 
-const MANAGED_PATH_PREFIXES = [".persona/", ".opencode/opencode.json", ".gitignore", "AGENTS.md"] as const
+const MANAGED_PATH_PREFIXES = [
+  ".persona/",
+  ".agents/skills/",
+  ".claude/skills/",
+  ".opencode/opencode.json",
+  ".opencode/skills/",
+  ".gitignore",
+  "AGENTS.md",
+] as const
 
 export type InitProfileBindingCheck =
   | { readonly kind: "exact"; readonly digest: string | null }

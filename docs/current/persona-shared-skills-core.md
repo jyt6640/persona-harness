@@ -135,15 +135,29 @@ run commands, or automatically create or advance workflow state. Existing `ph`
 workflow commands remain separate user-selected product operations; the
 shared-skill adapter does not grant them authority.
 
-On OpenCode, the plugin config hook also registers the package's bundled
-`packages/shared-skills/skills` directory with OpenCode's native skill loader
-through the current OpenCode 1.x `skills.paths` setting. If a compatible newer
-host supplies a `skills` source array instead, that array is preserved and
-extended. This makes the catalog discoverable without writing a
-machine-specific package path into the consumer config. Existing valid skill
-sources are retained; an incompatible setting is left untouched. Registration
-does not activate a skill, inject all skill bodies, or change the routing and
-workflow authority rules above.
+`ph init` materializes regular, manifest-owned adapters from the canonical
+catalog at host-local discovery paths:
+
+| Host convention | Materialized path |
+| --- | --- |
+| Codex and Antigravity | `.agents/skills/persona-harness-<skill-id>/SKILL.md` |
+| Claude Code | `.claude/skills/persona-harness-claude-<skill-id>/SKILL.md` |
+| OpenCode | `.opencode/skills/persona-harness-opencode-<skill-id>/SKILL.md` |
+
+Before writing an adapter, init verifies every generated path with no-follow
+regular-file checks. A user-owned, modified, or symlinked target fails closed;
+an unchanged manifest-owned adapter may be retained on a later init. When an
+otherwise clean checkout has no init manifest, an exactly byte-identical adapter
+can be re-owned; any difference still fails closed. Neighboring user skills are
+neither adopted nor rewritten.
+
+OpenCode's native skill loader can discover all of these conventional project
+directories. To avoid duplicate automatic candidates, the generated `.agents`
+and `.claude` adapters declare `opencode/autoinvoke: "false"`; only the
+OpenCode-native adapter declares `opencode/autoinvoke: "true"`. The plugin
+leaves host skill settings untouched and does not add a second package-internal
+catalog path. Materialization does not activate a skill, inject all skill
+bodies, or change the routing and workflow authority rules above.
 
 Every bundled `SKILL.md` carries a short `name` and `description` frontmatter
 pair so OpenCode can advertise the compact native catalog to the model. The

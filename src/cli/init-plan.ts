@@ -28,6 +28,7 @@ import {
 import type { InitTarget } from "./init-transaction.js"
 import { InitManifestError } from "./init-manifest.js"
 import { readOpenCodePluginEntries } from "./opencode-plugin-config.js"
+import { isHostSkillAdapterTarget } from "./host-skill-materializer.js"
 
 export type PreparedInit = {
   readonly currentManifest: InitManifest | null
@@ -120,16 +121,19 @@ function verifiedManifestBinding(
 
 function rejectForeignNewTargets(
   projectDir: string,
-  manifest: InitManifest,
+  manifest: InitManifest | null,
   targets: readonly InitTarget[],
 ): void {
-  const ownedPaths = new Set(manifest.files.map((entry) => entry.path))
+  const ownedPaths = new Set(manifest?.files.map((entry) => entry.path) ?? [])
   for (const target of targets) {
     if (ownedPaths.has(target.relativePath)) {
       continue
     }
-    if (existingBytes(projectDir, target.relativePath) !== null) {
-      throw new InitManifestError(`Init ownership conflict at ${target.relativePath}; no files were changed.`)
+    if (manifest !== null || isHostSkillAdapterTarget(target.relativePath)) {
+      const current = existingBytes(projectDir, target.relativePath)
+      if (current !== null && !current.equals(target.nextBytes)) {
+        throw new InitManifestError(`Init ownership conflict at ${target.relativePath}; no files were changed.`)
+      }
     }
   }
 }
@@ -151,9 +155,7 @@ function nextInitState(
   const targets = verified === undefined
     ? sourceTargets
     : preserveBootstrapHarnessOptIns(sourceTargets, verified.ownedFiles)
-  if (current !== null) {
-    rejectForeignNewTargets(projectDir, current, targets)
-  }
+  rejectForeignNewTargets(projectDir, current, targets)
   const projectBinding: InitProjectBinding = {
     realPath: realpathSync(manifestProjectRealPath ?? projectDir),
     profileDigest: currentProfileDigest,

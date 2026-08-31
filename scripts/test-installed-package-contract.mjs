@@ -1303,22 +1303,20 @@ async function assertPackagedOpenCodeSharedSkillCatalog(packageRoot, label) {
   }
   await hooks.config(config)
   if (
-    config.skills.paths.length !== 2
+    config.skills.paths.length !== 1
     || config.skills.paths[0] !== "/tmp/custom-skills"
-    || config.skills.paths[1] !== sharedSkillsPath
     || JSON.stringify(config.skills.urls) !== JSON.stringify(["https://example.test/skills"])
   ) {
-    throw new Error(`${label} OpenCode shared-skill catalog registration is invalid`)
+    throw new Error(`${label} OpenCode host skill settings were unexpectedly changed`)
   }
 
   const arrayConfig = { skills: ["/tmp/future-skills"] }
   await hooks.config(arrayConfig)
   if (
-    arrayConfig.skills.length !== 2
+    arrayConfig.skills.length !== 1
     || arrayConfig.skills[0] !== "/tmp/future-skills"
-    || arrayConfig.skills[1] !== sharedSkillsPath
   ) {
-    throw new Error(`${label} future OpenCode shared-skill catalog registration is invalid`)
+    throw new Error(`${label} future OpenCode host skill settings were unexpectedly changed`)
   }
 }
 
@@ -1408,9 +1406,46 @@ function assertInstalledInitManifest(installedPackage, fixtureRoot) {
       throw new Error(`installed init manifest file digest is stale for ${entry.path}`)
     }
   }
+  assertInstalledHostSkillAdapters(installedPackage, fixtureRoot, manifest)
   const harness = JSON.parse(readFileSync(join(fixtureRoot, ".persona", "harness.jsonc"), "utf8"))
   if (harness?.enforce?.executeVerification !== true) {
     throw new Error("installed init rerun lost strict verification")
+  }
+}
+
+function assertInstalledHostSkillAdapters(installedPackage, fixtureRoot, manifest) {
+  const catalogPath = join(installedPackage, "packages", "shared-skills", "catalog.json")
+  if (!existsSync(catalogPath) || lstatSync(catalogPath).isSymbolicLink() || !lstatSync(catalogPath).isFile()) {
+    throw new Error("installed host skill catalog is missing")
+  }
+  const catalog = JSON.parse(readFileSync(catalogPath, "utf8"))
+  if (!Array.isArray(catalog?.skills) || !Array.isArray(manifest.files)) {
+    throw new Error("installed host skill catalog is invalid")
+  }
+  const layouts = [
+    { namePrefix: "persona-harness", openCodeAutoinvoke: false, root: ".agents/skills" },
+    { namePrefix: "persona-harness-claude", openCodeAutoinvoke: false, root: ".claude/skills" },
+    { namePrefix: "persona-harness-opencode", openCodeAutoinvoke: true, root: ".opencode/skills" },
+  ]
+  const ownedPaths = new Set(manifest.files.map((entry) => entry?.path))
+  for (const skill of catalog.skills) {
+    if (typeof skill?.id !== "string") throw new Error("installed host skill catalog is invalid")
+    for (const layout of layouts) {
+      const relativePath = join(layout.root, `${layout.namePrefix}-${skill.id}`, "SKILL.md").replace(/\\/g, "/")
+      const adapterPath = join(fixtureRoot, relativePath)
+      if (!existsSync(adapterPath) || lstatSync(adapterPath).isSymbolicLink() || !lstatSync(adapterPath).isFile()) {
+        throw new Error("installed host skill adapter is missing")
+      }
+      const adapter = readFileSync(adapterPath, "utf8")
+      if (
+        !adapter.includes(`name: ${layout.namePrefix}-${skill.id}`)
+        || !adapter.includes(`persona-harness/canonical-skill: ${skill.id}`)
+        || !adapter.includes(`opencode/autoinvoke: \"${layout.openCodeAutoinvoke ? "true" : "false"}\"`)
+        || !ownedPaths.has(relativePath)
+      ) {
+        throw new Error("installed host skill adapter is invalid")
+      }
+    }
   }
 }
 
@@ -1428,7 +1463,7 @@ function snapshotInstalledInitState(fixtureRoot) {
     if (!stat.isFile()) throw new Error(`installed init state contains an unsupported entry at ${relativePath}`)
     entries.push([relativePath, readFileSync(path).toString("base64")])
   }
-  for (const relativePath of [".persona", ".opencode", ".gitignore", "AGENTS.md"]) visit(relativePath)
+  for (const relativePath of [".persona", ".agents", ".claude", ".opencode", ".gitignore", "AGENTS.md"]) visit(relativePath)
   return JSON.stringify(entries)
 }
 

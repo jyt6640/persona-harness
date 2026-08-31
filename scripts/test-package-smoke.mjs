@@ -13,6 +13,11 @@ import { readPackageContentIdentity } from "./package-content-identity.mjs"
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const temporaryRoot = realpathSync(mkdtempSync(join(tmpdir(), "persona-package-smoke-")))
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm"
+const HOST_ADAPTER_LAYOUTS = [
+  { namePrefix: "persona-harness", openCodeAutoinvoke: false, root: ".agents/skills" },
+  { namePrefix: "persona-harness-claude", openCodeAutoinvoke: false, root: ".claude/skills" },
+  { namePrefix: "persona-harness-opencode", openCodeAutoinvoke: true, root: ".opencode/skills" },
+]
 
 class PackageSmokeError extends Error {
   constructor(code) {
@@ -62,6 +67,7 @@ try {
   if (!initialized.stdout.includes("https://github.com/jyt6640/persona-harness")) {
     throw new PackageSmokeError("installed-cli-init-support-link")
   }
+  assertInstalledHostSkillAdapters(initProject, installedRoot)
   const rerun = run(process.execPath, [cliPath, "init"], initProject, "installed-cli-init-rerun")
   if (rerun.stdout.includes("https://github.com/jyt6640/persona-harness")) {
     throw new PackageSmokeError("installed-cli-init-noop-support-link")
@@ -224,6 +230,42 @@ function assertInstalledSharedSkillDescriptions(installedRoot) {
       || metadata.description.length > 240
     ) {
       throw new PackageSmokeError("installed-shared-skill-description")
+    }
+  }
+}
+
+function assertInstalledHostSkillAdapters(projectRoot, installedRoot) {
+  const catalogPath = join(installedRoot, "packages", "shared-skills", "catalog.json")
+  const manifestPath = join(projectRoot, ".persona", ".ph-init-manifest.json")
+  assertRegularFile(catalogPath, "installed-host-skill-catalog")
+  assertRegularFile(manifestPath, "installed-host-skill-manifest")
+  const catalog = parseJson(readFileSync(catalogPath, "utf8"), "installed-host-skill-catalog")
+  const manifest = parseJson(readFileSync(manifestPath, "utf8"), "installed-host-skill-manifest")
+  if (!isRecord(catalog) || !Array.isArray(catalog.skills) || !isRecord(manifest) || !Array.isArray(manifest.files)) {
+    throw new PackageSmokeError("installed-host-skill-manifest")
+  }
+  const ownedPaths = new Set(
+    manifest.files
+      .filter((entry) => isRecord(entry) && typeof entry.path === "string")
+      .map((entry) => entry.path),
+  )
+  for (const skill of catalog.skills) {
+    if (!isRecord(skill) || typeof skill.id !== "string") {
+      throw new PackageSmokeError("installed-host-skill-catalog")
+    }
+    for (const layout of HOST_ADAPTER_LAYOUTS) {
+      const relativePath = join(layout.root, `${layout.namePrefix}-${skill.id}`, "SKILL.md").replace(/\\/g, "/")
+      const adapterPath = join(projectRoot, relativePath)
+      assertRegularFile(adapterPath, "installed-host-skill-adapter")
+      const adapter = readFileSync(adapterPath, "utf8")
+      if (
+        !adapter.includes(`name: ${layout.namePrefix}-${skill.id}`)
+        || !adapter.includes(`persona-harness/canonical-skill: ${skill.id}`)
+        || !adapter.includes(`opencode/autoinvoke: \"${layout.openCodeAutoinvoke ? "true" : "false"}\"`)
+        || !ownedPaths.has(relativePath)
+      ) {
+        throw new PackageSmokeError("installed-host-skill-adapter")
+      }
     }
   }
 }

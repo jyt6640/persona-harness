@@ -1,6 +1,7 @@
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -27,6 +28,8 @@ import {
   parseAttachArgs,
 } from "./attach-command-contract.js"
 import { runBootstrapCommand } from "./bootstrap.js"
+import { isHostSkillAdapterTarget } from "./host-skill-materializer.js"
+import { InitManifestError, readInitManifest } from "./init-manifest.js"
 import { runInstructionsCommand } from "./instructions-infer.js"
 import { readWorkflowDiagnosis } from "./workflow-diagnostics.js"
 
@@ -34,6 +37,77 @@ type AttachOptions = {
   readonly onAfterCommitFile?: (relativePath: string) => void
   readonly packageRoot?: string
   readonly projectDir?: string
+}
+
+const ATTACH_ROOTS = [".gitignore", ".opencode/opencode.json", ".persona", "AGENTS.md"] as const
+
+function hostSkillAdapterPaths(projectDir: string): readonly string[] | null {
+  try {
+    const manifest = readInitManifest(projectDir)
+    if (manifest === null) {
+      return null
+    }
+    return manifest.files
+      .map((entry) => entry.path)
+      .filter((path) => isHostSkillAdapterTarget(path))
+  } catch (error) {
+    if (error instanceof InitManifestError) {
+      return null
+    }
+    throw error
+  }
+}
+
+function assertSafeHostSkillAdapterTarget(projectDir: string, relativePath: string): void {
+  let current = resolve(projectDir)
+  const segments = relativePath.split("/")
+  for (const [index, segment] of segments.entries()) {
+    current = join(current, segment)
+    if (!existsSync(current)) {
+      return
+    }
+    const stat = lstatSync(current)
+    if (stat.isSymbolicLink()) {
+      throw new Error(`Attach host skill adapter contains a symbolic link: ${relativePath}`)
+    }
+    if (index < segments.length - 1 && !stat.isDirectory()) {
+      throw new Error(`Attach host skill adapter parent is not a directory: ${relativePath}`)
+    }
+    if (index === segments.length - 1 && !stat.isFile()) {
+      throw new Error(`Attach host skill adapter is not a regular file: ${relativePath}`)
+    }
+  }
+}
+
+function assertHostSkillAdapterTargetsAreSafe(projectDir: string, stagingDir: string): readonly string[] {
+  const paths = hostSkillAdapterPaths(stagingDir)
+  if (paths === null) {
+    throw new Error("Attach staging is missing the init ownership manifest")
+  }
+  for (const relativePath of paths) {
+    assertSafeHostSkillAdapterTarget(projectDir, relativePath)
+    const targetPath = join(projectDir, relativePath)
+    if (!existsSync(targetPath)) {
+      continue
+    }
+    const expected = readFileSync(join(stagingDir, relativePath))
+    if (!readFileSync(targetPath).equals(expected)) {
+      throw new Error(`Attach host skill adapter conflicts at ${relativePath}`)
+    }
+  }
+  return paths
+}
+
+function attachCommitRoots(projectDir: string, stagingDir: string): readonly string[] {
+  return [...ATTACH_ROOTS, ...assertHostSkillAdapterTargetsAreSafe(projectDir, stagingDir)]
+}
+
+function ownedHostSkillAdapterPaths(projectDir: string): readonly string[] {
+  const paths = hostSkillAdapterPaths(projectDir) ?? []
+  for (const relativePath of paths) {
+    assertSafeHostSkillAdapterTarget(projectDir, relativePath)
+  }
+  return paths
 }
 
 function writeManagedAgents(stagingDir: string): void {
@@ -113,7 +187,7 @@ function runFreshAttach(projectDir: string, options: AttachOptions): CliRunResul
     commitAttachTree(
       projectDir,
       stagingDir,
-      [".gitignore", ".opencode/opencode.json", ".persona", "AGENTS.md"],
+      attachCommitRoots(projectDir, stagingDir),
       { onAfterCommitFile: options.onAfterCommitFile },
     )
     return {
@@ -158,7 +232,7 @@ function runRepair(projectDir: string, options: AttachOptions): CliRunResult {
   }
   const stagingDir = mkdtempSync(join(tmpdir(), "persona-attach-repair-"))
   try {
-    copyAttachContext(projectDir, stagingDir)
+    copyAttachContext(projectDir, stagingDir, ownedHostSkillAdapterPaths(projectDir))
     cpSync(join(projectDir, ".persona"), join(stagingDir, ".persona"), { recursive: true })
     const bootstrap = runBootstrapCommand(
       ["backend"],
@@ -189,7 +263,7 @@ function runRepair(projectDir: string, options: AttachOptions): CliRunResult {
     writeFileSync(join(stagingDir, "AGENTS.md"), existsSync(agentsPath)
       ? repairManagedBackendAgentInstructions(readFileSync(agentsPath, "utf8"))
       : managedBackendAgentInstructions())
-    commitAttachTree(projectDir, stagingDir, [".gitignore", ".opencode/opencode.json", ".persona", "AGENTS.md"], {
+    commitAttachTree(projectDir, stagingDir, attachCommitRoots(projectDir, stagingDir), {
       onAfterCommitFile: options.onAfterCommitFile,
     })
     return {

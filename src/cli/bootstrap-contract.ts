@@ -54,7 +54,10 @@ export const BOOTSTRAP_WORKFLOW_FILES = [
 
 export const BOOTSTRAP_TRANSACTION_OUTPUT_MANIFEST = [
   ".gitignore",
+  ".agents/skills/**",
+  ".claude/skills/**",
   ".opencode/opencode.json",
+  ".opencode/skills/**",
   "AGENTS.md",
   ".persona/.ph-init-manifest.json",
   ".persona/harness.jsonc",
@@ -156,7 +159,10 @@ export function bootstrapUsage(invocation = "ph"): string {
     `- ${HARNESS_CONFIG_PATH}`,
     `- ${CONVENTIONS_DIR_PATH}`,
     `- ${RULES_DIR_PATH}`,
+    "- .agents/skills/persona-harness-*/",
+    "- .claude/skills/persona-harness-claude-*/",
     `- ${OPENCODE_CONFIG_PATH}`,
+    "- .opencode/skills/persona-harness-opencode-*/",
     `- ${GITIGNORE_PATH}`,
     `- ${ROOT_AGENT_INSTRUCTIONS_PATH}`,
     `- ${PROFILE_PATH}`,

@@ -46,6 +46,9 @@ function createPackageRoot(version?: string): string {
     recursive: true,
   })
   cpSync(join(process.cwd(), "package.json"), join(packageRoot, "package.json"))
+  cpSync(join(process.cwd(), "packages", "shared-skills"), join(packageRoot, "packages", "shared-skills"), {
+    recursive: true,
+  })
   if (version !== undefined) {
     const packageJson = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as Record<string, unknown>
     writeFileSync(join(packageRoot, "package.json"), `${JSON.stringify({ ...packageJson, version }, null, 2)}\n`, "utf8")
@@ -147,6 +150,9 @@ describe("persona-harness init", () => {
     expect(existsSync(join(projectDir, ".persona", "workflow", "plan.md"))).toBe(false)
     expect(existsSync(join(projectDir, ".persona", ".ph-init-manifest.json"))).toBe(true)
     expect(existsSync(join(projectDir, ".opencode", "opencode.json"))).toBe(true)
+    expect(existsSync(join(projectDir, ".agents", "skills", "persona-harness-deep-interview", "SKILL.md"))).toBe(true)
+    expect(existsSync(join(projectDir, ".claude", "skills", "persona-harness-claude-deep-interview", "SKILL.md"))).toBe(true)
+    expect(existsSync(join(projectDir, ".opencode", "skills", "persona-harness-opencode-deep-interview", "SKILL.md"))).toBe(true)
     expect(existsSync(join(projectDir, "AGENTS.md"))).toBe(false)
     expect(readFileSync(join(projectDir, ".gitignore"), "utf8")).toContain("node_modules/")
     expect(readFileSync(join(projectDir, ".gitignore"), "utf8")).toContain(".opencode/node_modules/")
@@ -157,13 +163,21 @@ describe("persona-harness init", () => {
         ".persona/harness.jsonc",
         ".persona/conventions/",
         ".persona/rules/",
+        ".agents/skills/",
+        ".claude/skills/",
         ".opencode/opencode.json",
+        ".opencode/skills/",
         ".gitignore",
       ]),
     )
     expect(result.evidenceCopied).toBe(false)
     expect(result.decision).toBe("apply")
     expect(result.changed).toContain(".persona/.ph-init-manifest.json")
+
+    const manifest = readInitManifest(projectDir)
+    expect(manifest?.files.some((entry) => entry.path === ".agents/skills/persona-harness-deep-interview/SKILL.md")).toBe(true)
+    expect(manifest?.files.some((entry) => entry.path === ".claude/skills/persona-harness-claude-deep-interview/SKILL.md")).toBe(true)
+    expect(manifest?.files.some((entry) => entry.path === ".opencode/skills/persona-harness-opencode-deep-interview/SKILL.md")).toBe(true)
 
     const config = readOpencodeConfig(projectDir)
     expect(isRecord(config)).toBe(true)
@@ -348,6 +362,20 @@ describe("persona-harness init", () => {
     expect(snapshotTree(projectDir)).toEqual(before)
   })
 
+  it("fails closed without writes when an owned host skill adapter is user-modified", () => {
+    const projectDir = createTempProject()
+    initializePersonaHarness({ projectDir, packageRoot: process.cwd() })
+    const skillPath = join(projectDir, ".claude", "skills", "persona-harness-claude-deep-interview", "SKILL.md")
+    writeFileSync(skillPath, `${readFileSync(skillPath, "utf8")}\nUser customization\n`)
+    const before = snapshotTree(projectDir)
+
+    const result = runPersonaCli(["init"], { cwd: projectDir, packageRoot: process.cwd(), invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("persona-harness-claude-deep-interview")
+    expect(snapshotTree(projectDir)).toEqual(before)
+  })
+
   it("does not overwrite a foreign file at a newly introduced generated path during a package version upgrade", () => {
     const projectDir = createTempProject()
     initializePersonaHarness({ projectDir, packageRoot: process.cwd() })
@@ -365,6 +393,36 @@ describe("persona-harness init", () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain("new-rule.md")
+    expect(snapshotTree(projectDir)).toEqual(before)
+  })
+
+  it("fails closed without writes when a fresh project already owns a host skill path", () => {
+    const projectDir = createTempProject()
+    const skillPath = join(projectDir, ".agents", "skills", "persona-harness-deep-interview", "SKILL.md")
+    mkdirSync(join(skillPath, ".."), { recursive: true })
+    writeFileSync(skillPath, "# user skill\n")
+    const before = snapshotTree(projectDir)
+
+    const result = runPersonaCli(["init"], { cwd: projectDir, packageRoot: process.cwd(), invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("persona-harness-deep-interview")
+    expect(result.stderr).toContain("no files were changed")
+    expect(snapshotTree(projectDir)).toEqual(before)
+  })
+
+  it("fails closed without writes when a host skill parent is symlinked", () => {
+    const projectDir = createTempProject()
+    const outside = mkdtempSync(join(tmpdir(), "persona-init-host-skill-outside-"))
+    tempProjects.push(outside)
+    const agentsPath = join(projectDir, ".agents")
+    symlinkSync(outside, agentsPath, "dir")
+    const before = snapshotTree(projectDir)
+
+    const result = runPersonaCli(["init"], { cwd: projectDir, packageRoot: process.cwd(), invocationName: "ph" })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain("symbolic link")
     expect(snapshotTree(projectDir)).toEqual(before)
   })
 
@@ -573,7 +631,7 @@ describe("persona-harness init", () => {
       conflicts: [],
     })
 
-    expect(result).toContain("`ph init` installs Persona Harness config/conventions/rules and OpenCode plugin config only.")
+    expect(result).toContain("`ph init` installs Persona Harness config/conventions/rules, portable host skill adapters, and OpenCode plugin config only.")
     expect(result).toContain("It does not create `AGENTS.md`, `.persona/project-profile.jsonc`, or workflow plan/report templates.")
     expect(result).toContain("Do not enter implementation before the backend project profile exists.")
     expect(result).toContain("npx ph bootstrap backend")

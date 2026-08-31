@@ -54,7 +54,7 @@ export function runBackendBootstrap(
     if (!existsSync(join(projectDir, PERSONA_DIR))) {
       const initialized = initializeFreshBootstrapPersonaHarness({ projectDir, packageRoot: options.packageRoot })
       bootstrapWriteBoundary = initialized.boundary
-      actions.push("initialized .persona and OpenCode plugin config")
+      actions.push("initialized .persona, portable host skill adapters, and OpenCode plugin config")
     } else {
       if (readInitManifest(projectDir) === null) {
         initializePersonaHarness({
