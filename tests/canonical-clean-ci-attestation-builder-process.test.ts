@@ -67,6 +67,22 @@ describe("canonical builder bounded process contract", () => {
     expect(result.stdoutDigest).toMatch(/^sha256:/)
   })
 
+  it("uses a command-specific timeout when no runner override is supplied", async () => {
+    const error = await runBoundedBuilderCommand(
+      {
+        ...fixedNodeCommand("command-specific-timeout", "setInterval(() => {}, 1000)"),
+        timeoutMs: 150,
+      },
+      createTempDir(),
+      { graceMs: 50 },
+    ).catch((candidate: unknown) => candidate)
+
+    expect(error).toMatchObject({
+      details: { commandId: "command-specific-timeout", exitState: "timeout" },
+      message: "fixed command failed: command-specific-timeout",
+    })
+  })
+
   it("fails closed at the fixed stdout cap without retaining a 2 MiB command output", async () => {
     const marker = "CANONICAL_BUILDER_STDOUT_SECRET"
     const error = await runBoundedBuilderCommand(
