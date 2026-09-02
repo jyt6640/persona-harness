@@ -28,6 +28,7 @@ describe("host skill materializer", () => {
       expect(source).toContain('persona-harness/display-name: "(PH) ')
       expect(source).toContain("persona-harness/canonical-skill: deep-interview")
       expect(source).toContain("# (PH) ")
+      expect(source).toContain("ph interview")
     }
   })
 

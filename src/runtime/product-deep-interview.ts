@@ -1,103 +1,44 @@
+import {
+  advanceSocraticInterview,
+  createSocraticInterview,
+  socraticInterviewTopicAt,
+  SOCRATIC_INTERVIEW_TOPICS,
+  type SocraticInterviewDecision,
+  type SocraticInterviewMode,
+  type SocraticInterviewState,
+  type SocraticInterviewTopic,
+} from "../interview/socratic-interview-core.js"
 import { createOpenCodeSkillRoute } from "./opencode-skill-adapter.js"
 import {
   isExplicitProductInterviewRequest,
-  isProductInterviewApproval,
-  isProductInterviewClarification,
   isProductInterviewStop,
 } from "./product-interview-control.js"
 
-const TOPICS = [
-  {
-    id: "target-user",
-    question: "Who is the first specific user this product should help?",
-    recommendation: "Name one primary user group before describing features.",
-    tradeoff: "A narrow first user makes the MVP easier to test; a broad audience can hide conflicting needs.",
-  },
-  {
-    id: "problem",
-    question: "What recurring problem does that user have today?",
-    recommendation: "Describe the costly or frustrating moment, not the proposed feature.",
-    tradeoff: "Problem-first framing prevents a polished solution from solving the wrong thing.",
-  },
-  {
-    id: "outcome",
-    question: "What observable outcome should improve for that user?",
-    recommendation: "Choose a result the user can recognize without internal metrics.",
-    tradeoff: "A concrete outcome keeps the plan honest; an ambitious outcome may require more discovery.",
-  },
-  {
-    id: "journey",
-    question: "What is the shortest user journey from need to that outcome?",
-    recommendation: "State the first end-to-end path before listing screens or integrations.",
-    tradeoff: "A short journey clarifies the MVP; edge cases can remain explicitly deferred.",
-  },
-  {
-    id: "mvp",
-    question: "Which smallest capabilities must exist for that journey to work?",
-    recommendation: "Limit the MVP to the minimum user-visible capabilities.",
-    tradeoff: "Fewer capabilities accelerate learning; omitted conveniences may need manual support at first.",
-  },
-  {
-    id: "non-goals",
-    question: "Which tempting capabilities are explicitly out of scope for the MVP?",
-    recommendation: "Name at least one attractive exclusion.",
-    tradeoff: "Clear non-goals protect focus; they may disappoint some early requests by design.",
-  },
-  {
-    id: "success-signal",
-    question: "What first signal would tell you this MVP is useful?",
-    recommendation: "Use one observable behavior or outcome rather than a vanity metric.",
-    tradeoff: "A simple signal supports early decisions; it may not predict long-term retention.",
-  },
-  {
-    id: "constraints",
-    question: "Which product constraints or risks must shape the first release?",
-    recommendation: "Include timing, privacy, compliance, operations, or integration limits only when they change the product decision.",
-    tradeoff: "Naming real constraints early avoids surprise rework; speculative technical choices can wait for technical intake.",
-  },
-] as const
+const START_PATTERN = /(만들래|만들고\s*싶|기획해|구상해|서비스\s*만들|웹\s*서비스|기존\s*(?:서비스|제품|앱|흐름).*(?:개선|변경)|product\s+idea|want\s+to\s+(?:build|create|make|explore)|(?:build|create|make)\s+(?:an?|the)\s+(?:app|service|product)|new\s+(?:app|service|product)|(?:app|service|product)\s+idea|(?:improve|change)\s+(?:an?\s+)?existing(?:\s+\w+){0,2}\s+(?:app|service|product|flow))/iu
+const STOPPED_BLOCK = "[Persona Harness Product Interview]\nProduct discovery is paused.\nNo project, workflow, issue, agent, or file state was changed."
+const TRACKER_PROJECT_BINDING = "sha256:1c144066487b9a5f0aa8e52a5f0b84d4d8bc06811b2e6954dc5bef9faadfe40e"
 
-type ProductInterviewTopic = (typeof TOPICS)[number]["id"]
-
-export type ProductDeepInterviewMode = "new-product" | "brownfield-change-discovery"
-
-type ProductInterviewSession = {
-  readonly answers: ReadonlyMap<ProductInterviewTopic, string>
-  readonly mode: ProductDeepInterviewMode
-  readonly topicIndex: number
-}
+export type ProductDeepInterviewMode = SocraticInterviewMode
 
 export type ProductDeepInterviewOptions = {
   readonly mode?: ProductDeepInterviewMode
 }
 
 export type ProductDeepInterviewResult =
-  | { readonly kind: "question"; readonly topic: ProductInterviewTopic; readonly block: string }
-  | { readonly kind: "recommendation"; readonly topic: ProductInterviewTopic; readonly block: string }
-  | { readonly kind: "clarification-required"; readonly topic: ProductInterviewTopic; readonly block: string }
+  | { readonly kind: "question"; readonly topic: SocraticInterviewTopic; readonly block: string }
+  | { readonly kind: "recommendation"; readonly topic: SocraticInterviewTopic; readonly block: string }
+  | { readonly kind: "clarification-required"; readonly topic: SocraticInterviewTopic; readonly block: string }
   | { readonly kind: "approval-required"; readonly block: string }
   | { readonly kind: "approved"; readonly handoff: "technical-intake"; readonly block: string }
   | { readonly kind: "stopped"; readonly block: string }
-
-const START_PATTERN = /(만들래|만들고\s*싶|기획해|구상해|서비스\s*만들|웹\s*서비스|기존\s*(?:서비스|제품|앱|흐름).*(?:개선|변경)|product\s+idea|want\s+to\s+(?:build|create|make|explore)|(?:build|create|make)\s+(?:an?|the)\s+(?:app|service|product)|new\s+(?:app|service|product)|(?:app|service|product)\s+idea|(?:improve|change)\s+(?:an?\s+)?existing(?:\s+\w+){0,2}\s+(?:app|service|product|flow))/iu
-const DEFER_PATTERN = /^(?:defer|skip|later|보류|넘겨)$/iu
-const RECOMMEND_PATTERN = /^(?:recommend|recommendation|추천)$/iu
-const STOPPED_BLOCK = "[Persona Harness Product Interview]\nProduct discovery is paused.\nNo project, workflow, issue, agent, or file state was changed."
 
 export function isProductDeepInterviewStart(message: string): boolean {
   return START_PATTERN.test(message.trim())
 }
 
-function topicAt(index: number): (typeof TOPICS)[number] | undefined {
-  return TOPICS[index]
-}
-
-function renderQuestion(session: ProductInterviewSession, approvalBlocked = false): ProductDeepInterviewResult {
-  const topic = topicAt(session.topicIndex)
-  if (topic === undefined) {
-    return renderApprovalRequired(session)
-  }
-
+function renderQuestion(session: SocraticInterviewState, approvalBlocked = false): ProductDeepInterviewResult {
+  const topic = socraticInterviewTopicAt(session.topicIndex)
+  if (topic === undefined) return renderApprovalRequired(session)
   return {
     kind: "question",
     topic: topic.id,
@@ -136,11 +77,9 @@ function renderQuestion(session: ProductInterviewSession, approvalBlocked = fals
   }
 }
 
-function renderRecommendation(session: ProductInterviewSession): ProductDeepInterviewResult {
-  const topic = topicAt(session.topicIndex)
-  if (topic === undefined) {
-    return renderApprovalRequired(session)
-  }
+function renderRecommendation(session: SocraticInterviewState): ProductDeepInterviewResult {
+  const topic = socraticInterviewTopicAt(session.topicIndex)
+  if (topic === undefined) return renderApprovalRequired(session)
   return {
     kind: "recommendation",
     topic: topic.id,
@@ -155,11 +94,9 @@ function renderRecommendation(session: ProductInterviewSession): ProductDeepInte
   }
 }
 
-function renderClarificationRequired(session: ProductInterviewSession): ProductDeepInterviewResult {
-  const topic = topicAt(session.topicIndex)
-  if (topic === undefined) {
-    return renderApprovalRequired(session)
-  }
+function renderClarificationRequired(session: SocraticInterviewState): ProductDeepInterviewResult {
+  const topic = socraticInterviewTopicAt(session.topicIndex)
+  if (topic === undefined) return renderApprovalRequired(session)
   return {
     kind: "clarification-required",
     topic: topic.id,
@@ -175,35 +112,46 @@ function renderClarificationRequired(session: ProductInterviewSession): ProductD
   }
 }
 
-function briefAnswer(session: ProductInterviewSession, topic: ProductInterviewTopic): string {
-  return session.answers.get(topic) ?? "deferred"
-}
-
-function approvalBriefLines(session: ProductInterviewSession): readonly string[] {
+function approvalBriefLines(decisions: readonly SocraticInterviewDecision[]): readonly string[] {
   return [
     "Approval brief:",
-    ...TOPICS.map((topic) => `- ${topic.id}: ${briefAnswer(session, topic.id)}`),
+    ...SOCRATIC_INTERVIEW_TOPICS.map((topic) => {
+      const decision = decisions.find((candidate) => candidate.topic === topic.id)?.decision ?? "deferred"
+      return `- ${topic.id}: ${decision}`
+    }),
     "Approval is explicit: reply `approve` to hand off to technical-intake, or name a correction.",
   ]
 }
 
-function renderApprovalRequired(session: ProductInterviewSession): ProductDeepInterviewResult {
+function renderApprovalRequired(session: SocraticInterviewState): ProductDeepInterviewResult {
   return {
     kind: "approval-required",
     block: [
       "[Persona Harness Product Interview]",
-      ...approvalBriefLines(session),
+      ...approvalBriefLines(session.decisions),
       "No plan, ticket, workflow, branch, file, issue, or agent action has been created.",
     ].join("\n"),
   }
 }
 
-function startSession(mode: ProductDeepInterviewMode): ProductInterviewSession {
-  return { answers: new Map<ProductInterviewTopic, string>(), mode, topicIndex: 0 }
+function renderApproved(decisions: readonly SocraticInterviewDecision[]): ProductDeepInterviewResult {
+  return {
+    kind: "approved",
+    handoff: "technical-intake",
+    block: [
+      "[Persona Harness Product Interview]",
+      ...approvalBriefLines(decisions),
+      "Approval received in this conversation only.",
+      "Next explicit handoff: technical-intake.",
+      "Sequence after an explicit technical brief: plan -> optional ralplan -> TDD -> implementation -> review.",
+      "Optional adversarial review after planning: ralplan.",
+      "The host adapter does not create or advance workflow state.",
+    ].join("\n"),
+  }
 }
 
 export class ProductDeepInterviewTracker {
-  private readonly sessions = new Map<string, ProductInterviewSession>()
+  private readonly sessions = new Map<string, SocraticInterviewState>()
   private readonly suppressedSessions = new Set<string>()
 
   constructor(private readonly options: ProductDeepInterviewOptions = {}) {}
@@ -214,26 +162,22 @@ export class ProductDeepInterviewTracker {
 
   route(sessionId: string, message: string): ProductDeepInterviewResult | undefined {
     const normalized = message.trim()
-    if (normalized.length === 0) {
-      return undefined
-    }
+    if (normalized.length === 0) return undefined
 
     const current = this.sessions.get(sessionId)
     if (current === undefined) {
       if (this.suppressedSessions.has(sessionId)) {
-        if (!isExplicitProductInterviewRequest(normalized)) {
-          return undefined
-        }
+        if (!isExplicitProductInterviewRequest(normalized)) return undefined
         this.suppressedSessions.delete(sessionId)
       }
-      if (!isProductDeepInterviewStart(normalized)) {
-        if (!isExplicitProductInterviewRequest(normalized)) {
-          return undefined
-        }
-      }
-      const started = startSession(this.options.mode ?? "new-product")
-      this.sessions.set(sessionId, started)
-      return renderQuestion(started)
+      if (!isProductDeepInterviewStart(normalized) && !isExplicitProductInterviewRequest(normalized)) return undefined
+      const started = createSocraticInterview({
+        mode: this.options.mode ?? "new-product",
+        projectBinding: TRACKER_PROJECT_BINDING,
+        recordRevision: 0,
+      })
+      this.sessions.set(sessionId, started.state)
+      return renderQuestion(started.state)
     }
 
     if (isProductInterviewStop(normalized)) {
@@ -241,41 +185,23 @@ export class ProductDeepInterviewTracker {
       this.suppressedSessions.add(sessionId)
       return { kind: "stopped", block: STOPPED_BLOCK }
     }
-    if (RECOMMEND_PATTERN.test(normalized)) {
-      return renderRecommendation(current)
-    }
-    if (isProductInterviewClarification(normalized)) {
-      return renderClarificationRequired(current)
-    }
-    if (isProductInterviewApproval(normalized)) {
-      if (current.topicIndex < TOPICS.length) {
-        return renderQuestion(current, true)
-      }
+
+    const next = advanceSocraticInterview(current, normalized)
+    if (next.kind === "blocked") return undefined
+    if (next.kind === "stopped") {
       this.sessions.delete(sessionId)
-      return {
-        kind: "approved",
-        handoff: "technical-intake",
-        block: [
-          "[Persona Harness Product Interview]",
-          ...approvalBriefLines(current),
-          "Approval received in this conversation only.",
-          "Next explicit handoff: technical-intake.",
-          "Sequence after an explicit technical brief: plan -> optional ralplan -> TDD -> implementation -> review.",
-          "Optional adversarial review after planning: ralplan.",
-          "The host adapter does not create or advance workflow state.",
-        ].join("\n"),
-      }
+      this.suppressedSessions.add(sessionId)
+      return { kind: "stopped", block: STOPPED_BLOCK }
+    }
+    if (next.kind === "approved") {
+      this.sessions.delete(sessionId)
+      return renderApproved(next.decisions)
     }
 
-    const topic = topicAt(current.topicIndex)
-    if (topic === undefined) {
-      return renderApprovalRequired(current)
-    }
-    const answer = DEFER_PATTERN.test(normalized) ? "deferred" : normalized.slice(0, 600)
-    const answers = new Map(current.answers)
-    answers.set(topic.id, answer)
-    const next: ProductInterviewSession = { answers, mode: current.mode, topicIndex: current.topicIndex + 1 }
-    this.sessions.set(sessionId, next)
-    return next.topicIndex >= TOPICS.length ? renderApprovalRequired(next) : renderQuestion(next)
+    this.sessions.set(sessionId, next.state)
+    if (next.kind === "question") return renderQuestion(next.state, next.approvalBlocked)
+    if (next.kind === "recommendation") return renderRecommendation(next.state)
+    if (next.kind === "explanation-required") return renderClarificationRequired(next.state)
+    return renderApprovalRequired(next.state)
   }
 }

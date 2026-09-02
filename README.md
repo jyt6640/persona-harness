@@ -39,6 +39,13 @@ npx ph go "Add a task creation endpoint."
 npx ph workflow finish implement
 ```
 
+For an explicitly selected product-discovery conversation that can carry only
+approved decisions across Codex, Claude Code, OpenCode, and Antigravity:
+
+```bash
+npx ph interview start --json
+```
+
 **What has actually been observed:** a simple forged-evidence fixture is
 ignored and `finish` exits `1`; the opt-in TDD rail blocked green-only
 completion in 5/5 measured runs. Runtime injection did not improve the paired

@@ -32,6 +32,7 @@ describe("public CLI discovery", () => {
     expect(result.stdout).toContain("  attach")
     expect(result.stdout).toContain("  go <goal> | --stdin")
     expect(result.stdout).toContain("  doctor")
+    expect(result.stdout).toContain("  interview")
     expect(result.stdout).not.toContain("  workflow")
     expect(result.stdout).not.toContain("  dev")
     expect(result.stdout).not.toContain("  bootstrap")

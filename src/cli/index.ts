@@ -31,6 +31,10 @@ import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
 import { runProjectAutoUpdateCommand } from "./project-auto-update.js"
 import { runHostPluginCommand } from "./host-plugin-command.js"
+import {
+  MAX_SOCRATIC_INTERVIEW_INPUT_BYTES,
+  runSocraticInterviewCommand,
+} from "./socratic-interview-command.js"
 import { decodeCliStdinText, readBoundedCliStdinText } from "./stdin-text.js"
 import { MAX_SUBMITTED_REPORT_BYTES, workflowReportStdinLimitMessage } from "./report-status.js"
 import { personaHarnessVersion } from "./version.js"
@@ -199,6 +203,13 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
     return runHostPluginCommand(args.slice(1), { packageRoot: options.packageRoot }, invocationName)
   }
 
+  if (command === "interview") {
+    return runSocraticInterviewCommand(args.slice(1), {
+      projectDir: options.cwd,
+      stdin: options.stdin,
+    }, invocationName)
+  }
+
   if (command === "authority") {
     return runAuthorityCommand(args.slice(1), {
       githubToken: selectAuthorityGithubToken(options.env ?? process.env),
@@ -348,7 +359,10 @@ async function cliStdin(args: readonly string[]): Promise<string | undefined> {
   const philosophyStdin = args[0] === "philosophy"
     && (args[1] === "propose" || args[1] === "refine")
     && args.includes("--stdin")
-  if (!goStdin && !planStdin && !workflowStdin && !philosophyStdin) {
+  const interviewStdin = args[0] === "interview"
+    && (args[1] === "advance" || args[1] === "approve" || args[1] === "cancel")
+    && args.includes("--stdin")
+  if (!goStdin && !planStdin && !workflowStdin && !philosophyStdin && !interviewStdin) {
     return undefined
   }
   if (process.stdin.isTTY === true) {
@@ -363,6 +377,10 @@ async function cliStdin(args: readonly string[]): Promise<string | undefined> {
   }
   if (philosophyStdin) {
     const stdin = await readBoundedCliStdinText(process.stdin, MAX_PERSONALIZATION_CANDIDATE_BYTES)
+    return stdin.kind === "limit-exceeded" ? "" : stdin.text
+  }
+  if (interviewStdin) {
+    const stdin = await readBoundedCliStdinText(process.stdin, MAX_SOCRATIC_INTERVIEW_INPUT_BYTES)
     return stdin.kind === "limit-exceeded" ? "" : stdin.text
   }
   return decodeCliStdinText(readFileSync(0))

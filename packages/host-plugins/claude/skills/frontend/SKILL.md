@@ -7,7 +7,7 @@ metadata:
   persona-harness/canonical-skill: frontend
   persona-harness/display-name: "(PH) Frontend Overlay"
   persona-harness/adapter-layout: claude
-  persona-harness/adapter-version: 0.12.0
+  persona-harness/adapter-version: 0.13.0
   opencode/autoinvoke: "false"
 ---
 

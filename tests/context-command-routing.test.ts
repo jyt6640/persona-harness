@@ -78,6 +78,7 @@ describe("context-only CLI routing", () => {
     const source = readFileSync(resolve(process.cwd(), "src/cli/context-command.ts"), "utf8")
     const forbidden = [
       "workflow",
+      "socratic-interview",
       "authority",
       "evidence",
       "@opencode-ai/plugin",

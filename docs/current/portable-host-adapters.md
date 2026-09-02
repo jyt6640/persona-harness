@@ -95,6 +95,10 @@ using punctuation that can violate a host's skill-name rules. Each adapter also
 carries catalog identity, adapter layout, and package version. The catalog can
 advise one compact reference, such as `deep-interview`, `grill-me`,
 `programming`, `debug`, or `review`; discovery does not load every skill body.
+The canonical `deep-interview` guidance can additionally reference the explicit
+host-neutral `ph interview` boundary. It returns transient caller-local state
+and persists only explicitly approved structured decisions; packaging that
+guidance does not run the command or claim a host session did.
 
 The adapter does not, merely by being discovered:
 

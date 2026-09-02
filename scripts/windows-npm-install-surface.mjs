@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process"
 import { existsSync, lstatSync, realpathSync } from "node:fs"
-import { dirname, isAbsolute, join, resolve } from "node:path"
+import { basename, dirname, isAbsolute, join, resolve } from "node:path"
 
 const MAX_CHILD_OUTPUT_BYTES = 1024
 const CHILD_SUCCESS = "windows-npm-bin-link: PASS\n"
@@ -34,19 +34,34 @@ function canonicalDirectory(value) {
   return realpathSync(value)
 }
 
-function resolveBundledBinLinksRoot() {
-  const executableDirectory = dirname(process.execPath)
+export function resolveBundledBinLinksRoot({ nodeExecutable = process.execPath, npmExecPath = process.env.npm_execpath } = {}) {
+  const executableDirectory = dirname(nodeExecutable)
   const candidates = [
+    lifecycleNpmBinLinksCandidate(npmExecPath),
     resolve(executableDirectory, "..", "lib", "node_modules", "npm", "node_modules", "bin-links"),
     join(executableDirectory, "node_modules", "npm", "node_modules", "bin-links"),
   ]
   for (const candidate of candidates) {
+    if (candidate === undefined) continue
     if (!existsSync(candidate)) continue
     const stat = lstatSync(candidate)
     if (!stat.isDirectory() || stat.isSymbolicLink()) continue
     return realpathSync(candidate)
   }
   throw new Error("windows-npm-install-bin-link")
+}
+
+function lifecycleNpmBinLinksCandidate(value) {
+  if (typeof value !== "string" || !isAbsolute(value)) return undefined
+  try {
+    const stat = lstatSync(value)
+    if (!stat.isFile() || stat.isSymbolicLink()) return undefined
+    const canonical = realpathSync(value)
+    if (basename(canonical) !== "npm-cli.js" || basename(dirname(canonical)) !== "bin") return undefined
+    return join(dirname(dirname(canonical)), "node_modules", "bin-links")
+  } catch {
+    return undefined
+  }
 }
 
 const CHILD_PROGRAM = String.raw`

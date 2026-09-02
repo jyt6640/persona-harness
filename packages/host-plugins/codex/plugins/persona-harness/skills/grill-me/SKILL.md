@@ -7,7 +7,7 @@ metadata:
   persona-harness/canonical-skill: grill-me
   persona-harness/display-name: "(PH) Decision Grill"
   persona-harness/adapter-layout: agents
-  persona-harness/adapter-version: 0.12.0
+  persona-harness/adapter-version: 0.13.0
   opencode/autoinvoke: "false"
 ---
 
