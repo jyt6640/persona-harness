@@ -273,14 +273,27 @@ function assertInstalledHostSkillAdapters(projectRoot, installedRoot) {
 }
 
 function assertInstalledHostPluginDistribution(installedRoot, cliPath, consumerRoot) {
+  const antigravity = run(process.execPath, [cliPath, "plugin", "path", "antigravity"], consumerRoot, "installed-antigravity-plugin-path")
   const codex = run(process.execPath, [cliPath, "plugin", "path", "codex"], consumerRoot, "installed-codex-plugin-path")
   const claude = run(process.execPath, [cliPath, "plugin", "path", "claude"], consumerRoot, "installed-claude-plugin-path")
+  const antigravityRoot = join(installedRoot, "packages", "host-plugins", "antigravity")
   const codexRoot = join(installedRoot, "packages", "host-plugins", "codex")
   const claudeRoot = join(installedRoot, "packages", "host-plugins", "claude")
-  if (codex.stdout.trim() !== codexRoot || claude.stdout.trim() !== claudeRoot) {
+  if (antigravity.stdout.trim() !== antigravityRoot || codex.stdout.trim() !== codexRoot || claude.stdout.trim() !== claudeRoot) {
     throw new PackageSmokeError("installed-host-plugin-path")
   }
 
+  assertRegularFile(join(antigravityRoot, "plugin.json"), "installed-antigravity-plugin-manifest")
+  const antigravityManifest = parseJson(readFileSync(join(antigravityRoot, "plugin.json"), "utf8"), "installed-antigravity-plugin-manifest")
+  if (
+    !isRecord(antigravityManifest)
+    || Object.keys(antigravityManifest).length !== 3
+    || antigravityManifest.$schema !== "https://antigravity.google/schemas/v1/plugin.json"
+    || antigravityManifest.name !== "persona-harness"
+    || typeof antigravityManifest.description !== "string"
+  ) {
+    throw new PackageSmokeError("installed-antigravity-plugin-manifest")
+  }
   assertRegularFile(join(codexRoot, ".agents", "plugins", "marketplace.json"), "installed-codex-marketplace")
   assertRegularFile(join(codexRoot, "plugins", "persona-harness", ".codex-plugin", "plugin.json"), "installed-codex-plugin-manifest")
   assertRegularFile(join(claudeRoot, ".claude-plugin", "plugin.json"), "installed-claude-plugin-manifest")
@@ -292,6 +305,7 @@ function assertInstalledHostPluginDistribution(installedRoot, cliPath, consumerR
     if (!isRecord(skill) || typeof skill.id !== "string") {
       throw new PackageSmokeError("installed-host-plugin-catalog")
     }
+    assertRegularFile(join(antigravityRoot, "skills", skill.id, "SKILL.md"), "installed-antigravity-plugin-skill")
     assertRegularFile(join(codexRoot, "plugins", "persona-harness", "skills", skill.id, "SKILL.md"), "installed-codex-plugin-skill")
     assertRegularFile(join(claudeRoot, "skills", skill.id, "SKILL.md"), "installed-claude-plugin-skill")
   }
@@ -326,13 +340,28 @@ function assertInstalledHostPluginFailures(installedRoot, temporaryRoot, consume
         writeFileSync(duplicate, readFileSync(join(root, "packages", "host-plugins", "claude", "skills", "debug", "SKILL.md")))
       },
     },
+    {
+      name: "antigravity-malformed",
+      host: "antigravity",
+      mutate(root) {
+        writeFileSync(join(root, "packages", "host-plugins", "antigravity", "plugin.json"), "{\n")
+      },
+    },
+    {
+      name: "antigravity-version-mismatch",
+      host: "antigravity",
+      mutate(root) {
+        const path = join(root, "packages", "host-plugins", "antigravity", "skills", "debug", "SKILL.md")
+        writeFileSync(path, readFileSync(path, "utf8").replace(/persona-harness\/adapter-version: [^\n]+/u, "persona-harness/adapter-version: 0.0.0"))
+      },
+    },
   ]
 
   for (const scenario of cases) {
     const root = join(temporaryRoot, `tampered-host-plugin-${scenario.name}`)
     cpSync(installedRoot, root, { recursive: true })
     scenario.mutate(root)
-    const result = runFailure(process.execPath, [join(root, "dist", "cli", "index.js"), "plugin", "path", "codex"], consumerRoot)
+    const result = runFailure(process.execPath, [join(root, "dist", "cli", "index.js"), "plugin", "path", scenario.host ?? "codex"], consumerRoot)
     if (!result.stderr.trim().startsWith("host-plugin-distribution")) {
       throw new PackageSmokeError("installed-host-plugin-fail-closed")
     }

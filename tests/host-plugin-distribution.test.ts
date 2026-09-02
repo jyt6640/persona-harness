@@ -54,12 +54,18 @@ afterEach(() => {
 })
 
 describe("host plugin distribution", () => {
-  it("renders Codex and Claude plugin skills byte-bound to canonical host adapters", () => {
+  it("renders Antigravity, Codex, and Claude plugin skills byte-bound to canonical host adapters", () => {
     const targets = buildHostPluginDistributionTargets(process.cwd())
     const adapters = buildHostSkillAdapterTargets(process.cwd())
     const skills = listPersonaSharedSkills()
 
-    expect(targets).toHaveLength((skills.length * 2) + 3)
+    expect(targets).toHaveLength((skills.length * 3) + 4)
+    const antigravityManifest = JSON.parse(findTarget(targets, "packages/host-plugins/antigravity/plugin.json").nextBytes.toString("utf8"))
+    expect(antigravityManifest).toEqual({
+      $schema: "https://antigravity.google/schemas/v1/plugin.json",
+      description: "Portable Persona Harness shared skills for Antigravity.",
+      name: "persona-harness",
+    })
     expect(findTarget(targets, "packages/host-plugins/codex/.agents/plugins/marketplace.json").nextBytes.toString("utf8"))
       .toContain('"name": "persona-harness"')
     expect(findTarget(targets, "packages/host-plugins/codex/plugins/persona-harness/.codex-plugin/plugin.json").nextBytes.toString("utf8"))
@@ -84,6 +90,10 @@ describe("host plugin distribution", () => {
       ).nextBytes.equals(codexAdapter.nextBytes)).toBe(true)
       expect(findTarget(
         targets,
+        `packages/host-plugins/antigravity/skills/${skill.id}/SKILL.md`,
+      ).nextBytes.equals(codexAdapter.nextBytes)).toBe(true)
+      expect(findTarget(
+        targets,
         `packages/host-plugins/claude/skills/${skill.id}/SKILL.md`,
       ).nextBytes.equals(claudeAdapter.nextBytes)).toBe(true)
     }
@@ -95,6 +105,7 @@ describe("host plugin distribution", () => {
     writeHostPluginDistribution(packageRoot)
 
     expect(verifyHostPluginDistribution(packageRoot)).toEqual({
+      antigravityPluginRoot: join(packageRoot, "packages", "host-plugins", "antigravity"),
       claudePluginRoot: join(packageRoot, "packages", "host-plugins", "claude"),
       codexMarketplaceRoot: join(packageRoot, "packages", "host-plugins", "codex"),
     })
@@ -108,12 +119,17 @@ describe("host plugin distribution", () => {
       stderr: "",
       stdout: `${join(packageRoot, "packages", "host-plugins", "claude")}\n`,
     })
+    expect(runHostPluginCommand(["path", "antigravity"], { packageRoot }, "ph")).toEqual({
+      status: 0,
+      stderr: "",
+      stdout: `${join(packageRoot, "packages", "host-plugins", "antigravity")}\n`,
+    })
   })
 
   it("fails closed without replacing a modified plugin artifact", () => {
     const packageRoot = createPackageRoot()
     writeHostPluginDistribution(packageRoot)
-    const manifestPath = join(packageRoot, "packages", "host-plugins", "claude", ".claude-plugin", "plugin.json")
+    const manifestPath = join(packageRoot, "packages", "host-plugins", "antigravity", "plugin.json")
     writeFileSync(manifestPath, "{\n")
     const before = snapshot(manifestPath)
 
@@ -125,7 +141,7 @@ describe("host plugin distribution", () => {
   it("rejects missing, duplicate, and symlinked skill artifacts", () => {
     const missingRoot = createPackageRoot()
     writeHostPluginDistribution(missingRoot)
-    rmSync(join(missingRoot, "packages", "host-plugins", "codex", "plugins", "persona-harness", "skills", "debug", "SKILL.md"))
+    rmSync(join(missingRoot, "packages", "host-plugins", "antigravity", "skills", "debug", "SKILL.md"))
     expect(() => verifyHostPluginDistribution(missingRoot)).toThrow("host-plugin-distribution")
 
     const duplicateRoot = createPackageRoot()
@@ -137,8 +153,8 @@ describe("host plugin distribution", () => {
 
     const symlinkRoot = createPackageRoot()
     writeHostPluginDistribution(symlinkRoot)
-    const skillPath = join(symlinkRoot, "packages", "host-plugins", "claude", "skills", "debug", "SKILL.md")
-    const sourcePath = join(symlinkRoot, "packages", "host-plugins", "claude", "skills", "review", "SKILL.md")
+    const skillPath = join(symlinkRoot, "packages", "host-plugins", "antigravity", "skills", "debug", "SKILL.md")
+    const sourcePath = join(symlinkRoot, "packages", "host-plugins", "antigravity", "skills", "review", "SKILL.md")
     rmSync(skillPath)
     symlinkSync(sourcePath, skillPath, "file")
     expect(existsSync(skillPath) && lstatSync(skillPath).isSymbolicLink()).toBe(true)
@@ -148,11 +164,13 @@ describe("host plugin distribution", () => {
   it("rejects stale versions and invalid command arguments before returning a path", () => {
     const packageRoot = createPackageRoot()
     writeHostPluginDistribution(packageRoot)
-    const manifestPath = join(packageRoot, "packages", "host-plugins", "codex", "plugins", "persona-harness", ".codex-plugin", "plugin.json")
-    const manifest = readFileSync(manifestPath, "utf8").replace(/"version": "[^"]+"/u, '"version": "0.0.0"')
-    writeFileSync(manifestPath, manifest)
+    const skillPath = join(packageRoot, "packages", "host-plugins", "antigravity", "skills", "debug", "SKILL.md")
+    const skill = readFileSync(skillPath, "utf8").replace(/persona-harness\/adapter-version: [^\n]+/u, "persona-harness/adapter-version: 0.0.0")
+    writeFileSync(skillPath, skill)
 
     expect(() => verifyHostPluginDistribution(packageRoot)).toThrow("host-plugin-distribution")
+    expect(runHostPluginCommand(["path", "antigravity"], { packageRoot }, "ph").status).toBe(1)
+    expect(runHostPluginCommand(["--help"], { packageRoot }, "ph").stdout).toContain("<antigravity|codex|claude>")
     expect(runHostPluginCommand(["path", "unknown"], { packageRoot }, "ph").status).toBe(1)
     expect(runHostPluginCommand(["install", "codex"], { packageRoot }, "ph").status).toBe(1)
   })

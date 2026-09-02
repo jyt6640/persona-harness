@@ -7,7 +7,7 @@ metadata:
   persona-harness/canonical-skill: refactor
   persona-harness/display-name: "(PH) Refactor"
   persona-harness/adapter-layout: claude
-  persona-harness/adapter-version: 0.11.0
+  persona-harness/adapter-version: 0.12.0
   opencode/autoinvoke: "false"
 ---
 
