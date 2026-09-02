@@ -8,6 +8,9 @@ const DEFAULT_EXCLUDE = [
 ]
 
 const RESOURCE_SENSITIVE_TEST_FILES = [
+  // The owner-feedback store traverses its no-follow root through process.cwd().
+  // Keep that process-global filesystem boundary in its own worker.
+  "tests/owner-dogfood-feedback.test.ts",
   "tests/cooperative-finish-real-gradle.test.ts",
   "tests/project-finish-attestation-producer-oidc-bridge.test.ts",
   "tests/staged-package-verification-runner.test.ts",

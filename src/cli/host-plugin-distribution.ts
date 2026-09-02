@@ -20,7 +20,7 @@ const PACKAGE_NAME = "persona-harness"
 const HOST_PLUGIN_ROOT = "packages/host-plugins"
 const REPOSITORY_URL = "https://github.com/jyt6640/persona-harness"
 
-export const HOST_PLUGIN_HOSTS = ["codex", "claude"] as const
+export const HOST_PLUGIN_HOSTS = ["antigravity", "codex", "claude"] as const
 
 export type HostPluginHost = typeof HOST_PLUGIN_HOSTS[number]
 
@@ -30,6 +30,7 @@ export type HostPluginDistributionTarget = {
 }
 
 export type HostPluginDistributionPaths = {
+  readonly antigravityPluginRoot: string
   readonly claudePluginRoot: string
   readonly codexMarketplaceRoot: string
 }
@@ -50,6 +51,11 @@ type HostPluginLayout = {
 }
 
 const HOST_PLUGIN_LAYOUTS = [
+  {
+    host: "antigravity",
+    sourceLayout: "agents",
+    skillRoot: "packages/host-plugins/antigravity/skills",
+  },
   {
     host: "codex",
     sourceLayout: "agents",
@@ -207,6 +213,14 @@ function codexMarketplaceManifest(): Buffer {
   })
 }
 
+function antigravityPluginManifest(): Buffer {
+  return serializeJson({
+    $schema: "https://antigravity.google/schemas/v1/plugin.json",
+    name: PACKAGE_NAME,
+    description: "Portable Persona Harness shared skills for Antigravity.",
+  })
+}
+
 function claudePluginManifest(identity: PackageIdentity): Buffer {
   return serializeJson({
     $schema: "https://json.schemastore.org/claude-code-plugin-manifest.json",
@@ -225,9 +239,14 @@ function claudePluginManifest(identity: PackageIdentity): Buffer {
 }
 
 function pluginManifestPath(host: HostPluginHost): string {
-  return host === "codex"
-    ? "packages/host-plugins/codex/plugins/persona-harness/.codex-plugin/plugin.json"
-    : "packages/host-plugins/claude/.claude-plugin/plugin.json"
+  switch (host) {
+    case "antigravity":
+      return "packages/host-plugins/antigravity/plugin.json"
+    case "codex":
+      return "packages/host-plugins/codex/plugins/persona-harness/.codex-plugin/plugin.json"
+    case "claude":
+      return "packages/host-plugins/claude/.claude-plugin/plugin.json"
+  }
 }
 
 function pluginSkillPath(layout: HostPluginLayout, skill: PersonaSharedSkill): string {
@@ -249,6 +268,10 @@ export function buildHostPluginDistributionTargets(packageRoot: string): readonl
   }
 
   const targets: HostPluginDistributionTarget[] = [
+    {
+      relativePath: pluginManifestPath("antigravity"),
+      nextBytes: antigravityPluginManifest(),
+    },
     {
       relativePath: "packages/host-plugins/codex/.agents/plugins/marketplace.json",
       nextBytes: codexMarketplaceManifest(),
@@ -329,6 +352,7 @@ function assertExactArtifactTree(root: string, targets: readonly HostPluginDistr
 
 function distributionPaths(root: string): HostPluginDistributionPaths {
   return {
+    antigravityPluginRoot: packagePath(root, "packages/host-plugins/antigravity"),
     claudePluginRoot: packagePath(root, "packages/host-plugins/claude"),
     codexMarketplaceRoot: packagePath(root, "packages/host-plugins/codex"),
   }
@@ -342,7 +366,14 @@ export function verifyHostPluginDistribution(packageRoot: string): HostPluginDis
 
 export function hostPluginDistributionPath(packageRoot: string, host: HostPluginHost): string {
   const paths = verifyHostPluginDistribution(packageRoot)
-  return host === "codex" ? paths.codexMarketplaceRoot : paths.claudePluginRoot
+  switch (host) {
+    case "antigravity":
+      return paths.antigravityPluginRoot
+    case "codex":
+      return paths.codexMarketplaceRoot
+    case "claude":
+      return paths.claudePluginRoot
+  }
 }
 
 export function writeHostPluginDistribution(packageRoot: string, options: HostPluginWriteOptions = {}): HostPluginDistributionPaths {

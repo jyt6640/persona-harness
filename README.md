@@ -436,11 +436,13 @@ discovery so an OpenCode project receives one native candidate rather than
 duplicates. For the full ownership, upgrade, and non-claim boundary, read the
 [portable host adapter guide](docs/current/portable-host-adapters.md).
 
-The npm package also ships verified, versioned Codex and Claude Code plugin
-directories. `npx ph plugin path codex` prints the package-local Codex
-marketplace root, and `npx ph plugin path claude` prints the Claude plugin root.
-Those commands are read-only; adding a marketplace or loading a plugin remains
-an explicit host command. See the [portable host adapter guide](docs/current/portable-host-adapters.md#install-packaged-host-plugins)
+The npm package also ships verified, versioned Antigravity, Codex, and Claude
+Code plugin directories. `npx ph plugin path antigravity` prints the
+package-local Antigravity plugin root, `npx ph plugin path codex` prints the
+Codex marketplace root, and `npx ph plugin path claude` prints the Claude
+plugin root. Those commands are read-only; installing, adding a marketplace,
+or loading a plugin remains an explicit host command. See the [portable host
+adapter guide](docs/current/portable-host-adapters.md#install-packaged-host-plugins)
 for the exact commands and the boundary between static readiness and live host
 selection.
 

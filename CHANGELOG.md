@@ -8,6 +8,20 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [0.12.0] - 2026-09-03
+
+- Ship the canonical shared-skill catalog as a package-contained Antigravity
+  plugin artifact alongside the existing Codex and Claude Code artifacts.
+  `ph plugin path antigravity` verifies the package-owned tree before returning
+  its path.
+- Keep Antigravity installation explicit. Persona Harness does not run
+  `agy plugin install`, alter workspace/global plugin state, or claim a live
+  Antigravity session selected a skill.
+- Bind Antigravity plugin skills to the same generated `.agents` adapter bytes
+  used for Antigravity project-local discovery, and reject missing, duplicate,
+  stale, modified, malformed, or symlinked package artifacts before printing a
+  host path.
+
 ## [0.11.0] - 2026-09-02
 
 - Ship the canonical shared-skill catalog as package-contained plugin artifacts

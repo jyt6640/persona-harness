@@ -14,7 +14,7 @@ export type HostPluginCommandOptions = {
 
 function hostPluginUsage(invocationName: string): string {
   return [
-    `Usage: ${invocationName} plugin path <codex|claude>`,
+    `Usage: ${invocationName} plugin path <antigravity|codex|claude>`,
     "",
     "Print a verified, read-only installed plugin path. This command never registers a marketplace or edits host configuration.",
   ].join("\n")

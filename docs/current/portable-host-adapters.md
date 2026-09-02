@@ -47,9 +47,10 @@ the existing `npx ph init` command. It still does not imply `bootstrap`,
 
 ## Install Packaged Host Plugins
 
-The npm package also includes immutable, versioned plugin artifacts for Codex
-and Claude Code. This is useful when a user wants the canonical catalog as a
-host plugin rather than as project-local adapters produced by `ph init`.
+The npm package also includes immutable, versioned plugin artifacts for
+Antigravity, Codex, and Claude Code. This is useful when a user wants the
+canonical catalog as a host plugin rather than as project-local adapters
+produced by `ph init`.
 
 `ph plugin path` is read-only: it verifies the installed artifact tree against
 the catalog before printing a path. It never adds a marketplace, enables a
@@ -61,6 +62,14 @@ plugin through the normal Codex plugin commands:
 ```bash
 codex plugin marketplace add "$(npx ph plugin path codex)"
 codex plugin add persona-harness@persona-harness
+```
+
+For Antigravity, explicitly install the verified local plugin directory through
+its normal CLI. This stages host-owned state, so Persona Harness only prints the
+path and never runs the command itself:
+
+```bash
+agy plugin install "$(npx ph plugin path antigravity)"
 ```
 
 For Claude Code, validate the same packaged directory locally, then load it for

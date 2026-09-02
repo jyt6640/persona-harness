@@ -7,7 +7,7 @@ metadata:
   persona-harness/canonical-skill: plan
   persona-harness/display-name: "(PH) Delivery Plan"
   persona-harness/adapter-layout: claude
-  persona-harness/adapter-version: 0.11.0
+  persona-harness/adapter-version: 0.12.0
   opencode/autoinvoke: "false"
 ---
 
