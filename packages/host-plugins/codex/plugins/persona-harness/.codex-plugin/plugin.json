@@ -1,0 +1,30 @@
+{
+  "name": "persona-harness",
+  "version": "0.11.0",
+  "description": "Portable Persona Harness shared skills for Codex.",
+  "author": {
+    "name": "Persona Harness",
+    "url": "https://github.com/jyt6640/persona-harness"
+  },
+  "homepage": "https://github.com/jyt6640/persona-harness#portable-host-adapters",
+  "repository": "https://github.com/jyt6640/persona-harness",
+  "license": "Apache-2.0",
+  "keywords": [
+    "ai-coding",
+    "codex",
+    "persona-harness",
+    "skills"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Persona Harness",
+    "shortDescription": "Portable engineering skills for Codex.",
+    "longDescription": "A versioned, canonical Persona Harness skill catalog for Codex project workflows.",
+    "developerName": "Persona Harness",
+    "category": "Productivity",
+    "capabilities": [
+      "Skills"
+    ],
+    "websiteURL": "https://github.com/jyt6640/persona-harness"
+  }
+}

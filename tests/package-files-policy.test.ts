@@ -110,12 +110,15 @@ describe("package files policy", () => {
     expect(existsSync(path.join(packageRoot, "scripts", "run-default-test.mjs"))).toBe(true)
     expect(existsSync(path.join(packageRoot, "scripts", "package-root-build.mjs"))).toBe(true)
     expect(existsSync(path.join(packageRoot, "scripts", "package-root-build-lock.mjs"))).toBe(true)
+    expect(existsSync(path.join(packageRoot, "scripts", "check-host-skill-plugins.mjs"))).toBe(true)
     expect(isCoveredByPackageFiles("scripts/run-default-test.mjs", packageJson.files)).toBe(true)
     expect(isCoveredByPackageFiles("scripts/package-root-build-lock.mjs", packageJson.files)).toBe(true)
     expect(isCoveredByPackageFiles("scripts/package-root-build.mjs", packageJson.files)).toBe(true)
+    expect(isCoveredByPackageFiles("scripts/check-host-skill-plugins.mjs", packageJson.files)).toBe(true)
+    expect(packageJson.files).toContain("packages/host-plugins")
     expect(scripts?.["test"]).toBe("node scripts/run-default-test.mjs")
     expect(scripts?.["build"]).toBe("node scripts/package-root-build.mjs")
-    expect(scripts?.["prepack"]).toBe("node scripts/package-root-build.mjs")
+    expect(scripts?.["prepack"]).toBe("node scripts/package-root-build.mjs && node scripts/check-host-skill-plugins.mjs")
   })
 
   it("packages the portable content identity and canonical release packer", () => {

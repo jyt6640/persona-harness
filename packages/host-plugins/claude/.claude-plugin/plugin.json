@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "persona-harness",
+  "version": "0.11.0",
+  "description": "Portable Persona Harness shared skills for Claude Code.",
+  "author": {
+    "name": "Persona Harness",
+    "url": "https://github.com/jyt6640/persona-harness"
+  },
+  "homepage": "https://github.com/jyt6640/persona-harness#portable-host-adapters",
+  "repository": "https://github.com/jyt6640/persona-harness",
+  "license": "Apache-2.0",
+  "keywords": [
+    "ai-coding",
+    "claude-code",
+    "persona-harness",
+    "skills"
+  ]
+}

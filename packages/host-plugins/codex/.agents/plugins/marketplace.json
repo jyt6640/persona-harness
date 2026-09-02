@@ -1,0 +1,20 @@
+{
+  "name": "persona-harness",
+  "interface": {
+    "displayName": "Persona Harness"
+  },
+  "plugins": [
+    {
+      "name": "persona-harness",
+      "source": {
+        "source": "local",
+        "path": "./plugins/persona-harness"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

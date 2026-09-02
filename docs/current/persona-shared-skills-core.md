@@ -231,7 +231,8 @@ default-on OpenCode advisory route and never enables that broader context path.
 
 ## Package Boundary
 
-The root tarball includes the catalog, each cataloged `SKILL.md`, and the
+The root tarball includes the catalog, each cataloged `SKILL.md`, the generated
+Codex marketplace/plugin tree, the generated Claude Code plugin tree, and the
 package-internal shared-skills README. The only packaged language overlay is
 the Java reference directory. Legacy OMO orchestration material and legacy
 `skills/workflow/**` payloads are nonoperative and excluded from the tarball.

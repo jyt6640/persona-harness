@@ -30,6 +30,7 @@ import { runPhilosophyCommand } from "./philosophy-command.js"
 import { runReviewCommand } from "./review.js"
 import { runSmokeCommand } from "./smoke.js"
 import { runProjectAutoUpdateCommand } from "./project-auto-update.js"
+import { runHostPluginCommand } from "./host-plugin-command.js"
 import { decodeCliStdinText, readBoundedCliStdinText } from "./stdin-text.js"
 import { MAX_SUBMITTED_REPORT_BYTES, workflowReportStdinLimitMessage } from "./report-status.js"
 import { personaHarnessVersion } from "./version.js"
@@ -192,6 +193,10 @@ export function runPersonaCli(args: readonly string[], options: PersonaCliOption
       packageRoot: options.packageRoot,
       projectDir: options.cwd,
     }, invocationName)
+  }
+
+  if (command === "plugin") {
+    return runHostPluginCommand(args.slice(1), { packageRoot: options.packageRoot }, invocationName)
   }
 
   if (command === "authority") {
