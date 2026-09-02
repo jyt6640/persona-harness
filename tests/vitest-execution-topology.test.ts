@@ -5,6 +5,7 @@ import config from "../vitest.config.js"
 type JsonRecord = Readonly<Record<string, unknown>>
 
 const RESOURCE_SENSITIVE_TEST_FILES = [
+  "tests/owner-dogfood-feedback.test.ts",
   "tests/cooperative-finish-real-gradle.test.ts",
   "tests/project-finish-attestation-producer-oidc-bridge.test.ts",
   "tests/staged-package-verification-runner.test.ts",
@@ -41,7 +42,7 @@ function stringList(value: unknown): readonly string[] {
 }
 
 describe("Vitest execution topology", () => {
-  it("keeps process-only cleanup parallel and gives physical runtime fixtures one owned worker", () => {
+  it("gives process-global and physical runtime fixtures one owned worker", () => {
     const rootConfig: unknown = config
     expect(isRecord(rootConfig)).toBe(true)
     if (!isRecord(rootConfig) || !isRecord(rootConfig["test"])) {
