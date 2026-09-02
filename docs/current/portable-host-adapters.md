@@ -45,6 +45,38 @@ command, or start a workflow. Only a later explicit acceptance may authorize
 the existing `npx ph init` command. It still does not imply `bootstrap`,
 `attach`, workflow, Git, or network work.
 
+## Install Packaged Host Plugins
+
+The npm package also includes immutable, versioned plugin artifacts for Codex
+and Claude Code. This is useful when a user wants the canonical catalog as a
+host plugin rather than as project-local adapters produced by `ph init`.
+
+`ph plugin path` is read-only: it verifies the installed artifact tree against
+the catalog before printing a path. It never adds a marketplace, enables a
+plugin, or changes any host configuration.
+
+For Codex, explicitly register the package-local marketplace and then add the
+plugin through the normal Codex plugin commands:
+
+```bash
+codex plugin marketplace add "$(npx ph plugin path codex)"
+codex plugin add persona-harness@persona-harness
+```
+
+For Claude Code, validate the same packaged directory locally, then load it for
+the session using Claude Code's supported plugin-directory flag:
+
+```bash
+claude plugin validate "$(npx ph plugin path claude)"
+claude --plugin-dir "$(npx ph plugin path claude)"
+```
+
+Those host commands are intentionally user actions. They may create or update
+host-owned marketplace or plugin state, so Persona Harness never invokes them
+by inference. Marketplace publication, public-directory acceptance, and live
+host skill selection are separate host-governed observations and are not
+claimed by successful static validation.
+
 ## What Is Shared
 
 Every generated adapter points to the same Persona-owned catalog. Its
@@ -93,6 +125,12 @@ canonical skill while preserving Codex, Antigravity, and Claude Code discovery.
 The existing optional OpenCode plugin registration remains separate from static
 adapter materialization. It may expose OpenCode-specific advisory behavior, but
 it does not change other hosts' semantics.
+
+OpenCode continues to use its documented npm-plugin configuration and the
+project-local `.opencode/skills` adapter that `ph init` manages. Its existing
+plugin array and host skill settings are preserved; `ph init` adds the
+versioned Persona package entry once and never registers a second shared-skill
+identity.
 
 ## Context And Runtime Boundary
 

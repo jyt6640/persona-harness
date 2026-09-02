@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto"
 import { spawnSync } from "node:child_process"
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
+import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import process from "node:process"
@@ -116,6 +116,8 @@ try {
     consumerRoot,
     "installed-package-exports",
   )
+  assertInstalledHostPluginDistribution(installedRoot, cliPath, consumerRoot)
+  assertInstalledHostPluginFailures(installedRoot, temporaryRoot, consumerRoot)
 
   process.stdout.write("package-smoke: PASS\n")
 } catch (error) {
@@ -270,6 +272,84 @@ function assertInstalledHostSkillAdapters(projectRoot, installedRoot) {
   }
 }
 
+function assertInstalledHostPluginDistribution(installedRoot, cliPath, consumerRoot) {
+  const codex = run(process.execPath, [cliPath, "plugin", "path", "codex"], consumerRoot, "installed-codex-plugin-path")
+  const claude = run(process.execPath, [cliPath, "plugin", "path", "claude"], consumerRoot, "installed-claude-plugin-path")
+  const codexRoot = join(installedRoot, "packages", "host-plugins", "codex")
+  const claudeRoot = join(installedRoot, "packages", "host-plugins", "claude")
+  if (codex.stdout.trim() !== codexRoot || claude.stdout.trim() !== claudeRoot) {
+    throw new PackageSmokeError("installed-host-plugin-path")
+  }
+
+  assertRegularFile(join(codexRoot, ".agents", "plugins", "marketplace.json"), "installed-codex-marketplace")
+  assertRegularFile(join(codexRoot, "plugins", "persona-harness", ".codex-plugin", "plugin.json"), "installed-codex-plugin-manifest")
+  assertRegularFile(join(claudeRoot, ".claude-plugin", "plugin.json"), "installed-claude-plugin-manifest")
+  const catalog = parseJson(readFileSync(join(installedRoot, "packages", "shared-skills", "catalog.json"), "utf8"), "installed-host-plugin-catalog")
+  if (!isRecord(catalog) || !Array.isArray(catalog.skills)) {
+    throw new PackageSmokeError("installed-host-plugin-catalog")
+  }
+  for (const skill of catalog.skills) {
+    if (!isRecord(skill) || typeof skill.id !== "string") {
+      throw new PackageSmokeError("installed-host-plugin-catalog")
+    }
+    assertRegularFile(join(codexRoot, "plugins", "persona-harness", "skills", skill.id, "SKILL.md"), "installed-codex-plugin-skill")
+    assertRegularFile(join(claudeRoot, "skills", skill.id, "SKILL.md"), "installed-claude-plugin-skill")
+  }
+}
+
+function assertInstalledHostPluginFailures(installedRoot, temporaryRoot, consumerRoot) {
+  const cases = [
+    {
+      name: "malformed",
+      mutate(root) {
+        writeFileSync(join(root, "packages", "host-plugins", "codex", "plugins", "persona-harness", ".codex-plugin", "plugin.json"), "{\n")
+      },
+    },
+    {
+      name: "missing",
+      mutate(root) {
+        rmSync(join(root, "packages", "host-plugins", "claude", "skills", "debug", "SKILL.md"))
+      },
+    },
+    {
+      name: "version-mismatch",
+      mutate(root) {
+        const path = join(root, "packages", "host-plugins", "claude", ".claude-plugin", "plugin.json")
+        writeFileSync(path, readFileSync(path, "utf8").replace(/"version": "[^"]+"/u, '"version": "0.0.0"'))
+      },
+    },
+    {
+      name: "duplicate",
+      mutate(root) {
+        const duplicate = join(root, "packages", "host-plugins", "claude", "skills", "duplicate", "SKILL.md")
+        mkdirSync(dirname(duplicate), { recursive: true })
+        writeFileSync(duplicate, readFileSync(join(root, "packages", "host-plugins", "claude", "skills", "debug", "SKILL.md")))
+      },
+    },
+  ]
+
+  for (const scenario of cases) {
+    const root = join(temporaryRoot, `tampered-host-plugin-${scenario.name}`)
+    cpSync(installedRoot, root, { recursive: true })
+    scenario.mutate(root)
+    const result = runFailure(process.execPath, [join(root, "dist", "cli", "index.js"), "plugin", "path", "codex"], consumerRoot)
+    if (!result.stderr.trim().startsWith("host-plugin-distribution")) {
+      throw new PackageSmokeError("installed-host-plugin-fail-closed")
+    }
+  }
+
+  const userProject = join(temporaryRoot, "host-plugin-user-owned-project")
+  mkdirSync(userProject, { recursive: true })
+  const cliPath = join(installedRoot, "dist", "cli", "index.js")
+  run(process.execPath, [cliPath, "init"], userProject, "installed-host-plugin-user-init")
+  const ownedAdapter = join(userProject, ".agents", "skills", "persona-harness-debug", "SKILL.md")
+  writeFileSync(ownedAdapter, "# User-owned adapter\n")
+  const rerun = runFailure(process.execPath, [cliPath, "init"], userProject)
+  if (!rerun.stderr.includes("Init ownership conflict")) {
+    throw new PackageSmokeError("installed-host-plugin-user-owned")
+  }
+}
+
 function readSkillFrontmatter(source) {
   const lines = source.split(/\r?\n/)
   if (lines[0] !== "---") return undefined
@@ -307,6 +387,28 @@ function run(command, args, cwd, code) {
     timeout: 120_000,
   })
   if (result.error !== undefined || result.status !== 0) throw new PackageSmokeError(code)
+  return { stderr: result.stderr, stdout: result.stdout }
+}
+
+function runFailure(command, args, cwd) {
+  const result = spawnSync(command, args, {
+    cwd,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      APPDATA: join(temporaryRoot, "appdata"),
+      HOME: join(temporaryRoot, "home"),
+      PH_HOME: join(temporaryRoot, "persona-state"),
+      USERPROFILE: join(temporaryRoot, "home"),
+      XDG_CONFIG_HOME: join(temporaryRoot, "xdg-config"),
+      npm_config_audit: "false",
+      npm_config_cache: join(temporaryRoot, "npm-cache"),
+      npm_config_fund: "false",
+    },
+    maxBuffer: 16 * 1024 * 1024,
+    timeout: 120_000,
+  })
+  if (result.error !== undefined || result.status === 0) throw new PackageSmokeError("installed-host-plugin-failure")
   return { stderr: result.stderr, stdout: result.stdout }
 }
 

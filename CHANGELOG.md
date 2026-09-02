@@ -8,6 +8,21 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [0.11.0] - 2026-09-02
+
+- Ship the canonical shared-skill catalog as package-contained plugin artifacts
+  for Codex and Claude Code. `ph plugin path <host>` verifies the installed
+  artifact tree before returning its path.
+- Keep host registration explicit: Persona Harness does not add a Codex
+  marketplace, enable a plugin, or change a Claude Code configuration by
+  inference.
+- Use Codex's `.agents/plugins/marketplace.json` package layout and a
+  Claude-compatible baseline manifest so the packaged directories validate in
+  the supported local host CLIs.
+- Keep tarball packing fail-closed while leaving `npm pack --json` machine
+  readable; the host-plugin check is quiet on success and reports only bounded
+  failures.
+
 ## [0.10.0] - 2026-09-01
 
 - Add a separate, default-on `features.sharedSkillRouting` boundary for the
