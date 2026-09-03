@@ -123,6 +123,13 @@ values in their historical rows; they are not competing live claims.
 | `0.8.29` | 2026-08-24 | published stable release | [`release notes`](../current/release/v0.8.29-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
 | `0.8.30` | 2026-08-25 | published stable release | [`release notes`](../current/release/v0.8.30-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
 | `0.8.31` | 2026-08-25 | published stable release | [`release notes`](../current/release/v0.8.31-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
+| `0.9.0` | not documented in `CHANGELOG.md` | historical local tag; portable host capability foundation | [`release notes`](../current/release/v0.9.0-release-notes.md) | registry not checked in this index |
+| `0.9.1` | 2026-08-31 | historical local tag; portable host documentation | [`release notes`](../current/release/v0.9.1-release-notes.md) | registry not checked in this index |
+| `0.9.2` | 2026-08-31 | historical local tag; recognizable portable skills | [`release notes`](../current/release/v0.9.2-release-notes.md) | registry not checked in this index |
+| `0.10.0` | 2026-09-01 | historical local tag; default-safe shared-skill routing | [`release notes`](../current/release/v0.10.0-release-notes.md) | registry not checked in this index |
+| `0.11.0` | 2026-09-02 | historical local tag; packaged Codex and Claude Code plugins | [`release notes`](../current/release/v0.11.0-release-notes.md) | registry not checked in this index |
+| `0.12.0` | 2026-09-03 | historical local tag; packaged Antigravity plugin | [`release notes`](../current/release/v0.12.0-release-notes.md) | registry not checked in this index |
+| `0.13.0` | 2026-09-03 | current unpublished source candidate; no local tag | [`release notes`](../current/release/v0.13.0-release-notes.md) | registry not checked in this candidate |
 
 ## Future Migration Notes
 

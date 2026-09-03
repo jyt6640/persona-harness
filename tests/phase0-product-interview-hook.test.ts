@@ -6,7 +6,7 @@ import type { Part, UserMessage } from "@opencode-ai/sdk"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
-import type { TransformMessagesOutput } from "../src/runtime/types.js"
+import type { EventInput, TransformMessagesOutput } from "../src/runtime/types.js"
 import { writeManagedInitFixture } from "./managed-init-fixture.js"
 
 const workspaces: string[] = []
@@ -112,5 +112,28 @@ describe("product interview hook activation", () => {
     expect(latestText(automaticRestart)).not.toContain("[Persona Harness Product Interview]")
     expect(latestText(explicitRestart)).toContain("[Persona Harness Product Interview]")
     expect(latestText(explicitRestart)).toContain("Question:")
+  })
+
+  it("releases stopped interview state when the host ends its session", async () => {
+    const projectDir = createProductProject()
+    const hooks = createPhase0Hooks({ projectDir })
+    const sessionID = "session-product-lifecycle-cleanup"
+
+    // Given: a stopped product interview whose host session is then removed.
+    await hooks["experimental.chat.messages.transform"]?.(
+      {},
+      outputWithText(sessionID, "Create an app for neighbours to exchange practical skills"),
+    )
+    await hooks["experimental.chat.messages.transform"]?.({}, outputWithText(sessionID, "stop"))
+    await hooks.event?.({
+      event: { type: "session.deleted", properties: { info: { id: sessionID } } },
+    } as unknown as EventInput)
+
+    // When: a host reuses that identifier after lifecycle cleanup.
+    const restarted = outputWithText(sessionID, "Create an app for neighbourhood bookings")
+    await hooks["experimental.chat.messages.transform"]?.({}, restarted)
+
+    // Then: no stopped-session state can exhaust future automatic routing.
+    expect(latestText(restarted)).toContain("[Persona Harness Product Interview]")
   })
 })

@@ -184,6 +184,11 @@ export class ProductDeepInterviewTracker {
     return this.sessions.has(sessionId)
   }
 
+  clearSession(sessionId: string): void {
+    this.sessions.delete(sessionId)
+    this.suppressedSessions.delete(sessionId)
+  }
+
   route(sessionId: string, message: string): ProductDeepInterviewResult | undefined {
     if (sessionId.length === 0 || sessionId.length > MAX_SESSION_ID_CHARS || !isBoundedSocraticInterviewText(message)) return undefined
     const normalized = message.trim()

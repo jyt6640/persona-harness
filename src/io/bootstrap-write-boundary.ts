@@ -10,6 +10,7 @@ import {
   openSync,
   readdirSync,
   readFileSync,
+  readSync,
   realpathSync,
   renameSync,
   rmSync,
@@ -96,6 +97,7 @@ export type ProjectReadTreeOptions = {
 }
 
 const DEFAULT_PROJECT_READ_BYTES = 8 * 1024 * 1024
+const MAX_WRITE_LOCK_BYTES = 32
 const PROJECT_READ_MANIFEST_OPTIONS = {
   excludedRoots: [".git", ".gradle", "build", "node_modules"],
   maxEntries: 20_000,
@@ -223,7 +225,7 @@ export class BootstrapWriteBoundary {
           reservations.push(reservation)
           parent = reservation
         }
-        return this.#writeCurrentFileAtomicallyIfUnchanged(leaf, expected, content, reservations)
+        return this.#writeCurrentFileIfUnchanged(leaf, expected, content, reservations)
       } finally {
         leaveCurrentReservations(this.#project, reservations)
       }
@@ -399,8 +401,12 @@ export class BootstrapWriteBoundary {
     return this.#withCurrentFileLock(name, reservations, () => this.#writeCurrentFileLocked(name, content, reservations))
   }
 
-  #writeCurrentFileLocked(name: string, content: string | Buffer, reservations: readonly DirectoryReservation[]): boolean {
-    const expected = this.#readCurrentFile(name, reservations)
+  #writeCurrentFileLocked(
+    name: string,
+    content: string | Buffer,
+    reservations: readonly DirectoryReservation[],
+    expected = this.#readCurrentFile(name, reservations),
+  ): boolean {
     const nextBytes = typeof content === "string" ? Buffer.from(content, "utf8") : content
     if (expected.kind === "ready" && expected.bytes.equals(nextBytes)) return false
     let descriptor: number | undefined
@@ -446,7 +452,7 @@ export class BootstrapWriteBoundary {
     })
   }
 
-  #writeCurrentFileAtomicallyIfUnchanged(
+  #writeCurrentFileIfUnchanged(
     name: string,
     expected: ProjectFileSnapshot | undefined,
     content: string | Buffer,
@@ -455,7 +461,8 @@ export class BootstrapWriteBoundary {
     return this.#withCurrentFileLock(name, reservations, () => {
       const current = this.#readCurrentFile(name, reservations)
       if (!matchesProjectFileSnapshot(current, expected)) return "stale"
-      return this.#writeCurrentFileAtomicallyLocked(name, content, reservations, current) ? "written" : "unchanged"
+      // Do not rename over a path that an uncooperative writer could replace after this identity check.
+      return this.#writeCurrentFileLocked(name, content, reservations, current) ? "written" : "unchanged"
     })
   }
 
@@ -530,16 +537,17 @@ export class BootstrapWriteBoundary {
     let identity: NoFollowPathIdentity | undefined
     try {
       this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
-      descriptor = openSync(
-        lockName,
-        constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
-        0o600,
-      )
-      identity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
-      const pathIdentity = noFollowPathIdentityFromStat(lstatSync(lockName, { bigint: true }))
-      if (!sameNoFollowPathIdentity(identity, pathIdentity) || identity.size !== "0") {
+      descriptor = this.#openCurrentFileLock(lockName, reservations)
+      const initial = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
+      const initialPath = noFollowPathIdentityFromStat(lstatSync(lockName, { bigint: true }))
+      if (!sameNoFollowPathIdentity(initial, initialPath) || initial.size !== "0") {
         throw new BootstrapWriteBoundaryError()
       }
+      writeFileSync(descriptor, `${process.pid}\n`)
+      fsyncSync(descriptor)
+      identity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
+      const pathIdentity = noFollowPathIdentityFromStat(lstatSync(lockName, { bigint: true }))
+      if (!sameNoFollowPathIdentity(identity, pathIdentity)) throw new BootstrapWriteBoundaryError()
       this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
       return operation()
     } catch (error) {
@@ -548,6 +556,65 @@ export class BootstrapWriteBoundary {
     } finally {
       if (descriptor !== undefined) closeSync(descriptor)
       if (identity !== undefined) this.#removeCurrentLock(lockName, identity)
+    }
+  }
+
+  #openCurrentFileLock(name: string, reservations: readonly DirectoryReservation[]): number {
+    try {
+      return openSync(
+        name,
+        constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
+        0o600,
+      )
+    } catch (error) {
+      if (errorCode(error) !== "EEXIST" || !this.#removeStaleCurrentLock(name, reservations)) {
+        throw new BootstrapWriteBoundaryError()
+      }
+      try {
+        return openSync(
+          name,
+          constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
+          0o600,
+        )
+      } catch {
+        throw new BootstrapWriteBoundaryError()
+      }
+    }
+  }
+
+  #removeStaleCurrentLock(name: string, reservations: readonly DirectoryReservation[]): boolean {
+    let descriptor: number | undefined
+    try {
+      const before = lstatSync(name, { bigint: true })
+      if (!before.isFile() || before.isSymbolicLink() || before.size > BigInt(MAX_WRITE_LOCK_BYTES)) {
+        throw new BootstrapWriteBoundaryError()
+      }
+      const expected = noFollowPathIdentityFromStat(before)
+      this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
+      descriptor = openSync(name, constants.O_RDONLY | constants.O_NOFOLLOW)
+      const descriptorIdentity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
+      const afterOpen = noFollowPathIdentityFromStat(lstatSync(name, { bigint: true }))
+      if (!sameNoFollowPathIdentity(expected, descriptorIdentity) || !sameNoFollowPathIdentity(expected, afterOpen)) {
+        throw new BootstrapWriteBoundaryError()
+      }
+      const pid = parseWriteLockProcessId(readFixedSizeDescriptor(descriptor, Number(descriptorIdentity.size)))
+      const afterRead = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
+      const pathAfterRead = noFollowPathIdentityFromStat(lstatSync(name, { bigint: true }))
+      if (!sameNoFollowPathIdentity(descriptorIdentity, afterRead) || !sameNoFollowPathIdentity(afterRead, pathAfterRead)) {
+        throw new BootstrapWriteBoundaryError()
+      }
+      if (isProcessRunning(pid)) return false
+      this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
+      const beforeUnlink = noFollowPathIdentityFromStat(lstatSync(name, { bigint: true }))
+      if (!sameNoFollowPathIdentity(afterRead, beforeUnlink)) return false
+      unlinkSync(name)
+      return true
+    } catch (error) {
+      if (errorCode(error) === "ENOENT") return true
+      if (error instanceof BootstrapWriteBoundaryError) throw error
+      throw new BootstrapWriteBoundaryError()
+    } finally {
+      if (descriptor !== undefined) closeSync(descriptor)
     }
   }
 
@@ -578,7 +645,9 @@ export class BootstrapWriteBoundary {
       if (maxBytes !== undefined && BigInt(descriptorIdentity.size) > BigInt(maxBytes)) {
         throw new BootstrapWriteBoundaryLimitError()
       }
-      const bytes = readFileSync(descriptor)
+      const bytes = maxBytes === undefined
+        ? readFileSync(descriptor)
+        : readFixedSizeDescriptor(descriptor, Number(descriptorIdentity.size))
       const afterRead = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
       const pathAfterRead = noFollowPathIdentityFromStat(lstatSync(name, { bigint: true }))
       if (!sameNoFollowPathIdentity(descriptorIdentity, afterRead) || !sameNoFollowPathIdentity(afterRead, pathAfterRead)) {
@@ -656,6 +725,38 @@ function matchesProjectFileSnapshot(current: CurrentFile, expected: ProjectFileS
   return expected === undefined
     ? current.kind === "absent"
     : current.kind === "ready" && sameNoFollowPathIdentity(current.identity, expected.identity)
+}
+
+function readFixedSizeDescriptor(descriptor: number, expectedBytes: number): Buffer {
+  if (!Number.isSafeInteger(expectedBytes) || expectedBytes < 0) throw new BootstrapWriteBoundaryError()
+  const bytes = Buffer.alloc(expectedBytes)
+  let offset = 0
+  while (offset < expectedBytes) {
+    const read = readSync(descriptor, bytes, offset, expectedBytes - offset, offset)
+    if (!Number.isSafeInteger(read) || read <= 0) throw new BootstrapWriteBoundaryError()
+    offset += read
+  }
+  return bytes
+}
+
+function parseWriteLockProcessId(bytes: Buffer): number {
+  const text = bytes.toString("ascii")
+  if (!/^[1-9][0-9]{0,9}\n$/u.test(text)) throw new BootstrapWriteBoundaryError()
+  const pid = Number(text.slice(0, -1))
+  if (!Number.isSafeInteger(pid) || pid <= 0) throw new BootstrapWriteBoundaryError()
+  return pid
+}
+
+function isProcessRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    const code = errorCode(error)
+    if (code === "ESRCH") return false
+    if (code === "EPERM") return true
+    throw new BootstrapWriteBoundaryError()
+  }
 }
 
 export class ProjectReadBoundary {
@@ -1448,6 +1549,9 @@ function canonicalClose(reservation: DirectoryReservation): void {
 }
 
 function validatedRelativeSegments(path: string): string[] {
+  if (path.length === 0 || path.includes("\\") || path.includes("\u0000") || isAbsolute(path)) {
+    throw new BootstrapWriteBoundaryError()
+  }
   const segments = path.split("/")
   if (segments.length === 0 || segments.some((segment) => segment === "" || segment === "." || segment === "..")) {
     throw new BootstrapWriteBoundaryError()
@@ -1456,7 +1560,16 @@ function validatedRelativeSegments(path: string): string[] {
 }
 
 function assertLeafName(name: string): void {
-  if (name.length === 0 || name.includes("/") || name.includes("\\")) throw new BootstrapWriteBoundaryError()
+  if (
+    name.length === 0
+    || name === "."
+    || name === ".."
+    || name.includes("/")
+    || name.includes("\\")
+    || name.includes("\u0000")
+  ) {
+    throw new BootstrapWriteBoundaryError()
+  }
 }
 
 function errorCode(error: unknown): string | undefined {
