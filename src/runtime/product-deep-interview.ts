@@ -220,6 +220,9 @@ export class ProductDeepInterviewTracker {
       this.suppressedSessions.add(sessionId)
       return renderStopped(socraticInterviewProgress(current.topicIndex))
     }
+    if (isExplicitProductInterviewRequest(normalized)) {
+      return renderQuestion(current, { approvalBlocked: false, visibleActivation: false })
+    }
 
     const next = advanceSocraticInterview(current, normalized)
     if (next.kind === "blocked") return undefined

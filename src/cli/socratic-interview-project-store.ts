@@ -83,6 +83,7 @@ export class SocraticInterviewProjectStore {
       this.#boundary.writeProjectFileAtomically(
         SOCRATIC_INTERVIEW_DECISION_RECORD_PATH,
         recordText(valid),
+        MAX_SOCRATIC_INTERVIEW_RECORD_BYTES,
       )
     } catch (error) {
       if (error instanceof SocraticInterviewProjectStateError) throw error
@@ -100,6 +101,7 @@ export class SocraticInterviewProjectStore {
         SOCRATIC_INTERVIEW_DECISION_RECORD_PATH,
         expected.snapshot,
         recordText(valid),
+        MAX_SOCRATIC_INTERVIEW_RECORD_BYTES,
       )
       if (result === "stale") throw new SocraticInterviewProjectStateStaleError()
     } catch (error) {

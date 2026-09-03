@@ -18,6 +18,7 @@ import {
   advanceSocraticInterview,
   createSocraticInterview,
   createSocraticInterviewDecisionRecord,
+  replaySocraticInterviewDecisionRecord,
   type SocraticInterviewMode,
   type SocraticInterviewState,
 } from "../interview/socratic-interview-core.js"
@@ -66,8 +67,10 @@ function runStart(args: readonly string[], options: SocraticInterviewCommandOpti
     const stored = store.readRecord()
     if (!isUsableStoredRecord(stored)) return storedFailure(stored)
     if (stored.kind === "valid" && !parsed.startNew) {
+      const replay = replaySocraticInterviewDecisionRecord(stored.value)
+      if (replay.kind !== "approved") return failure(replay.code)
       return successJson({
-        decisionCount: stored.value.decisions.length,
+        decisionCount: replay.decisions.length,
         kind: "approved-decision-replay",
         progress: 100,
         recordRevision: stored.revision,

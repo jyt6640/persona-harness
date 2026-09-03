@@ -18,7 +18,8 @@ values in their historical rows; they are not competing live claims.
 
 ## Reading Rules
 
-- `Documented date` comes from `CHANGELOG.md` when present.
+- `Recorded date` comes from `CHANGELOG.md` when present; otherwise it is the
+  matching local tag's creator date.
 - `Local tag` means a local git tag with the matching `v<version>` name exists
   in this checkout.
 - `Registry/archive evidence` is included only where repo docs already record
@@ -29,7 +30,7 @@ values in their historical rows; they are not competing live claims.
 
 ## Chronological Timeline
 
-| Version | Documented date | Channel/status | Primary docs | Registry/archive evidence |
+| Version | Recorded date | Channel/status | Primary docs | Registry/archive evidence |
 | --- | --- | --- | --- | --- |
 | `0.1.0` | not documented in repo | not documented in repo | none found | registry not checked in this cleanup |
 | `0.2.0` | not documented in repo | not documented in repo | none found | registry not checked in this cleanup |
@@ -115,6 +116,25 @@ values in their historical rows; they are not competing live claims.
 | `0.8.2` | 2026-08-10 | recorded npm `latest` publication | [`release notes`](../current/release/v0.8.2-release-notes.md) | canonical registry bytes are immutable and cannot supply `0.8.3` or later package evidence |
 | `0.8.3` | 2026-08-10 | published stable release; immutable historical record | [`release notes`](../current/release/v0.8.3-release-notes.md) | package bytes and acceptance evidence are fixed to 0.8.3 and cannot be reused for later package-visible corrections |
 | `0.8.4` | 2026-08-11 | unpublished stable source candidate | [`release notes`](../current/release/v0.8.4-release-notes.md) | adds the normalized authority binding-reason contract; requires its own exact package facts and normal package and hosted gates |
+| `0.8.5` | 2026-08-12 | historical local tag; release notes | [`release notes`](../current/release/v0.8.5-release-notes.md) | registry not checked in this cleanup |
+| `0.8.6` | 2026-08-12 | historical local tag; release notes | [`release notes`](../current/release/v0.8.6-release-notes.md) | registry not checked in this cleanup |
+| `0.8.7` | 2026-08-13 | historical local tag; release notes | [`release notes`](../current/release/v0.8.7-release-notes.md) | registry not checked in this cleanup |
+| `0.8.8` | 2026-08-14 | historical local tag; release notes | [`release notes`](../current/release/v0.8.8-release-notes.md) | registry not checked in this cleanup |
+| `0.8.9` | 2026-08-17 | historical local tag; release notes | [`release notes`](../current/release/v0.8.9-release-notes.md) | registry not checked in this cleanup |
+| `0.8.10` | 2026-08-17 | historical local tag; release notes | [`release notes`](../current/release/v0.8.10-release-notes.md) | registry not checked in this cleanup |
+| `0.8.11` | 2026-08-20 | historical local tag; release notes | [`release notes`](../current/release/v0.8.11-release-notes.md) | registry not checked in this cleanup |
+| `0.8.12` | 2026-08-20 | historical local tag; release notes | [`release notes`](../current/release/v0.8.12-release-notes.md) | registry not checked in this cleanup |
+| `0.8.13` | 2026-08-20 | historical local tag; release notes | [`release notes`](../current/release/v0.8.13-release-notes.md) | registry not checked in this cleanup |
+| `0.8.14` | 2026-08-20 | historical local tag; release notes | [`release notes`](../current/release/v0.8.14-release-notes.md) | registry not checked in this cleanup |
+| `0.8.15` | 2026-08-21 | historical local tag; release notes | [`release notes`](../current/release/v0.8.15-release-notes.md) | registry not checked in this cleanup |
+| `0.8.16` | 2026-08-22 | historical local tag; release notes | [`release notes`](../current/release/v0.8.16-release-notes.md) | registry not checked in this cleanup |
+| `0.8.17` | 2026-08-22 | historical local tag; release notes | [`release notes`](../current/release/v0.8.17-release-notes.md) | registry not checked in this cleanup |
+| `0.8.18` | 2026-08-22 | historical local tag; release notes | [`release notes`](../current/release/v0.8.18-release-notes.md) | registry not checked in this cleanup |
+| `0.8.19` | 2026-08-22 | historical local tag; release notes | [`release notes`](../current/release/v0.8.19-release-notes.md) | registry not checked in this cleanup |
+| `0.8.20` | 2026-08-22 | historical local tag; release notes | [`release notes`](../current/release/v0.8.20-release-notes.md) | registry not checked in this cleanup |
+| `0.8.21` | 2026-08-22 | historical local tag; release notes | [`release notes`](../current/release/v0.8.21-release-notes.md) | registry not checked in this cleanup |
+| `0.8.22` | 2026-08-22 | historical local tag; release notes | [`release notes`](../current/release/v0.8.22-release-notes.md) | registry not checked in this cleanup |
+| `0.8.23` | 2026-08-22 | historical local tag; release notes | [`release notes`](../current/release/v0.8.23-release-notes.md) | registry not checked in this cleanup |
 | `0.8.24` | 2026-08-22 | published stable release | [`release notes`](../current/release/v0.8.24-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm `latest`, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
 | `0.8.25` | 2026-08-22 | published stable release | [`release notes`](../current/release/v0.8.25-release-notes.md) | release-truth contract, protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
 | `0.8.26` | 2026-08-22 | published stable release | [`release notes`](../current/release/v0.8.26-release-notes.md) | package-visible live lookup, protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
@@ -123,6 +143,17 @@ values in their historical rows; they are not competing live claims.
 | `0.8.29` | 2026-08-24 | published stable release | [`release notes`](../current/release/v0.8.29-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
 | `0.8.30` | 2026-08-25 | published stable release | [`release notes`](../current/release/v0.8.30-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
 | `0.8.31` | 2026-08-25 | published stable release | [`release notes`](../current/release/v0.8.31-release-notes.md) | protected CI, immutable tag, stable GitHub Release, npm publication, canonical tar reconciliation, and provenance readback were recorded; these immutable facts cannot authorize a later package |
+| `0.8.32` | 2026-08-25 | historical local tag; release notes | [`release notes`](../current/release/v0.8.32-release-notes.md) | registry not checked in this cleanup |
+| `0.8.33` | 2026-08-29 | historical local tag; release notes | [`release notes`](../current/release/v0.8.33-release-notes.md) | registry not checked in this cleanup |
+| `0.8.34` | 2026-08-29 | historical local tag; release notes | [`release notes`](../current/release/v0.8.34-release-notes.md) | registry not checked in this cleanup |
+| `0.8.35` | 2026-08-30 | historical local tag; release notes | [`release notes`](../current/release/v0.8.35-release-notes.md) | registry not checked in this cleanup |
+| `0.8.36` | 2026-08-30 | historical local tag; release notes | [`release notes`](../current/release/v0.8.36-release-notes.md) | registry not checked in this cleanup |
+| `0.8.37` | 2026-08-30 | historical local tag; release notes | [`release notes`](../current/release/v0.8.37-release-notes.md) | registry not checked in this cleanup |
+| `0.8.38` | 2026-08-30 | historical local tag; release notes | [`release notes`](../current/release/v0.8.38-release-notes.md) | registry not checked in this cleanup |
+| `0.8.39` | 2026-08-30 | historical local tag; release notes | [`release notes`](../current/release/v0.8.39-release-notes.md) | registry not checked in this cleanup |
+| `0.8.40` | 2026-08-30 | historical local tag; release notes | [`release notes`](../current/release/v0.8.40-release-notes.md) | registry not checked in this cleanup |
+| `0.8.41` | 2026-08-30 | historical local tag; release notes | [`release notes`](../current/release/v0.8.41-release-notes.md) | registry not checked in this cleanup |
+| `0.8.42` | 2026-08-30 | historical local tag; release notes | [`release notes`](../current/release/v0.8.42-release-notes.md) | registry not checked in this cleanup |
 | `0.9.0` | not documented in `CHANGELOG.md` | historical local tag; portable host capability foundation | [`release notes`](../current/release/v0.9.0-release-notes.md) | registry not checked in this index |
 | `0.9.1` | 2026-08-31 | historical local tag; portable host documentation | [`release notes`](../current/release/v0.9.1-release-notes.md) | registry not checked in this index |
 | `0.9.2` | 2026-08-31 | historical local tag; recognizable portable skills | [`release notes`](../current/release/v0.9.2-release-notes.md) | registry not checked in this index |

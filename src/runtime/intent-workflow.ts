@@ -23,6 +23,7 @@ import {
   formatExplicitPersonaSkillActivationBlock,
   formatUnavailablePersonaSkillActivationBlock,
 } from "./workflow-skill-loader.js"
+import { parseExplicitPersonaSkillCommand } from "./persona-shared-skill-activation.js"
 import type { TransformMessagesOutput } from "./types.js"
 
 type IntentWorkflowOptions = {
@@ -75,6 +76,14 @@ export function maybeInjectProductDeepInterview(
 ): boolean {
   const text = latestUserText(output)
   if (text === undefined) {
+    return false
+  }
+  const explicitSkill = parseExplicitPersonaSkillCommand(text)
+  if (
+    tracker.hasActiveSession(sessionID)
+    && explicitSkill.kind !== "none"
+    && (explicitSkill.kind !== "valid" || explicitSkill.skillId !== "deep-interview")
+  ) {
     return false
   }
   if (!tracker.hasActiveSession(sessionID) && detectTopLevelIntent(text, { productMode })?.primary !== "product-interview") {

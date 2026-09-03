@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest"
 import {
   advanceSocraticInterview,
   createSocraticInterview,
+  createSocraticInterviewDecisionRecord,
   replaySocraticInterviewDecisionRecord,
+  SOCRATIC_INTERVIEW_TOPICS,
   type SocraticInterviewState,
 } from "../src/interview/socratic-interview-core.js"
 
@@ -116,6 +118,20 @@ describe("portable Socratic interview core", () => {
     expect(nulResponse).toEqual({ kind: "blocked", code: "socratic-interview-input-invalid" })
     expect(oversizedResponse).toEqual({ kind: "blocked", code: "socratic-interview-input-invalid" })
     expect(malformedReplay).toEqual({ kind: "blocked", code: "socratic-interview-state-malformed" })
+  })
+
+  it("replays a valid approved record through the same bounded core contract", () => {
+    const record = createSocraticInterviewDecisionRecord(
+      SOCRATIC_INTERVIEW_TOPICS.map((topic) => ({ decision: `Decision for ${topic.id}`, topic: topic.id })),
+      4,
+    )
+
+    if (record === undefined) throw new Error("Expected a valid approved record")
+    const replay = replaySocraticInterviewDecisionRecord(record)
+
+    expect(replay).toMatchObject({ kind: "approved", progress: 100 })
+    if (replay.kind !== "approved") throw new Error("Expected approved replay")
+    expect(replay.decisions).toEqual(record.decisions)
   })
 })
 
