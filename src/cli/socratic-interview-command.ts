@@ -4,6 +4,7 @@ import type { CliRunResult } from "./bearshell.js"
 import {
   openSocraticInterviewProjectStore,
   SocraticInterviewProjectStateError,
+  SocraticInterviewProjectStateStaleError,
   type SocraticInterviewProjectStore,
   type SocraticInterviewStoredRecord,
 } from "./socratic-interview-project-store.js"
@@ -72,11 +73,12 @@ function runStart(args: readonly string[], options: SocraticInterviewCommandOpti
         recordRevision: stored.revision,
       })
     }
-    return successJson(createSocraticInterview({
+    const started = createSocraticInterview({
       mode: parsed.mode,
       projectBinding: store.projectBinding,
       recordRevision: stored.revision,
-    }))
+    })
+    return started.kind === "blocked" ? failure(started.code) : successJson(started)
   })
 }
 
@@ -102,10 +104,7 @@ function runApprove(args: readonly string[], options: SocraticInterviewCommandOp
     if (result.kind !== "approved") return successJson(result)
     const record = createSocraticInterviewDecisionRecord(result.decisions, stored.revision + 1)
     if (record === undefined) return failure("socratic-interview-state-malformed")
-    const latest = store.readRecord()
-    if (!isUsableStoredRecord(latest)) return storedFailure(latest)
-    if (!sameStoredRecord(latest, stored)) return failure("socratic-interview-state-stale")
-    store.writeRecord(record)
+    store.writeRecordIfUnchanged(record, stored)
     return successJson({ kind: "approved", progress: 100, recordRevision: record.revision })
   })
 }
@@ -151,6 +150,7 @@ function withStore(projectDir: string | undefined, operation: (store: SocraticIn
     store = openSocraticInterviewProjectStore(projectDir ?? process.cwd())
     return operation(store)
   } catch (error) {
+    if (error instanceof SocraticInterviewProjectStateStaleError) return failure("socratic-interview-state-stale")
     if (error instanceof SocraticInterviewProjectStateError) return failure("socratic-interview-state-unsafe")
     return failure("socratic-interview-state-unsafe")
   } finally {
@@ -166,10 +166,6 @@ function storedFailure(stored: Exclude<SocraticInterviewStoredRecord, { readonly
   return stored.kind === "version-mismatch"
     ? failure("socratic-interview-record-version-mismatch")
     : failure("socratic-interview-record-malformed")
-}
-
-function sameStoredRecord(left: SocraticInterviewStoredRecord, right: SocraticInterviewStoredRecord): boolean {
-  return JSON.stringify(left) === JSON.stringify(right)
 }
 
 function parseStartArgs(args: readonly string[]): { readonly mode: SocraticInterviewMode; readonly startNew: boolean } | undefined {

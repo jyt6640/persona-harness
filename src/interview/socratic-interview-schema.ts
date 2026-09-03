@@ -11,7 +11,7 @@ import {
 } from "./socratic-interview-contract.js"
 
 const PROJECT_BINDING_PATTERN = /^sha256:[a-f0-9]{64}$/u
-const MAX_DECISION_CHARS = 600
+export const MAX_SOCRATIC_INTERVIEW_DECISION_CHARS = 600
 
 export function parseSocraticInterviewState(value: unknown): SocraticInterviewStateParseResult {
   if (!isRecord(value)) return { kind: "malformed" }
@@ -78,16 +78,23 @@ export function parseSocraticInterviewDecisions(value: readonly unknown[]): read
     if (
       topic === undefined
       || candidate.topic !== topic.id
-      || typeof candidate.decision !== "string"
-      || candidate.decision.length === 0
-      || candidate.decision.length > MAX_DECISION_CHARS
-      || candidate.decision.includes("\u0000")
+      || !isSocraticInterviewDecisionText(candidate.decision)
     ) {
       return undefined
     }
     decisions.push({ decision: candidate.decision, topic: topic.id })
   }
   return decisions
+}
+
+export function isBoundedSocraticInterviewText(value: unknown): value is string {
+  return typeof value === "string"
+    && value.length <= MAX_SOCRATIC_INTERVIEW_DECISION_CHARS
+    && !value.includes("\u0000")
+}
+
+export function isSocraticInterviewDecisionText(value: unknown): value is string {
+  return isBoundedSocraticInterviewText(value) && value.trim().length > 0
 }
 
 export function hasExactKeys(value: Readonly<Record<string, unknown>>, expected: readonly string[]): boolean {

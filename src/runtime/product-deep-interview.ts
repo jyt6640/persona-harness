@@ -1,6 +1,8 @@
 import {
   advanceSocraticInterview,
   createSocraticInterview,
+  isBoundedSocraticInterviewText,
+  socraticInterviewProgress,
   socraticInterviewTopicAt,
   SOCRATIC_INTERVIEW_TOPICS,
   type SocraticInterviewDecision,
@@ -17,6 +19,8 @@ import {
 const START_PATTERN = /(만들래|만들고\s*싶|기획해|구상해|서비스\s*만들|웹\s*서비스|기존\s*(?:서비스|제품|앱|흐름).*(?:개선|변경)|product\s+idea|want\s+to\s+(?:build|create|make|explore)|(?:build|create|make)\s+(?:an?|the)\s+(?:app|service|product)|new\s+(?:app|service|product)|(?:app|service|product)\s+idea|(?:improve|change)\s+(?:an?\s+)?existing(?:\s+\w+){0,2}\s+(?:app|service|product|flow))/iu
 const STOPPED_BLOCK = "[Persona Harness Product Interview]\nProduct discovery is paused.\nNo project, workflow, issue, agent, or file state was changed."
 const TRACKER_PROJECT_BINDING = "sha256:1c144066487b9a5f0aa8e52a5f0b84d4d8bc06811b2e6954dc5bef9faadfe40e"
+const MAX_TRACKED_SESSIONS = 128
+const MAX_SESSION_ID_CHARS = 256
 
 export type ProductDeepInterviewMode = SocraticInterviewMode
 
@@ -25,32 +29,43 @@ export type ProductDeepInterviewOptions = {
 }
 
 export type ProductDeepInterviewResult =
-  | { readonly kind: "question"; readonly topic: SocraticInterviewTopic; readonly block: string }
-  | { readonly kind: "recommendation"; readonly topic: SocraticInterviewTopic; readonly block: string }
-  | { readonly kind: "clarification-required"; readonly topic: SocraticInterviewTopic; readonly block: string }
-  | { readonly kind: "approval-required"; readonly block: string }
-  | { readonly kind: "approved"; readonly handoff: "technical-intake"; readonly block: string }
-  | { readonly kind: "stopped"; readonly block: string }
+  | { readonly block: string; readonly kind: "question"; readonly progress: number; readonly topic: SocraticInterviewTopic; readonly visibleActivation: boolean }
+  | { readonly block: string; readonly kind: "recommendation"; readonly progress: number; readonly topic: SocraticInterviewTopic }
+  | { readonly block: string; readonly kind: "clarification-required"; readonly progress: number; readonly topic: SocraticInterviewTopic }
+  | { readonly block: string; readonly kind: "approval-required"; readonly progress: 90 }
+  | { readonly block: string; readonly handoff: "technical-intake"; readonly kind: "approved"; readonly progress: 100 }
+  | { readonly block: string; readonly kind: "stopped"; readonly progress: number }
 
 export function isProductDeepInterviewStart(message: string): boolean {
   return START_PATTERN.test(message.trim())
 }
 
-function renderQuestion(session: SocraticInterviewState, approvalBlocked = false): ProductDeepInterviewResult {
+function renderQuestion(
+  session: SocraticInterviewState,
+  options: Readonly<{ readonly approvalBlocked: boolean; readonly visibleActivation: boolean }>,
+): ProductDeepInterviewResult {
   const topic = socraticInterviewTopicAt(session.topicIndex)
   if (topic === undefined) return renderApprovalRequired(session)
+  const progress = socraticInterviewProgress(session.topicIndex)
   return {
     kind: "question",
+    progress,
     topic: topic.id,
+    visibleActivation: options.visibleActivation,
     block: [
       "[Persona Harness Product Interview]",
-      createOpenCodeSkillRoute({
-        decision: "activate",
-        firstAction: session.mode === "brownfield-change-discovery" ? "code-first-change-discovery" : "one-question-product-interview",
-        skillId: "deep-interview",
-        reason: "Product facts are still unresolved, so technical intake and planning remain deferred.",
-      }),
-      "",
+      ...(options.visibleActivation
+        ? [
+            createOpenCodeSkillRoute({
+              decision: "activate",
+              firstAction: session.mode === "brownfield-change-discovery" ? "code-first-change-discovery" : "one-question-product-interview",
+              skillId: "deep-interview",
+              reason: "Product facts are still unresolved, so technical intake and planning remain deferred.",
+            }),
+            "",
+            "(PH) Product Deep Interview active.",
+          ]
+        : []),
       "Current understanding: product discovery is in progress in this conversation.",
       ...(session.mode === "brownfield-change-discovery"
         ? [
@@ -67,7 +82,8 @@ function renderQuestion(session: SocraticInterviewState, approvalBlocked = false
             "Read relevant existing code before asking for facts it already answers.",
           ]
         : []),
-      ...(approvalBlocked ? ["Approval is not available until this product decision is answered or deferred."] : []),
+      ...(options.approvalBlocked ? ["Approval is not available until this product decision is answered or deferred."] : []),
+      `Progress: ${progress}%`,
       `Question: ${topic.question}`,
       `Recommendation: ${topic.recommendation}`,
       `Tradeoff: ${topic.tradeoff}`,
@@ -82,6 +98,7 @@ function renderRecommendation(session: SocraticInterviewState): ProductDeepInter
   if (topic === undefined) return renderApprovalRequired(session)
   return {
     kind: "recommendation",
+    progress: socraticInterviewProgress(session.topicIndex),
     topic: topic.id,
     block: [
       "[Persona Harness Product Interview]",
@@ -99,6 +116,7 @@ function renderClarificationRequired(session: SocraticInterviewState): ProductDe
   if (topic === undefined) return renderApprovalRequired(session)
   return {
     kind: "clarification-required",
+    progress: socraticInterviewProgress(session.topicIndex),
     topic: topic.id,
     block: [
       "[Persona Harness Product Interview]",
@@ -117,15 +135,16 @@ function approvalBriefLines(decisions: readonly SocraticInterviewDecision[]): re
     "Approval brief:",
     ...SOCRATIC_INTERVIEW_TOPICS.map((topic) => {
       const decision = decisions.find((candidate) => candidate.topic === topic.id)?.decision ?? "deferred"
-      return `- ${topic.id}: ${decision}`
+      return `- ${topic.id}: ${decision === "deferred" ? "deferred" : "recorded"}`
     }),
-    "Approval is explicit: reply `approve` to hand off to technical-intake, or name a correction.",
+    "Approval is explicit: reply `approve` to hand off to technical-intake, or `stop` to leave this interview without a handoff.",
   ]
 }
 
 function renderApprovalRequired(session: SocraticInterviewState): ProductDeepInterviewResult {
   return {
     kind: "approval-required",
+    progress: 90,
     block: [
       "[Persona Harness Product Interview]",
       ...approvalBriefLines(session.decisions),
@@ -147,7 +166,12 @@ function renderApproved(decisions: readonly SocraticInterviewDecision[]): Produc
       "Optional adversarial review after planning: ralplan.",
       "The host adapter does not create or advance workflow state.",
     ].join("\n"),
+    progress: 100,
   }
+}
+
+function renderStopped(progress: number): ProductDeepInterviewResult {
+  return { kind: "stopped", block: STOPPED_BLOCK, progress }
 }
 
 export class ProductDeepInterviewTracker {
@@ -161,6 +185,7 @@ export class ProductDeepInterviewTracker {
   }
 
   route(sessionId: string, message: string): ProductDeepInterviewResult | undefined {
+    if (sessionId.length === 0 || sessionId.length > MAX_SESSION_ID_CHARS || !isBoundedSocraticInterviewText(message)) return undefined
     const normalized = message.trim()
     if (normalized.length === 0) return undefined
 
@@ -171,19 +196,24 @@ export class ProductDeepInterviewTracker {
         this.suppressedSessions.delete(sessionId)
       }
       if (!isProductDeepInterviewStart(normalized) && !isExplicitProductInterviewRequest(normalized)) return undefined
+      if (this.sessions.size + this.suppressedSessions.size >= MAX_TRACKED_SESSIONS) return undefined
       const started = createSocraticInterview({
         mode: this.options.mode ?? "new-product",
         projectBinding: TRACKER_PROJECT_BINDING,
         recordRevision: 0,
       })
+      if (started.kind !== "question") return undefined
       this.sessions.set(sessionId, started.state)
-      return renderQuestion(started.state)
+      return renderQuestion(started.state, {
+        approvalBlocked: started.approvalBlocked,
+        visibleActivation: started.visibleActivation,
+      })
     }
 
     if (isProductInterviewStop(normalized)) {
       this.sessions.delete(sessionId)
       this.suppressedSessions.add(sessionId)
-      return { kind: "stopped", block: STOPPED_BLOCK }
+      return renderStopped(socraticInterviewProgress(current.topicIndex))
     }
 
     const next = advanceSocraticInterview(current, normalized)
@@ -191,7 +221,7 @@ export class ProductDeepInterviewTracker {
     if (next.kind === "stopped") {
       this.sessions.delete(sessionId)
       this.suppressedSessions.add(sessionId)
-      return { kind: "stopped", block: STOPPED_BLOCK }
+      return renderStopped(next.progress)
     }
     if (next.kind === "approved") {
       this.sessions.delete(sessionId)
@@ -199,7 +229,12 @@ export class ProductDeepInterviewTracker {
     }
 
     this.sessions.set(sessionId, next.state)
-    if (next.kind === "question") return renderQuestion(next.state, next.approvalBlocked)
+    if (next.kind === "question") {
+      return renderQuestion(next.state, {
+        approvalBlocked: next.approvalBlocked,
+        visibleActivation: next.visibleActivation,
+      })
+    }
     if (next.kind === "recommendation") return renderRecommendation(next.state)
     if (next.kind === "explanation-required") return renderClarificationRequired(next.state)
     return renderApprovalRequired(next.state)

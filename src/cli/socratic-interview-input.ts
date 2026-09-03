@@ -1,4 +1,5 @@
 import {
+  isBoundedSocraticInterviewText,
   parseSocraticInterviewState,
   type SocraticInterviewState,
 } from "../interview/socratic-interview-core.js"
@@ -15,14 +16,14 @@ export type ParsedInterviewInput<T> =
 
 export function parseSocraticInterviewAdvanceInput(stdin: string | undefined): ParsedInterviewInput<ParsedAdvanceInput> {
   const input = parseJsonObject(stdin, ["response", "state"])
-  if (input === undefined || typeof input.response !== "string") return { kind: "input-invalid" }
+  if (input === undefined || !isBoundedSocraticInterviewText(input.response)) return { kind: "input-invalid" }
   const response = input.response
   return parsedState(input.state, (state) => ({ response, state }))
 }
 
 export function parseSocraticInterviewApprovalInput(stdin: string | undefined): ParsedInterviewInput<ParsedApprovalInput> {
   const input = parseJsonObject(stdin, ["confirmation", "state"])
-  if (input === undefined || typeof input.confirmation !== "string") return { kind: "input-invalid" }
+  if (input === undefined || !isBoundedSocraticInterviewText(input.confirmation)) return { kind: "input-invalid" }
   const confirmation = input.confirmation
   return parsedState(input.state, (state) => ({ confirmation, state }))
 }

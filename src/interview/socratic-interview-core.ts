@@ -18,6 +18,7 @@ import {
   isSocraticInterviewStop,
 } from "./socratic-interview-control.js"
 import {
+  isBoundedSocraticInterviewText,
   isNonNegativeInteger,
   parseSocraticInterviewDecisionRecord,
   parseSocraticInterviewDecisions,
@@ -25,14 +26,18 @@ import {
 } from "./socratic-interview-schema.js"
 
 const DEFER_PATTERN = /^(?:defer|skip|later|보류|넘겨)$/iu
-const MAX_DECISION_CHARS = 600
+
+export type SocraticInterviewStartStep = Extract<SocraticInterviewStep, { readonly kind: "blocked" | "question" }>
+export type SocraticInterviewReplayStep = Extract<SocraticInterviewStep, { readonly kind: "approved" | "blocked" }>
 
 export {
   SOCRATIC_INTERVIEW_RECORD_VERSION,
   SOCRATIC_INTERVIEW_STATE_VERSION,
   SOCRATIC_INTERVIEW_TOPICS,
+  socraticInterviewProgress,
   socraticInterviewTopicAt,
 }
+export { isBoundedSocraticInterviewText } from "./socratic-interview-schema.js"
 export {
   isSocraticInterviewApproval,
   isSocraticInterviewClarification,
@@ -56,8 +61,8 @@ export function createSocraticInterview(input: {
   readonly mode: SocraticInterviewMode
   readonly projectBinding: string
   readonly recordRevision: number
-}): Extract<SocraticInterviewStep, { readonly kind: "question" }> {
-  const state: SocraticInterviewState = {
+}): SocraticInterviewStartStep {
+  const candidate = {
     contractVersion: SOCRATIC_INTERVIEW_STATE_VERSION,
     decisions: [],
     mode: input.mode,
@@ -65,12 +70,16 @@ export function createSocraticInterview(input: {
     recordRevision: input.recordRevision,
     topicIndex: 0,
   }
-  return questionFor(state, true, false)
+  const parsed = parseSocraticInterviewState(candidate)
+  return parsed.kind === "valid"
+    ? questionFor(parsed.value, true, false)
+    : { kind: "blocked", code: "socratic-interview-state-malformed" }
 }
 
 export function advanceSocraticInterview(stateInput: unknown, messageInput: string): SocraticInterviewStep {
   const parsed = parseSocraticInterviewState(stateInput)
   if (parsed.kind !== "valid") return { kind: "blocked", code: "socratic-interview-state-malformed" }
+  if (!isBoundedSocraticInterviewText(messageInput)) return { kind: "blocked", code: "socratic-interview-input-invalid" }
   const state = parsed.value
   const message = messageInput.trim()
   if (message.length === 0) return { kind: "blocked", code: "socratic-interview-input-invalid" }
@@ -86,7 +95,7 @@ export function advanceSocraticInterview(stateInput: unknown, messageInput: stri
 
   const topic = socraticInterviewTopicAt(state.topicIndex)
   if (topic === undefined) return approvalRequired(state)
-  const decision = DEFER_PATTERN.test(message) ? "deferred" : message.slice(0, MAX_DECISION_CHARS)
+  const decision = DEFER_PATTERN.test(message) ? "deferred" : message
   const next: SocraticInterviewState = {
     ...state,
     decisions: [...state.decisions, { decision, topic: topic.id }],
@@ -111,9 +120,12 @@ export function createSocraticInterviewDecisionRecord(
 }
 
 export function replaySocraticInterviewDecisionRecord(
-  record: SocraticInterviewDecisionRecord,
-): Extract<SocraticInterviewStep, { readonly kind: "approved" }> {
-  return { kind: "approved", decisions: record.decisions, progress: 100 }
+  record: unknown,
+): SocraticInterviewReplayStep {
+  const parsed = parseSocraticInterviewDecisionRecord(record)
+  return parsed.kind === "valid"
+    ? { kind: "approved", decisions: parsed.value.decisions, progress: 100 }
+    : { kind: "blocked", code: "socratic-interview-state-malformed" }
 }
 
 function recommendationFor(state: SocraticInterviewState): SocraticInterviewStep {

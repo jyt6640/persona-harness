@@ -155,6 +155,10 @@ prove a live session received a Context block.
 The legacy `runtimeInjection` setting remains default-off. In an initialized
 OpenCode project, the separate `features.sharedSkillRouting` setting defaults
 on and permits one compact advisory skill route; set it to `false` to opt out.
+That enabled host route may select `deep-interview` automatically for an
+ambiguous product request. The portable `ph interview` CLI remains a separate,
+explicit/default-off durable boundary: adapter discovery and catalog reads do
+not invoke it by themselves.
 Here, initialized means that `ph init` created its regular managed manifest.
 A Context-only or partial `.persona` directory is deliberately not treated as
 initialized, so it cannot infer an interview or another automatic skill route.

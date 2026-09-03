@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   advanceSocraticInterview,
   createSocraticInterview,
+  replaySocraticInterviewDecisionRecord,
   type SocraticInterviewState,
 } from "../src/interview/socratic-interview-core.js"
 
@@ -10,9 +11,8 @@ const PROJECT_BINDING = "sha256:4f7d9f6d4d08f763d22a74d6065b5e9eb44a6d5a32a9a570
 
 describe("portable Socratic interview core", () => {
   it("activates visibly, advances one decision at a time, and uses only ten-percent progress steps", () => {
-    const started = createSocraticInterview({
+    const started = startInterview({
       mode: "new-product",
-      projectBinding: PROJECT_BINDING,
       recordRevision: 0,
     })
 
@@ -55,9 +55,8 @@ describe("portable Socratic interview core", () => {
   })
 
   it("explains the unresolved question without advancing, then stops without an implicit restart state", () => {
-    const started = createSocraticInterview({
+    const started = startInterview({
       mode: "brownfield-change-discovery",
-      projectBinding: PROJECT_BINDING,
       recordRevision: 3,
     })
 
@@ -89,4 +88,39 @@ describe("portable Socratic interview core", () => {
 
     expect(result).toEqual({ kind: "blocked", code: "socratic-interview-state-malformed" })
   })
+
+  it("rejects malformed creation, unsafe response text, and malformed replay at the core boundary", () => {
+    // Given: invalid constructor input and a valid initial state.
+    const invalidStart = createSocraticInterview({
+      mode: "new-product",
+      projectBinding: "not-a-project-binding",
+      recordRevision: 0,
+    })
+    const started = startInterview({
+      mode: "new-product",
+      recordRevision: 0,
+    })
+
+    // When: callers try to cross the boundary with malformed values.
+    const nulResponse = advanceSocraticInterview(started.state, "A decision\u0000with a NUL")
+    const oversizedResponse = advanceSocraticInterview(started.state, "x".repeat(601))
+    const malformedReplay = replaySocraticInterviewDecisionRecord({
+      approval: "explicit",
+      decisions: [],
+      recordVersion: "persona-socratic-interview-record.1",
+      revision: 0,
+    })
+
+    // Then: no malformed value produces an approved or next-question state.
+    expect(invalidStart).toEqual({ kind: "blocked", code: "socratic-interview-state-malformed" })
+    expect(nulResponse).toEqual({ kind: "blocked", code: "socratic-interview-input-invalid" })
+    expect(oversizedResponse).toEqual({ kind: "blocked", code: "socratic-interview-input-invalid" })
+    expect(malformedReplay).toEqual({ kind: "blocked", code: "socratic-interview-state-malformed" })
+  })
 })
+
+function startInterview(input: { readonly mode: "new-product" | "brownfield-change-discovery"; readonly recordRevision: number }) {
+  const started = createSocraticInterview({ ...input, projectBinding: PROJECT_BINDING })
+  if (started.kind !== "question") throw new Error("Expected valid Socratic interview start")
+  return started
+}

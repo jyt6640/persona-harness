@@ -13,6 +13,11 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { runPersonaCli } from "../src/cli/index.js"
+import { openSocraticInterviewProjectStore } from "../src/cli/socratic-interview-project-store.js"
+import {
+  createSocraticInterviewDecisionRecord,
+  type SocraticInterviewDecision,
+} from "../src/interview/socratic-interview-core.js"
 
 const temporaryProjects: string[] = []
 
@@ -115,6 +120,52 @@ describe("portable Socratic interview CLI", () => {
     const stale = runStdin(projectDir, "advance", { response: "Another answer", state })
     expect(stale).toEqual({ status: 1, stdout: "", stderr: "socratic-interview-state-stale\n" })
   })
+
+  it("rejects an oversized record and NUL-bearing response before it can advance or replay", () => {
+    // Given: a normal active state and a syntactically valid but padded record.
+    const projectDir = createInitializedProject()
+    const started = parseJson(run(projectDir, ["interview", "start", "--json"]).stdout)
+    const nulResponse = runStdin(projectDir, "advance", {
+      response: "A decision\u0000with a NUL",
+      state: started.state as Record<string, unknown>,
+    })
+    mkdirSync(join(projectDir, ".persona", "decisions"), { recursive: true })
+    writeApprovedRecord(projectDir, " ".repeat(32 * 1024))
+
+    // When: the command sees each malformed boundary input.
+    const oversizedRecord = run(projectDir, ["interview", "start", "--json"])
+
+    // Then: neither value becomes durable or returns a replay.
+    expect(nulResponse).toEqual({ status: 1, stdout: "", stderr: "socratic-interview-input-invalid\n" })
+    expect(oversizedRecord).toEqual({ status: 1, stdout: "", stderr: "socratic-interview-record-malformed\n" })
+  })
+
+  it("does not overwrite a record when the captured record changed before conditional approval", () => {
+    // Given: two stores observe the same initially absent decision record.
+    const projectDir = createInitializedProject()
+    const first = openSocraticInterviewProjectStore(projectDir)
+    const second = openSocraticInterviewProjectStore(projectDir)
+    const expected = first.readRecord()
+    const existing = approvedRecord(1)
+    const replacement = approvedRecord(2)
+
+    if (expected.kind !== "absent") throw new Error("Expected an initially absent decision record")
+
+    try {
+      second.writeRecord(existing)
+
+      // When: the first store tries to approve from its stale observation.
+      const conditionalWrite = () => first.writeRecordIfUnchanged(replacement, expected)
+
+      // Then: the newer record remains authoritative.
+      expect(conditionalWrite).toThrow()
+      expect(parseJson(readFileSync(decisionPath(projectDir), "utf8"))).toMatchObject({ revision: 1 })
+      expect(existsSync(join(projectDir, ".persona", "decisions", ".socratic-interview.json.lock"))).toBe(false)
+    } finally {
+      first.close()
+      second.close()
+    }
+  })
 })
 
 function createInitializedProject(): string {
@@ -158,8 +209,12 @@ function runStdin(projectDir: string, command: "advance" | "approve", input: Rec
   })
 }
 
-function writeApprovedRecord(projectDir: string): void {
-  const decisions = answers().map((decision, index) => ({ decision, topic: [
+function writeApprovedRecord(projectDir: string, suffix = ""): void {
+  writeFileSync(decisionPath(projectDir), `${JSON.stringify(approvedRecord(1))}${suffix}\n`)
+}
+
+function approvedRecord(revision: number) {
+  const topics = [
     "target-user",
     "problem",
     "outcome",
@@ -168,11 +223,13 @@ function writeApprovedRecord(projectDir: string): void {
     "non-goals",
     "success-signal",
     "constraints",
-  ][index] }))
-  writeFileSync(decisionPath(projectDir), `${JSON.stringify({
-    approval: "explicit",
-    decisions,
-    recordVersion: "persona-socratic-interview-record.1",
-    revision: 1,
-  })}\n`)
+  ] as const
+  const decisions: readonly SocraticInterviewDecision[] = answers().map((decision, index) => {
+    const topic = topics[index]
+    if (topic === undefined) throw new Error("Expected Socratic interview topic")
+    return { decision, topic }
+  })
+  const record = createSocraticInterviewDecisionRecord(decisions, revision)
+  if (record === undefined) throw new Error("Expected valid Socratic interview record")
+  return record
 }

@@ -64,6 +64,12 @@ export type ProjectReadFile = {
   readonly identity: NoFollowPathIdentity
 }
 
+export type ProjectFileSnapshot = {
+  readonly identity: NoFollowPathIdentity
+}
+
+export type ProjectConditionalWriteResult = "stale" | "unchanged" | "written"
+
 export type FreshBootstrapPersonaFile = {
   readonly bytes: Buffer
   readonly relativePath: string
@@ -101,6 +107,13 @@ export class BootstrapWriteBoundaryError extends Error {
   constructor() {
     super("bootstrap workspace is unsafe")
     this.name = "BootstrapWriteBoundaryError"
+  }
+}
+
+export class BootstrapWriteBoundaryLimitError extends Error {
+  constructor() {
+    super("bootstrap project file exceeds a bounded limit")
+    this.name = "BootstrapWriteBoundaryLimitError"
   }
 }
 
@@ -192,8 +205,40 @@ export class BootstrapWriteBoundary {
     return this.#writeProjectFileAtomically(relativePath, content, false)
   }
 
-  readProjectFile(relativePath: string): Buffer | undefined {
+  writeProjectFileAtomicallyIfUnchanged(
+    relativePath: string,
+    expected: ProjectFileSnapshot | undefined,
+    content: string | Buffer,
+  ): ProjectConditionalWriteResult {
     this.#assertActive()
+    const segments = validatedRelativeSegments(relativePath)
+    const leaf = segments.pop()
+    if (leaf === undefined) throw new BootstrapWriteBoundaryError()
+    return withReservedProjectDirectory(this.#project, () => {
+      const reservations: DirectoryReservation[] = []
+      try {
+        let parent = this.#project
+        for (const segment of segments) {
+          const reservation = reserveOrCreateCurrentChildDirectory(parent, segment)
+          reservations.push(reservation)
+          parent = reservation
+        }
+        return this.#writeCurrentFileAtomicallyIfUnchanged(leaf, expected, content, reservations)
+      } finally {
+        leaveCurrentReservations(this.#project, reservations)
+      }
+    })
+  }
+
+  readProjectFile(relativePath: string): Buffer | undefined {
+    return this.readProjectFileWithIdentity(relativePath)?.bytes
+  }
+
+  readProjectFileWithIdentity(relativePath: string, maxBytes?: number): ProjectReadFile | undefined {
+    this.#assertActive()
+    if (maxBytes !== undefined && (!Number.isSafeInteger(maxBytes) || maxBytes <= 0)) {
+      throw new BootstrapWriteBoundaryError()
+    }
     const segments = validatedRelativeSegments(relativePath)
     const leaf = segments.pop()
     if (leaf === undefined) throw new BootstrapWriteBoundaryError()
@@ -207,8 +252,10 @@ export class BootstrapWriteBoundary {
           reservations.push(reservation)
           parent = reservation
         }
-        const current = this.#readCurrentFile(leaf, reservations)
-        return current.kind === "ready" ? current.bytes : undefined
+        const current = this.#readCurrentFile(leaf, reservations, maxBytes)
+        return current.kind === "ready"
+          ? { bytes: current.bytes, identity: current.identity }
+          : undefined
       } finally {
         leaveCurrentReservations(this.#project, reservations)
       }
@@ -349,6 +396,10 @@ export class BootstrapWriteBoundary {
   }
 
   #writeCurrentFile(name: string, content: string | Buffer, reservations: readonly DirectoryReservation[]): boolean {
+    return this.#withCurrentFileLock(name, reservations, () => this.#writeCurrentFileLocked(name, content, reservations))
+  }
+
+  #writeCurrentFileLocked(name: string, content: string | Buffer, reservations: readonly DirectoryReservation[]): boolean {
     const expected = this.#readCurrentFile(name, reservations)
     const nextBytes = typeof content === "string" ? Buffer.from(content, "utf8") : content
     if (expected.kind === "ready" && expected.bytes.equals(nextBytes)) return false
@@ -389,7 +440,31 @@ export class BootstrapWriteBoundary {
   }
 
   #writeCurrentFileAtomically(name: string, content: string | Buffer, reservations: readonly DirectoryReservation[]): boolean {
-    const expected = this.#readCurrentFile(name, reservations)
+    return this.#withCurrentFileLock(name, reservations, () => {
+      const expected = this.#readCurrentFile(name, reservations)
+      return this.#writeCurrentFileAtomicallyLocked(name, content, reservations, expected)
+    })
+  }
+
+  #writeCurrentFileAtomicallyIfUnchanged(
+    name: string,
+    expected: ProjectFileSnapshot | undefined,
+    content: string | Buffer,
+    reservations: readonly DirectoryReservation[],
+  ): ProjectConditionalWriteResult {
+    return this.#withCurrentFileLock(name, reservations, () => {
+      const current = this.#readCurrentFile(name, reservations)
+      if (!matchesProjectFileSnapshot(current, expected)) return "stale"
+      return this.#writeCurrentFileAtomicallyLocked(name, content, reservations, current) ? "written" : "unchanged"
+    })
+  }
+
+  #writeCurrentFileAtomicallyLocked(
+    name: string,
+    content: string | Buffer,
+    reservations: readonly DirectoryReservation[],
+    expected: CurrentFile,
+  ): boolean {
     const nextBytes = typeof content === "string" ? Buffer.from(content, "utf8") : content
     if (expected.kind === "ready" && expected.bytes.equals(nextBytes)) return false
     const temporaryName = `.${name}.${randomUUID()}.tmp`
@@ -445,7 +520,49 @@ export class BootstrapWriteBoundary {
     }
   }
 
-  #readCurrentFile(name: string, reservations: readonly DirectoryReservation[]): CurrentFile {
+  #withCurrentFileLock<T>(
+    name: string,
+    reservations: readonly DirectoryReservation[],
+    operation: () => T,
+  ): T {
+    const lockName = `.${name}.lock`
+    let descriptor: number | undefined
+    let identity: NoFollowPathIdentity | undefined
+    try {
+      this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
+      descriptor = openSync(
+        lockName,
+        constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
+        0o600,
+      )
+      identity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
+      const pathIdentity = noFollowPathIdentityFromStat(lstatSync(lockName, { bigint: true }))
+      if (!sameNoFollowPathIdentity(identity, pathIdentity) || identity.size !== "0") {
+        throw new BootstrapWriteBoundaryError()
+      }
+      this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
+      return operation()
+    } catch (error) {
+      if (error instanceof BootstrapWriteBoundaryError) throw error
+      throw new BootstrapWriteBoundaryError()
+    } finally {
+      if (descriptor !== undefined) closeSync(descriptor)
+      if (identity !== undefined) this.#removeCurrentLock(lockName, identity)
+    }
+  }
+
+  #removeCurrentLock(name: string, expected: NoFollowPathIdentity): void {
+    try {
+      const current = lstatSync(name, { bigint: true })
+      if (current.isFile() && !current.isSymbolicLink() && sameNoFollowPathIdentity(expected, noFollowPathIdentityFromStat(current))) {
+        unlinkSync(name)
+      }
+    } catch (error) {
+      if (errorCode(error) !== "ENOENT") throw new BootstrapWriteBoundaryError()
+    }
+  }
+
+  #readCurrentFile(name: string, reservations: readonly DirectoryReservation[], maxBytes?: number): CurrentFile {
     let descriptor: number | undefined
     try {
       const currentStat = lstatSync(name, { bigint: true })
@@ -458,11 +575,20 @@ export class BootstrapWriteBoundary {
       if (!sameNoFollowPathIdentity(current, descriptorIdentity) || !sameNoFollowPathIdentity(current, afterOpen)) {
         throw new BootstrapWriteBoundaryError()
       }
+      if (maxBytes !== undefined && BigInt(descriptorIdentity.size) > BigInt(maxBytes)) {
+        throw new BootstrapWriteBoundaryLimitError()
+      }
       const bytes = readFileSync(descriptor)
+      const afterRead = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
+      const pathAfterRead = noFollowPathIdentityFromStat(lstatSync(name, { bigint: true }))
+      if (!sameNoFollowPathIdentity(descriptorIdentity, afterRead) || !sameNoFollowPathIdentity(afterRead, pathAfterRead)) {
+        throw new BootstrapWriteBoundaryError()
+      }
       this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
-      return { bytes, identity: descriptorIdentity, kind: "ready" }
+      return { bytes, identity: afterRead, kind: "ready" }
     } catch (error) {
       if (errorCode(error) === "ENOENT") return { kind: "absent" }
+      if (error instanceof BootstrapWriteBoundaryLimitError) throw error
       if (error instanceof BootstrapWriteBoundaryError) throw error
       throw new BootstrapWriteBoundaryError()
     } finally {
@@ -524,6 +650,12 @@ export class BootstrapWriteBoundary {
   #assertAll(reservations: readonly DirectoryReservation[]): void {
     for (const reservation of reservations) assertDirectoryReservation(reservation)
   }
+}
+
+function matchesProjectFileSnapshot(current: CurrentFile, expected: ProjectFileSnapshot | undefined): boolean {
+  return expected === undefined
+    ? current.kind === "absent"
+    : current.kind === "ready" && sameNoFollowPathIdentity(current.identity, expected.identity)
 }
 
 export class ProjectReadBoundary {
@@ -1067,6 +1199,7 @@ function withReservedProjectDirectory<T>(project: DirectoryReservation, operatio
     assertCurrentDirectory(project)
     return operation()
   } catch (error) {
+    if (error instanceof BootstrapWriteBoundaryLimitError) throw error
     if (error instanceof BootstrapWriteBoundaryError) throw error
     throw new BootstrapWriteBoundaryError()
   } finally {
