@@ -17,6 +17,7 @@ import {
   BootstrapWriteBoundaryLimitError,
   reserveExistingBootstrapWriteBoundary,
 } from "../src/io/bootstrap-write-boundary.js"
+import { readNoFollowProjectFile } from "../src/io/no-follow-file.js"
 
 const temporaryProjects: string[] = []
 
@@ -49,6 +50,7 @@ describe("bootstrap write boundary security", () => {
         "{}\n",
         1024,
       )).toThrow(BootstrapWriteBoundaryLimitError)
+      expect(readNoFollowProjectFile(project, "staging./outside.json", 1024)).toEqual({ code: "unsafe", kind: "blocked" })
       expect(existsSync(join(project, "outside.json"))).toBe(false)
     } finally {
       boundary.close()

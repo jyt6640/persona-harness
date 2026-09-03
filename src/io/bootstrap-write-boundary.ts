@@ -428,10 +428,7 @@ export class BootstrapWriteBoundary {
     const nextBytes = typeof content === "string" ? Buffer.from(content, "utf8") : content
     if (nextBytes.byteLength > maxBytes) throw new BootstrapWriteBoundaryLimitError()
     if (expected.kind === "ready" && expected.bytes.equals(nextBytes)) {
-      const current = this.#readCurrentFile(name, reservations, maxBytes)
-      if (current.kind !== "ready" || !sameNoFollowPathIdentity(expected.identity, current.identity)) {
-        throw new BootstrapWriteBoundaryError()
-      }
+      this.#assertCurrentFileContent(name, reservations, nextBytes, maxBytes, expected.identity)
       return false
     }
     let descriptor: number | undefined
@@ -472,6 +469,7 @@ export class BootstrapWriteBoundary {
       ) {
         throw new BootstrapWriteBoundaryError()
       }
+      this.#assertCurrentFileContent(name, reservations, nextBytes, maxBytes, after)
       this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
       return true
     } catch (error) {
@@ -504,7 +502,7 @@ export class BootstrapWriteBoundary {
     return this.#withCurrentFileLock(name, reservations, () => {
       const current = this.#readCurrentFile(name, reservations, maxBytes)
       if (!matchesProjectFileSnapshot(current, expected)) return "stale"
-      // Do not rename over a path that an uncooperative writer could replace after this identity check.
+      // Use the direct descriptor route so observed identity drift blocks the conditional write.
       return this.#writeCurrentFileLocked(name, content, reservations, current, maxBytes) ? "written" : "unchanged"
     })
   }
@@ -519,10 +517,7 @@ export class BootstrapWriteBoundary {
     const nextBytes = typeof content === "string" ? Buffer.from(content, "utf8") : content
     if (nextBytes.byteLength > maxBytes) throw new BootstrapWriteBoundaryLimitError()
     if (expected.kind === "ready" && expected.bytes.equals(nextBytes)) {
-      const current = this.#readCurrentFile(name, reservations, maxBytes)
-      if (current.kind !== "ready" || !sameNoFollowPathIdentity(expected.identity, current.identity)) {
-        throw new BootstrapWriteBoundaryError()
-      }
+      this.#assertCurrentFileContent(name, reservations, nextBytes, maxBytes, expected.identity)
       return false
     }
     const temporaryName = `.${name}.${randomUUID()}.tmp`
@@ -583,6 +578,7 @@ export class BootstrapWriteBoundary {
       ) {
         throw new BootstrapWriteBoundaryError()
       }
+      this.#assertCurrentFileContent(name, reservations, nextBytes, maxBytes, promoted)
       this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
       return true
     } catch (error) {
@@ -862,6 +858,23 @@ export class BootstrapWriteBoundary {
       throw new BootstrapWriteBoundaryError()
     } finally {
       if (descriptor !== undefined) closeSync(descriptor)
+    }
+  }
+
+  #assertCurrentFileContent(
+    name: string,
+    reservations: readonly DirectoryReservation[],
+    expectedBytes: Buffer,
+    maxBytes: number,
+    expectedIdentity: NoFollowPathIdentity,
+  ): void {
+    const current = this.#readCurrentFile(name, reservations, maxBytes)
+    if (
+      current.kind !== "ready"
+      || !sameNoFollowPathIdentity(expectedIdentity, current.identity)
+      || !current.bytes.equals(expectedBytes)
+    ) {
+      throw new BootstrapWriteBoundaryError()
     }
   }
 

@@ -221,7 +221,15 @@ function safeRelativeSegments(relativePath: string): readonly string[] | undefin
   }
   const segments = relativePath.split("/")
   return segments.length === 0
-    || segments.some((segment) => segment === "" || segment === "." || segment === ".." || !/^[A-Za-z0-9._@+-]+$/u.test(segment))
+    || segments.some((segment) => !isSafeNoFollowRelativeSegment(segment))
     ? undefined
     : segments
+}
+
+function isSafeNoFollowRelativeSegment(segment: string): boolean {
+  return segment.length > 0
+    && segment !== "."
+    && segment !== ".."
+    && !segment.endsWith(".")
+    && /^[A-Za-z0-9._@+-]+$/u.test(segment)
 }
