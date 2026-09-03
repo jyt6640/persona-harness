@@ -8,6 +8,19 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [0.13.0] - 2026-09-03
+
+- Add a portable Socratic product-discovery core and the explicit `ph interview`
+  CLI for bounded, one-question-at-a-time decision capture with visible
+  ten-percent progress and explicit approval.
+- Keep active interview state project-bound and transient while allowing only
+  approved, structured decisions to be committed as portable Git content.
+  Oversized, malformed, stale, foreign, symlinked, and version-mismatched input
+  fails closed before a decision write.
+- Generate the same canonical `deep-interview` guidance for Codex, Claude Code,
+  OpenCode, and Antigravity. Host routing can select it automatically when its
+  own predicates allow; direct durable CLI invocation remains explicit.
+
 ## [0.12.0] - 2026-09-03
 
 - Ship the canonical shared-skill catalog as a package-contained Antigravity

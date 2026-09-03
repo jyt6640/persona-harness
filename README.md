@@ -39,6 +39,13 @@ npx ph go "Add a task creation endpoint."
 npx ph workflow finish implement
 ```
 
+For an explicitly selected product-discovery conversation that can carry only
+approved decisions across Codex, Claude Code, OpenCode, and Antigravity:
+
+```bash
+npx ph interview start --json
+```
+
 **What has actually been observed:** a simple forged-evidence fixture is
 ignored and `finish` exits `1`; the opt-in TDD rail blocked green-only
 completion in 5/5 measured runs. Runtime injection did not improve the paired
@@ -210,9 +217,11 @@ evidence, or authority records. The adapter's actual behavior in a live
 OpenCode release remains a separate host-observation boundary.
 
 `ph init` materializes the bundled Persona-owned shared-skill catalog at each
-host's project-local discovery path. Product ideas start with a one-question
-interview and explicit brief approval; adapters advise only and never create
-workflow state or invoke host agents automatically. When an installed host
+host's project-local discovery path. An enabled host routing layer can select
+the product interview for an ambiguous product idea; the direct portable
+`ph interview` CLI remains explicit/default-off. The interview asks one question
+at a time and requires explicit brief approval; adapters never create workflow
+state or invoke host agents automatically. When an installed host
 integration sees a relevant request in a new project, it may first show a
 single `(PH) Setup` recommendation instead of starting a skill. The proposal
 does not write files or run commands; only a later explicit acceptance permits

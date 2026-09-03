@@ -6,7 +6,7 @@ import type { Part, UserMessage } from "@opencode-ai/sdk"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { createPhase0Hooks } from "../src/runtime/hooks.js"
-import type { TransformMessagesOutput } from "../src/runtime/types.js"
+import type { EventInput, TransformMessagesOutput } from "../src/runtime/types.js"
 import { writeManagedInitFixture } from "./managed-init-fixture.js"
 
 const workspaces: string[] = []
@@ -112,5 +112,69 @@ describe("product interview hook activation", () => {
     expect(latestText(automaticRestart)).not.toContain("[Persona Harness Product Interview]")
     expect(latestText(explicitRestart)).toContain("[Persona Harness Product Interview]")
     expect(latestText(explicitRestart)).toContain("Question:")
+  })
+
+  it("lets an explicit non-interview Persona skill take precedence without consuming the active answer slot", async () => {
+    const projectDir = createProductProject()
+    const hooks = createPhase0Hooks({ projectDir })
+    const sessionID = "session-product-explicit-skill-precedence"
+
+    await hooks["experimental.chat.messages.transform"]?.(
+      {},
+      outputWithText(sessionID, "Create an app for neighbours to exchange practical skills"),
+    )
+    const debug = outputWithText(sessionID, "/persona debug why does the current API fail?")
+    await hooks["experimental.chat.messages.transform"]?.({}, debug)
+    const answer = outputWithText(sessionID, "People booking a nearby shared workspace.")
+    await hooks["experimental.chat.messages.transform"]?.({}, answer)
+
+    expect(latestText(debug)).toContain("[Persona Harness Skill Activation]")
+    expect(latestText(debug)).toContain("Skill: debug")
+    expect(latestText(debug)).not.toContain("[Persona Harness Product Interview]")
+    expect(latestText(answer)).toContain("[Persona Harness Product Interview]")
+    expect(latestText(answer)).toContain("Progress: 20%")
+  })
+
+  it("releases stopped interview state when the host ends its session", async () => {
+    const projectDir = createProductProject()
+    const hooks = createPhase0Hooks({ projectDir })
+    const sessionID = "session-product-lifecycle-cleanup"
+
+    // Given: a stopped product interview whose host session is then removed.
+    await hooks["experimental.chat.messages.transform"]?.(
+      {},
+      outputWithText(sessionID, "Create an app for neighbours to exchange practical skills"),
+    )
+    await hooks["experimental.chat.messages.transform"]?.({}, outputWithText(sessionID, "stop"))
+    await hooks.event?.({
+      event: { type: "session.deleted", properties: { info: { id: sessionID } } },
+    } as unknown as EventInput)
+
+    // When: a host reuses that identifier after lifecycle cleanup.
+    const restarted = outputWithText(sessionID, "Create an app for neighbourhood bookings")
+    await hooks["experimental.chat.messages.transform"]?.({}, restarted)
+
+    // Then: no stopped-session state can exhaust future automatic routing.
+    expect(latestText(restarted)).toContain("[Persona Harness Product Interview]")
+  })
+
+  it("releases stopped interview state when the host compacts its session", async () => {
+    const projectDir = createProductProject()
+    const hooks = createPhase0Hooks({ projectDir })
+    const sessionID = "session-product-compaction-cleanup"
+
+    await hooks["experimental.chat.messages.transform"]?.(
+      {},
+      outputWithText(sessionID, "Create an app for neighbours to exchange practical skills"),
+    )
+    await hooks["experimental.chat.messages.transform"]?.({}, outputWithText(sessionID, "stop"))
+    await hooks.event?.({
+      event: { type: "session.compacted", properties: { sessionID } },
+    } as unknown as EventInput)
+
+    const restarted = outputWithText(sessionID, "Create an app for neighbourhood bookings")
+    await hooks["experimental.chat.messages.transform"]?.({}, restarted)
+
+    expect(latestText(restarted)).toContain("[Persona Harness Product Interview]")
   })
 })

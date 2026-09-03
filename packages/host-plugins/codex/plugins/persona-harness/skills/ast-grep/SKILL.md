@@ -7,7 +7,7 @@ metadata:
   persona-harness/canonical-skill: ast-grep
   persona-harness/display-name: "(PH) AST-Grep Overlay"
   persona-harness/adapter-layout: agents
-  persona-harness/adapter-version: 0.12.0
+  persona-harness/adapter-version: 0.13.0
   opencode/autoinvoke: "false"
 ---
 

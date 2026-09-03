@@ -40,7 +40,7 @@ describe("Persona-owned shared-skill catalog", () => {
     const skills = listPersonaSharedSkills()
     expect(skills.map((skill) => skill.id)).toEqual([...PERSONA_CORE_SKILL_IDS, ...PERSONA_OPTIONAL_SKILL_IDS])
     expect(resolvePersonaSharedSkill("deep-interview")).toMatchObject({
-      mutability: "conversation-only",
+      mutability: "explicit-user-action",
       handoff: "technical-intake",
     })
     expect(resolvePersonaSharedSkill("grill-me")).toMatchObject({

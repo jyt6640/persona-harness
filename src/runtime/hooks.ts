@@ -386,6 +386,7 @@ export function createPhase0Hooks(options: Phase0HookOptions = {}): Hooks {
           const sessionID = sessionIDFromLifecycleEvent(input.event)
           if (sessionID !== undefined) {
             store.clearSession(sessionID)
+            productInterview.clearSession(sessionID)
           }
         }
         if (config.telemetry.tokenUsage && input.event.type === "message.updated") {

@@ -5,7 +5,7 @@ import {
   fstatSync,
   lstatSync,
   openSync,
-  readFileSync,
+  readSync,
   type BigIntStats,
 } from "node:fs"
 import { isAbsolute, join, resolve } from "node:path"
@@ -63,16 +63,15 @@ export function readNoFollowRegularFile(
 
   try {
     const before = fstatSync(descriptor, { bigint: true })
-    if (!before.isFile()) return { code: "unsafe", kind: "blocked" }
+    if (!isNoFollowSingleLinkRegularFile(before)) return { code: "unsafe", kind: "blocked" }
     if (before.size > BigInt(maxBytes)) return { code: "limit", kind: "blocked" }
 
-    const bytes = readFileSync(descriptor)
+    const bytes = readFixedSizeDescriptor(descriptor, Number(before.size))
     const after = fstatSync(descriptor, { bigint: true })
     const current = lstatSync(path, { bigint: true })
     if (
-      !after.isFile()
-      || current.isSymbolicLink()
-      || !current.isFile()
+      !isNoFollowSingleLinkRegularFile(after)
+      || !isNoFollowSingleLinkRegularFile(current)
       || !sameNoFollowPathIdentity(pathIdentity(before), pathIdentity(after))
       || !sameNoFollowPathIdentity(pathIdentity(after), pathIdentity(current))
       || bytes.byteLength !== Number(after.size)
@@ -158,6 +157,10 @@ export function noFollowPathIdentityFromStat(stat: BigIntStats): NoFollowPathIde
   return pathIdentity(stat)
 }
 
+export function isNoFollowSingleLinkRegularFile(stat: BigIntStats): boolean {
+  return stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1n
+}
+
 export function noFollowPathIdentityDigest(identity: NoFollowPathIdentity): string {
   return `sha256:${createHash("sha256").update(JSON.stringify(identity)).digest("hex")}`
 }
@@ -181,6 +184,22 @@ function pathIdentity(stat: BigIntStats): NoFollowPathIdentity {
   }
 }
 
+function readFixedSizeDescriptor(descriptor: number, expectedBytes: number): Buffer {
+  if (!Number.isSafeInteger(expectedBytes) || expectedBytes < 0) {
+    throw new Error("invalid bounded file size")
+  }
+  const bytes = Buffer.alloc(expectedBytes)
+  let offset = 0
+  while (offset < expectedBytes) {
+    const read = readSync(descriptor, bytes, offset, expectedBytes - offset, offset)
+    if (!Number.isSafeInteger(read) || read <= 0) {
+      throw new Error("bounded file read ended early")
+    }
+    offset += read
+  }
+  return bytes
+}
+
 function errno(error: unknown): string | undefined {
   return error !== null
     && typeof error === "object"
@@ -202,7 +221,15 @@ function safeRelativeSegments(relativePath: string): readonly string[] | undefin
   }
   const segments = relativePath.split("/")
   return segments.length === 0
-    || segments.some((segment) => segment === "" || segment === "." || segment === ".." || !/^[A-Za-z0-9._@+-]+$/u.test(segment))
+    || segments.some((segment) => !isSafeNoFollowRelativeSegment(segment))
     ? undefined
     : segments
+}
+
+function isSafeNoFollowRelativeSegment(segment: string): boolean {
+  return segment.length > 0
+    && segment !== "."
+    && segment !== ".."
+    && !segment.endsWith(".")
+    && /^[A-Za-z0-9._@+-]+$/u.test(segment)
 }

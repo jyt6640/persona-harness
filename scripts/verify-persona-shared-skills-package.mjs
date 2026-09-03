@@ -230,6 +230,7 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
   const hooksModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "hooks.js")).href)
   const portableModule = await import(pathToFileURL(join(packageRoot, "dist", "portable-skill.js")).href)
   const interviewModule = await import(pathToFileURL(join(packageRoot, "dist", "runtime", "product-deep-interview.js")).href)
+  const cliModule = await import(pathToFileURL(join(packageRoot, "dist", "cli", "index.js")).href)
   const provenanceModule = await import(pathToFileURL(join(packageRoot, "scripts", "staged-package-artifact-provenance-network.mjs")).href)
   if (typeof pluginModule.PersonaHarnessPlugin !== "function") {
     throw new Error("installed shared-skill plugin module requires an advisory host tool")
@@ -319,6 +320,7 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
   if (existsSync(join(consumerRoot, ".persona"))) {
     throw new Error("installed product interview created consumer workflow state")
   }
+  assertInstalledSocraticInterviewBoundary(cliModule, consumerRoot)
   await assertInstalledFirstRunSetupRoute(hooksModule, consumerRoot)
 
   const originalEnvironment = new Map(
@@ -351,6 +353,65 @@ async function assertInstalledRuntime(packageRoot, consumerRoot) {
         process.env[name] = value
       }
     }
+  }
+}
+
+function assertInstalledSocraticInterviewBoundary(cliModule, consumerRoot) {
+  if (typeof cliModule.runPersonaCli !== "function") {
+    throw new Error("installed Socratic interview CLI is unavailable")
+  }
+  const projectRoot = join(consumerRoot, "socratic-interview-project")
+  const recordPath = join(projectRoot, ".persona", "decisions", "socratic-interview.json")
+  mkdirSync(join(projectRoot, ".persona", "workflow"), { recursive: true })
+  const run = (args, stdin) => cliModule.runPersonaCli(args, {
+    cwd: projectRoot,
+    env: {},
+    invocationName: "ph",
+    stdin,
+  })
+  const parse = (result, label) => {
+    if (result.status !== 0 || result.stderr !== "") throw new Error(`installed Socratic interview ${label} failed`)
+    try {
+      return JSON.parse(result.stdout)
+    } catch {
+      throw new Error(`installed Socratic interview ${label} did not return JSON`)
+    }
+  }
+  const started = parse(run(["interview", "start", "--json"]), "start")
+  if (started.kind !== "question" || started.progress !== 10 || started.visibleActivation !== true || existsSync(recordPath)) {
+    throw new Error("installed Socratic interview start contract mismatch")
+  }
+  let state = started.state
+  const decisions = [
+    "A nearby workspace user.",
+    "They cannot find an open desk.",
+    "They can reserve one quickly.",
+    "Find, choose, and confirm.",
+    "Availability and booking confirmation.",
+    "No payments in the first release.",
+    "One completed booking.",
+    "One location with manual moderation.",
+  ]
+  for (const response of decisions) {
+    const advanced = parse(run(["interview", "advance", "--json", "--stdin"], JSON.stringify({ response, state })), "advance")
+    state = advanced.state
+  }
+  const approved = parse(run(["interview", "approve", "--json", "--stdin"], JSON.stringify({ confirmation: "approve", state })), "approve")
+  const record = readJson(recordPath)
+  const replay = parse(run(["interview", "start", "--json"]), "replay")
+  if (
+    approved.kind !== "approved"
+    || approved.progress !== 100
+    || record.recordVersion !== "persona-socratic-interview-record.1"
+    || record.approval !== "explicit"
+    || !Array.isArray(record.decisions)
+    || record.decisions.length !== 8
+    || Object.keys(record).sort().join(",") !== "approval,decisions,recordVersion,revision"
+    || JSON.stringify(record).includes("session")
+    || replay.kind !== "approved-decision-replay"
+    || replay.progress !== 100
+  ) {
+    throw new Error("installed Socratic interview approval record mismatch")
   }
 }
 

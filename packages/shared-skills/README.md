@@ -15,8 +15,11 @@ automatically only when a concrete decision, design, or plan is paired with a
 pressure-test signal such as assumptions, alternatives, risks, or trade-offs.
 
 An explicit `/persona <skill-id>` command wins routing. Otherwise clear direct
-work uses its matching supporting skill, while ambiguous product requests start
-`deep-interview` with one safe action. `grill-me` does not replace
+work uses its matching supporting skill. An enabled host routing layer may
+select `deep-interview` for an ambiguous product request only after its own
+initialized-project and request predicates pass; catalog discovery alone never
+starts it. The durable `ph interview` CLI is separately explicit/default-off.
+`grill-me` does not replace
 `deep-interview`, `ralplan`, code review, debugging, or direct implementation.
 Hosts activate one compact catalog reference only; they do not load full bodies
 or the catalog, or advance workflow state automatically. The only bundled

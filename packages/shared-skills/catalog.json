@@ -9,9 +9,9 @@
       "optional": false,
       "entry": "skills/deep-interview/SKILL.md",
       "startPredicate": "A product idea or user outcome is still ambiguous.",
-      "mutability": "conversation-only",
+      "mutability": "explicit-user-action",
       "inputBrief": ["initial product idea", "answers or explicit deferrals"],
-      "outputBrief": ["approved product brief", "open decisions"],
+      "outputBrief": ["approved product brief", "open decisions", "optional structured approved decision record"],
       "handoff": "technical-intake"
     },
     {

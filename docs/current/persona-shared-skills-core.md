@@ -37,6 +37,10 @@ unavailable.
 change, review, or persist a reusable philosophy. A direct implementation
 request, design criticism, or one-off code preference stays on its normal route.
 
+This automatic selection belongs to an enabled host routing layer. It does not
+make the portable `ph interview` CLI start from catalog discovery or Context;
+that direct durable boundary remains explicit/default-off.
+
 An ambiguous new-product request starts `deep-interview` with one adaptive
 question, recommendation, and tradeoff. An ambiguous brownfield request starts
 the same skill in code-first discovery mode: inspect the relevant existing code
@@ -78,6 +82,37 @@ The product deep interview asks one product question at a time and gives a
 recommendation plus its tradeoff. A user may answer, request a recommendation,
 defer, or stop. After the facts are complete, it renders a brief and requires
 an explicit `approve` before technical intake.
+
+### Portable Durable Core
+
+The installed package also exposes a host-neutral, explicit `ph interview`
+boundary. It is default-off: resolving Context, discovering an adapter, or
+reading the skill catalog never starts an interview or invokes the CLI. A host
+adapter or user must choose it first. The resulting JSON state presents a
+compact activation notice, exactly one current question, a plain-language
+explanation for that question, and progress in ten-percent steps.
+
+Active state is caller-local, transient, and bound to its initialized project.
+On an approval-shaped input, the CLI writes only
+`.persona/decisions/socratic-interview.json`, a bounded,
+structured decision record that may be shared through Git. It contains the
+approved decision per topic and an explicit approval marker; it excludes session
+IDs, prompts, host metadata, and raw conversation transcripts. A normal start
+replays an approved record instead of asking those decisions again. Starting a
+new interview after a record exists is explicit and cannot overwrite the record
+until the new decision set receives explicit approval.
+
+The approved record intentionally has no project binding: it is portable Git
+content, not resumable active session state. Only the local active state is
+rejected as foreign when its binding does not match the current project.
+
+The boundary uses the initialized project's no-follow write reservation. A
+malformed, stale, foreign, symlinked, or version-mismatched state fails closed
+before it returns a follow-up question or writes a record. It invokes no
+workflow, shell, network, GitHub, evidence, authority, or host configuration
+surface. The generated OpenCode, Codex, Claude Code, and Antigravity skill
+representations carry this same canonical guidance; static packaging does not
+claim a live host selected or rendered it.
 
 While an interview is active, a natural-language request not to interview, a
 whole-task discovery defer, or a workflow feedback/dogfooding task switch ends

@@ -7,7 +7,7 @@ metadata:
   persona-harness/canonical-skill: ralplan
   persona-harness/display-name: "(PH) Adversarial Plan Review"
   persona-harness/adapter-layout: claude
-  persona-harness/adapter-version: 0.12.0
+  persona-harness/adapter-version: 0.13.0
   opencode/autoinvoke: "false"
 ---
 
