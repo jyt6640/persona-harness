@@ -167,5 +167,5 @@ function questionFor(
 }
 
 function approvalRequired(state: SocraticInterviewState): Extract<SocraticInterviewStep, { readonly kind: "approval-required" }> {
-  return { kind: "approval-required", decisions: state.decisions, progress: 90, state }
+  return { kind: "approval-required", progress: 90, state }
 }

@@ -38,6 +38,8 @@ describe("bootstrap write boundary security", () => {
       )
       expect(() => boundary.writeProjectFileAtomically("C:outside.json", "{}\n")).toThrow(BootstrapWriteBoundaryError)
       expect(() => boundary.writeProjectFileAtomically("decision.json:alternate-stream", "{}\n")).toThrow(BootstrapWriteBoundaryError)
+      expect(() => boundary.writeProjectFileAtomically(".. /outside.json", "{}\n")).toThrow(BootstrapWriteBoundaryError)
+      expect(() => boundary.writeProjectFileAtomically("staging./outside.json", "{}\n")).toThrow(BootstrapWriteBoundaryError)
       expect(() => boundary.readProjectFileWithIdentity(".persona/oversized.json", 1024)).toThrow(
         BootstrapWriteBoundaryLimitError,
       )

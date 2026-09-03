@@ -427,7 +427,13 @@ export class BootstrapWriteBoundary {
   ): boolean {
     const nextBytes = typeof content === "string" ? Buffer.from(content, "utf8") : content
     if (nextBytes.byteLength > maxBytes) throw new BootstrapWriteBoundaryLimitError()
-    if (expected.kind === "ready" && expected.bytes.equals(nextBytes)) return false
+    if (expected.kind === "ready" && expected.bytes.equals(nextBytes)) {
+      const current = this.#readCurrentFile(name, reservations, maxBytes)
+      if (current.kind !== "ready" || !sameNoFollowPathIdentity(expected.identity, current.identity)) {
+        throw new BootstrapWriteBoundaryError()
+      }
+      return false
+    }
     let descriptor: number | undefined
     try {
       this.#assertAll([this.#project, this.#persona, this.#workflow, ...reservations])
@@ -512,7 +518,13 @@ export class BootstrapWriteBoundary {
   ): boolean {
     const nextBytes = typeof content === "string" ? Buffer.from(content, "utf8") : content
     if (nextBytes.byteLength > maxBytes) throw new BootstrapWriteBoundaryLimitError()
-    if (expected.kind === "ready" && expected.bytes.equals(nextBytes)) return false
+    if (expected.kind === "ready" && expected.bytes.equals(nextBytes)) {
+      const current = this.#readCurrentFile(name, reservations, maxBytes)
+      if (current.kind !== "ready" || !sameNoFollowPathIdentity(expected.identity, current.identity)) {
+        throw new BootstrapWriteBoundaryError()
+      }
+      return false
+    }
     const temporaryName = `.${name}.${randomUUID()}.tmp`
     let descriptor: number | undefined
     let temporaryIdentity: NoFollowPathIdentity | undefined
@@ -631,7 +643,18 @@ export class BootstrapWriteBoundary {
       if (error instanceof BootstrapWriteBoundaryError || error instanceof BootstrapWriteBoundaryLimitError) throw error
       throw new BootstrapWriteBoundaryError()
     } finally {
-      if (descriptor !== undefined) closeSync(descriptor)
+      if (descriptor !== undefined) {
+        try {
+          const current = fstatSync(descriptor, { bigint: true })
+          identity = isNoFollowSingleLinkRegularFile(current)
+            ? noFollowPathIdentityFromStat(current)
+            : undefined
+        } catch {
+          identity = undefined
+        } finally {
+          closeSync(descriptor)
+        }
+      }
       if (identity !== undefined) this.#removeCurrentLock(lockName, identity)
     }
   }
@@ -716,7 +739,18 @@ export class BootstrapWriteBoundary {
       if (error instanceof BootstrapWriteBoundaryError) throw error
       throw new BootstrapWriteBoundaryError()
     } finally {
-      if (descriptor !== undefined) closeSync(descriptor)
+      if (descriptor !== undefined) {
+        try {
+          const current = fstatSync(descriptor, { bigint: true })
+          identity = isNoFollowSingleLinkRegularFile(current)
+            ? noFollowPathIdentityFromStat(current)
+            : undefined
+        } catch {
+          identity = undefined
+        } finally {
+          closeSync(descriptor)
+        }
+      }
       if (identity !== undefined) this.#removeCurrentLock(reclaimName, identity)
     }
   }
@@ -1719,7 +1753,7 @@ function validatedRelativeSegments(path: string): string[] {
     throw new BootstrapWriteBoundaryError()
   }
   const segments = path.split("/")
-  if (segments.length === 0 || segments.some((segment) => segment === "" || segment === "." || segment === "..")) {
+  if (segments.length === 0 || segments.some((segment) => !isSafeWritePathSegment(segment))) {
     throw new BootstrapWriteBoundaryError()
   }
   return segments
@@ -1732,17 +1766,17 @@ function assertBoundedWriteReadBytes(maxBytes: number): void {
 }
 
 function assertLeafName(name: string): void {
-  if (
-    name.length === 0
-    || name === "."
-    || name === ".."
-    || name.includes(":")
-    || name.includes("/")
-    || name.includes("\\")
-    || name.includes("\u0000")
-  ) {
+  if (!isSafeWritePathSegment(name)) {
     throw new BootstrapWriteBoundaryError()
   }
+}
+
+function isSafeWritePathSegment(segment: string): boolean {
+  return segment.length > 0
+    && segment !== "."
+    && segment !== ".."
+    && !segment.endsWith(".")
+    && /^[A-Za-z0-9._@+-]+$/u.test(segment)
 }
 
 function errorCode(error: unknown): string | undefined {

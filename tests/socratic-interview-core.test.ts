@@ -42,6 +42,7 @@ describe("portable Socratic interview core", () => {
       if (index === answers.length - 1) {
         expect(next).toMatchObject({ kind: "approval-required", progress: 90 })
         if (next.kind !== "approval-required") throw new Error("Expected approval-required state")
+        expect(next).not.toHaveProperty("decisions")
         state = next.state
         continue
       }

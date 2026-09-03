@@ -45,7 +45,10 @@ describe("portable Socratic interview CLI", () => {
     }
 
     const unapproved = runStdin(projectDir, "approve", { confirmation: "yes", state })
-    expect(parseJson(unapproved.stdout)).toMatchObject({ kind: "approval-required", progress: 90 })
+    const approvalRequired = parseJson(unapproved.stdout)
+    expect(approvalRequired).toMatchObject({ kind: "approval-required", progress: 90 })
+    expect(approvalRequired).not.toHaveProperty("decisions")
+    expect(approvalRequired.state).toMatchObject({ topicIndex: 8 })
     expect(existsSync(decisionPath(projectDir))).toBe(false)
     const approved = runStdin(projectDir, "approve", { confirmation: "approve", state })
     const output = parseJson(approved.stdout)

@@ -121,7 +121,6 @@ export type SocraticInterviewStep =
     }
   | {
       readonly kind: "approval-required"
-      readonly decisions: readonly SocraticInterviewDecision[]
       readonly progress: 90
       readonly state: SocraticInterviewState
     }
