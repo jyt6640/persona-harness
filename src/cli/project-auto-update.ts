@@ -37,6 +37,7 @@ const STABLE_VERSION_PATTERN = /^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9
 
 type ProjectAutoUpdateBlockReason =
   | "configuration-invalid"
+  | "major-approval-required"
   | "not-enabled"
   | "ownership-unavailable"
   | "registry-invalid"
@@ -639,6 +640,9 @@ export async function applyProjectAutoUpdate(options: ProjectAutoUpdateOptions):
   }
   if (compareStableVersions(latest.version, options.installedVersion) <= 0) {
     return { kind: "current" }
+  }
+  if (latest.version.split(".")[0] !== options.installedVersion.split(".")[0]) {
+    return { kind: "blocked", reason: "major-approval-required" }
   }
   const replacement = withPluginSpecifier(activeResult.entry, `${PERSONA_HARNESS_PACKAGE_NAME}@${latest.version}`)
   const transaction = commitPluginEntries(

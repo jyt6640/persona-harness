@@ -19,12 +19,15 @@ import {
   serializeInitManifest,
   sha256Bytes,
 } from "../src/cli/init-manifest.js"
-import { applyProjectAutoUpdate } from "../src/cli/project-auto-update.js"
+import { applyProjectAutoUpdate, runProjectAutoUpdateCommand } from "../src/cli/project-auto-update.js"
 import { mergePluginPath } from "../src/cli/init-source.js"
 import { personaHarnessVersion } from "../src/cli/version.js"
 import { createProjectAutoUpdateScheduler } from "../src/runtime/project-auto-update.js"
 
 const projects: string[] = []
+const [currentMajor = "0", currentMinor = "0"] = personaHarnessVersion().split(".")
+const nextMinorVersion = `${currentMajor}.${BigInt(currentMinor) + 1n}.0`
+const nextMajorVersion = `${BigInt(currentMajor) + 1n}.0.0`
 
 function createProject(): string {
   const projectDir = mkdtempSync(join(tmpdir(), "persona-project-auto-update-"))
@@ -240,7 +243,7 @@ describe("ph update", () => {
     })
   })
 
-  it("advances only the active owned Persona Harness pin after a newer latest result", async () => {
+  it("advances only the active owned Persona Harness pin after a newer same-major result", async () => {
     const projectDir = createProject()
     expect(cli(projectDir, ["init"]).status).toBe(0)
     expect(cli(projectDir, ["update", "enable", "--yes"]).status).toBe(0)
@@ -248,15 +251,57 @@ describe("ph update", () => {
     const result = await applyProjectAutoUpdate({
       installedVersion: personaHarnessVersion(),
       projectDir,
-      readLatestVersion: async () => ({ kind: "available", version: "9.9.9" }),
+      readLatestVersion: async () => ({ kind: "available", version: nextMinorVersion }),
     })
 
-    expect(result).toEqual({ kind: "updated", version: "9.9.9" })
+    expect(result).toEqual({ kind: "updated", version: nextMinorVersion })
     expect(readOpenCodeConfig(projectDir).plugin).toEqual([
-      ["persona-harness@9.9.9", { autoUpdate: true }],
+      [`persona-harness@${nextMinorVersion}`, { autoUpdate: true }],
     ])
     const manifest = readInitManifest(projectDir)
     expect(manifest?.files.find((entry) => entry.path === ".opencode/opencode.json")?.digest).toBe(
+      sha256Bytes(readFileSync(join(projectDir, ".opencode", "opencode.json"))),
+    )
+  })
+
+  it("blocks an automatic major update without changing config or ownership", async () => {
+    const projectDir = createProject()
+    expect(cli(projectDir, ["init"]).status).toBe(0)
+    expect(cli(projectDir, ["update", "enable", "--yes"]).status).toBe(0)
+    const before = configAndManifestBytes(projectDir)
+
+    const result = await applyProjectAutoUpdate({
+      installedVersion: personaHarnessVersion(),
+      projectDir,
+      readLatestVersion: async () => ({ kind: "available", version: nextMajorVersion }),
+    })
+
+    expect(result).toEqual({ kind: "blocked", reason: "major-approval-required" })
+    expect(configAndManifestBytes(projectDir)).toEqual(before)
+  })
+
+  it("requires explicit confirmation to apply a selected new major without replacing user rules", () => {
+    const projectDir = createProject()
+    expect(cli(projectDir, ["init"]).status).toBe(0)
+    const packageRoot = createProject()
+    writeFileSync(join(packageRoot, "package.json"), JSON.stringify({ name: "persona-harness", version: nextMajorVersion }))
+    const customRulePath = join(projectDir, ".persona", "custom-rule.md")
+    writeFileSync(customRulePath, "Keep domain classes separate.\n")
+    const before = configAndManifestBytes(projectDir)
+
+    const unconfirmed = runProjectAutoUpdateCommand(["enable"], { packageRoot, projectDir })
+
+    expect(unconfirmed.status).toBe(1)
+    expect(configAndManifestBytes(projectDir)).toEqual(before)
+
+    const confirmed = runProjectAutoUpdateCommand(["enable", "--yes"], { packageRoot, projectDir })
+
+    expect(confirmed.status).toBe(0)
+    expect(readOpenCodeConfig(projectDir).plugin).toEqual([
+      [`persona-harness@${nextMajorVersion}`, { autoUpdate: true }],
+    ])
+    expect(readFileSync(customRulePath, "utf8")).toBe("Keep domain classes separate.\n")
+    expect(readInitManifest(projectDir)?.files.find((entry) => entry.path === ".opencode/opencode.json")?.digest).toBe(
       sha256Bytes(readFileSync(join(projectDir, ".opencode", "opencode.json"))),
     )
   })
@@ -325,15 +370,15 @@ describe("ph update", () => {
     expect(cli(projectDir, ["update", "enable", "--yes"]).status).toBe(0)
     const scheduler = createProjectAutoUpdateScheduler({
       installedVersion: personaHarnessVersion(),
-      readLatestVersion: async () => ({ kind: "available", version: "9.9.9" }),
+      readLatestVersion: async () => ({ kind: "available", version: nextMinorVersion }),
     })
 
     scheduler.schedule(projectDir)
     await waitFor(() => readOpenCodeConfig(projectDir).plugin !== undefined
-      && JSON.stringify(readOpenCodeConfig(projectDir).plugin).includes("persona-harness@9.9.9"))
+      && JSON.stringify(readOpenCodeConfig(projectDir).plugin).includes(`persona-harness@${nextMinorVersion}`))
 
     expect(readOpenCodeConfig(projectDir).plugin).toEqual([
-      ["persona-harness@9.9.9", { autoUpdate: true }],
+      [`persona-harness@${nextMinorVersion}`, { autoUpdate: true }],
     ])
   })
 

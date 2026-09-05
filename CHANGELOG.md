@@ -16,8 +16,9 @@ preparation alone does not establish stable support or channel state.
   confusion before advancing and honor stop without a new interview question.
 - Reuse existing approval for implementation and review, size verification to
   the changed behavior, and retain workflow completion evidence requirements.
-- Keep major-update approval, user customization, Context opt-in, and legacy
-  runtime-injection defaults unchanged.
+- Block automatic OpenCode pin changes across major versions before writes;
+  retain explicit version-selected upgrades and user customization.
+- Keep Context opt-in and legacy runtime-injection defaults unchanged.
 
 ## [0.13.0] - 2026-09-03
 
