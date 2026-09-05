@@ -761,6 +761,7 @@ describe("package files policy", () => {
       "docs/current/canonical-docs-index.md",
       "docs/current/portable-host-adapters.md",
       "docs/current/workflow-closure-state-machine-design.md",
+      "docs/current/astra-migration-guide.ko.md",
       "docs/current/persona-shared-skills-core.md",
       "docs/current/personalization-profile-v1.md",
       "docs/current/context-program-status.md",

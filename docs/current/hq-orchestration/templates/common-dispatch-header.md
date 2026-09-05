@@ -13,7 +13,7 @@ a successor because a diagnostic code appeared.
   or automatically progress a workflow.
 - For an external OpenCode action that invokes a model, apply
   `externalOpenCodeModel`: record `configuredOpenCodeModel`, use only
-  `openai/gpt-5.3-codex-spark`, and stop `BLOCKED` before model or product
+  `openai/gpt-6-astra`, and stop `BLOCKED` before model or product
   action if it is unavailable. Do not substitute a model, provider, alias, or
   local simulation.
 - Keep complete packets for candidate freeze, independent acceptance, or final

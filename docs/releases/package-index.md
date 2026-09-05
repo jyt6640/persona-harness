@@ -160,7 +160,8 @@ values in their historical rows; they are not competing live claims.
 | `0.10.0` | 2026-09-01 | historical local tag; default-safe shared-skill routing | [`release notes`](../current/release/v0.10.0-release-notes.md) | registry not checked in this index |
 | `0.11.0` | 2026-09-02 | historical local tag; packaged Codex and Claude Code plugins | [`release notes`](../current/release/v0.11.0-release-notes.md) | registry not checked in this index |
 | `0.12.0` | 2026-09-03 | historical local tag; packaged Antigravity plugin | [`release notes`](../current/release/v0.12.0-release-notes.md) | registry not checked in this index |
-| `0.13.0` | 2026-09-03 | current unpublished source candidate; no local tag | [`release notes`](../current/release/v0.13.0-release-notes.md) | registry not checked in this candidate |
+| `0.13.0` | 2026-09-03 | immutable historical release | [`release notes`](../current/release/v0.13.0-release-notes.md) | historical evidence; not reusable for the current candidate |
+| `1.0.0` | 2026-09-05 | current unpublished source candidate; no local tag | [`release notes`](../current/release/v1.0.0-release-notes.md) | registry not checked in this candidate |
 
 ## Future Migration Notes
 

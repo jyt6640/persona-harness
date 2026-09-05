@@ -20,6 +20,8 @@ history but do not become a current product or release claim.
 | I need to... | Start here |
 | --- | --- |
 | Install or understand the product | [Portable host adapters](portable-host-adapters.md) and [workflow lifecycle](workflow-closure-state-machine-design.md) |
+| Migrate to Astra or organize prompts and AGENTS.md | [Korean migration guide](astra-migration-guide.ko.md) |
+| Review the 1.0.0 migration scope and evidence | The source checkout's `astra-v1-assessment.ko.md` |
 | Use the portable shared-skill or product-discovery guidance | [Persona Shared Skills Core](persona-shared-skills-core.md); use the portable-host guide above for host layouts. |
 | Maintain a local personalization profile | [Personalization Profile V1](personalization-profile-v1.md) |
 | Follow the Context Personalization program | [Context Personalization Program Status](context-program-status.md) |

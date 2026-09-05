@@ -6,7 +6,7 @@
 
 # Persona Harness
 
-**Evidence-first workflow gates and portable skill adapters for AI coding agents building Java/Spring backends.**
+**Project philosophy, conventions, and evidence-first workflows for AI coding agents, with portable skills and a Java/Spring workflow rail.**
 
 [![npm version](https://img.shields.io/npm/v/persona-harness?color=369eff&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
 [![npm downloads](https://img.shields.io/npm/dt/persona-harness?color=ff6b35&labelColor=black&style=flat-square)](https://www.npmjs.com/package/persona-harness)
@@ -16,6 +16,8 @@
 [English](https://github.com/jyt6640/persona-harness/blob/main/README.md) | [한국어](https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.ko.md) | [日本語](https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.ja.md) | [简体中文](https://github.com/jyt6640/persona-harness/blob/main/docs/current/README.zh-cn.md)
 
 **[Start Here](docs/START-HERE.md) · [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md)**
+
+[Astra migration, prompts, and AGENTS.md (한국어)](docs/current/astra-migration-guide.ko.md)
 
 </div>
 
@@ -65,7 +67,7 @@ production readiness, token savings, or broad security guarantees.
 **Start with:** [Quick Demo](docs/QUICK-DEMO.md) · [Measured Claims](docs/MEASURED-CLAIMS.md) · [Install guide](docs/START-HERE.md)
 
 > [!IMPORTANT]
-> **Alpha, gate-first, measured.** Live registry channels, tags, GitHub releases,
+> **Versioned, evidence-first.** Live registry channels, tags, GitHub releases,
 > and audit lifecycle facts are maintained by governed workflows and release
 > records; source release notes are inputs, not standalone proof. Runtime
 > injection remains **default-off / opt-in**. See

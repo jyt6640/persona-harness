@@ -7,6 +7,7 @@ import {
 } from "../runtime/persona-shared-skill-catalog.js"
 import { InitManifestError } from "./init-manifest.js"
 import type { InitTarget } from "./init-transaction.js"
+import { PERSONA_EXECUTION_GUIDANCE } from "../runtime/skill-execution-guidance.js"
 
 export type HostSkillLayout = {
   readonly id: "agents" | "claude" | "opencode"
@@ -143,6 +144,8 @@ function renderHostSkillAdapter(
     `# ${displayName}`,
     "",
     "This adapter exposes the canonical Persona Harness skill to this host only. Discovery alone does not authorize workflow, shell, network, GitHub, authority, evidence, or external actions.",
+    "",
+    PERSONA_EXECUTION_GUIDANCE,
     "",
     source.body,
     "",
