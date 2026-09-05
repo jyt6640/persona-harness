@@ -1,5 +1,6 @@
 import type { HarnessConfig } from "../config/harness-config.js"
 import type { TransformSystemOutput } from "./types.js"
+import { PERSONA_COMPACT_EXECUTION_GUIDANCE } from "./skill-execution-guidance.js"
 
 export const SYSTEM_CONSTITUTION_MARKER = "[Persona Harness System Constitution]"
 
@@ -7,13 +8,14 @@ export function createSystemConstitutionBlock(config: HarnessConfig): string {
   return [
     SYSTEM_CONSTITUTION_MARKER,
     "",
-    "Scope: PH workflow guidance is project-local and prerelease; it is not generated app quality certification.",
+    "Scope: PH workflow guidance is project-local; it is not generated app quality certification.",
     "System prompt text is still prose and may be ignored; PH finish/archive gates remain the authoritative checks.",
-    "Turn-local intent reset: classify the current user message first. Do not continue implementation mode only because a previous turn was implementation.",
-    "Context-completion gate: implement only when the current message asks for implementation, the scope is concrete, the accepted plan is present, and `.persona/project-profile.jsonc` has been read when it exists.",
-    "If the request is still an idea, requirement draft, approval, review, refactor, debug, or git task, use the matching PH rail before implementation.",
+    PERSONA_COMPACT_EXECUTION_GUIDANCE,
+    "Interpret the latest message in the active task's context. Preserve the original goal and accepted decisions through status questions or corrections; follow explicit changes of scope and cancellation immediately.",
+    "Read `.persona/project-profile.jsonc` when it exists. A small concrete change needs relevant code and focused verification. Require an accepted plan only when the selected project workflow requires it.",
+    "For a materially ambiguous product request, ask one understandable discovery question. For clear implementation, debug, refactor, review, or Git work, follow that request without restarting a product interview.",
     "Finish guard: before claiming done, use the project's explicit Finish policy only after implementation and review evidence are complete.",
-    "If the Finish policy blocks, do not claim done. Report the bounded blocker and wait for the user's explicit next procedure.",
+    "If the Finish policy blocks, do not claim done. Diagnose and fix the cause within the existing authorization, then perform the checks required by the changed evidence. A one-shot external observation must not be retried as a debugger.",
     "The host adapter does not run a workflow command, create workflow state, or advance a workflow automatically.",
     config.enforce.executeVerification
       ? "Strict verification is enabled: finish/closure may run the project verification command directly and use that result as authoritative."

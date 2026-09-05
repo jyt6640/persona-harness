@@ -1,6 +1,6 @@
 {
   "name": "persona-harness",
-  "version": "0.13.0",
+  "version": "1.0.0",
   "private": false,
   "type": "module",
   "packageManager": "npm@10.8.2",
@@ -63,6 +63,7 @@
     "docs/current/v0.3.0-alpha-publish-readiness.md",
     "docs/current/persona-harness-detailed-usage.md",
     "docs/current/portable-host-adapters.md",
+    "docs/current/astra-migration-guide.ko.md",
     "docs/current/context-program-status.md",
     "docs/current/context-contributor-map.json",
     "docs/current/context-external-validation.md",

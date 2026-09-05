@@ -8,11 +8,14 @@ handoff: tdd
 
 # Programming Discipline
 
-Use this concise, Persona-owned guidance only after the user has selected a
-scoped behavior. Read the project profile and nearby code first, write a
-failing focused test, make the smallest compatible change, then verify the
-changed behavior. Do not infer a project stack from this package's Node
-metadata and do not start a workflow, branch, ticket, or agent automatically.
+Treat a clear implementation or fix request as authorization for that scoped
+work. Read the project profile, approved decisions, and nearby code first.
+Implement and verify the requested behavior without asking the user to repeat
+approval. Add a focused regression for a behavioral change; for a reversible
+copy or configuration edit, validate the affected surface without inventing a
+test that only matches prose. Required project gates still apply. Do not infer
+a project stack from this package's Node metadata or grant extra permissions
+from skill activation.
 
 The packaged language overlay is `references/java/` for Java/Spring projects.
 Other language references are not a packaged Persona contract and must not be

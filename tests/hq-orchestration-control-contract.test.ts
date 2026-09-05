@@ -89,8 +89,8 @@ describe("HQ orchestration control contract", () => {
       externalOpenCodeModel: {
         scope: "opencode-external-model-invocation-only",
         provider: "openai",
-        modelId: "gpt-5.3-codex-spark",
-        configuredModel: "openai/gpt-5.3-codex-spark",
+        modelId: "gpt-6-astra",
+        configuredModel: "openai/gpt-6-astra",
         evidenceField: "configuredOpenCodeModel",
         unavailable: "blocked-before-model-or-product-action",
         prohibitedSubstitutions: ["model", "provider", "alias", "local-simulation"],

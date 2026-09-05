@@ -63,9 +63,14 @@ delivery is reported in the final result; it does not authorize another lane.
 
 `externalOpenCodeModel` applies only when an external OpenCode test, demo, or
 fixture actually invokes a model. It requires the configured OpenCode model
-`openai/gpt-5.3-codex-spark`, records that configured model in bounded evidence,
+`openai/gpt-6-astra`, records that configured model in bounded evidence,
 and returns `BLOCKED` before model or product action when unavailable. It never
 silently substitutes a model, provider, alias, or local simulation.
+
+This is the current Astra migration target. Historical Spark measurements and
+the versioned `opencode-advisory-observation.1` contract retain their recorded
+model; they cannot be relabeled or reused as Astra observations. A new live
+model comparison needs its own current, model-bound observation contract.
 
 GitHub Actions CI/release/publish, ordinary npm or package checks, non-OpenCode
 fixture steps, and historical evidence are outside this rule.
@@ -79,7 +84,11 @@ cause. The measurements evaluate the operating policy, not product quality.
 
 ## Stop Rules
 
-Control asks for an explicit decision before destructive work, publish/tag/push,
-an ambiguous product change, a conflicting owner result, or an unavailable
-named external prerequisite. No alternate executor, model, transport, or gate
-is inferred from a blocked predicate.
+Control uses authorization already recorded for the same scope. It asks for an
+explicit decision when destructive work, publish/tag/push, or a material product
+choice falls outside that authorization. Conflicting owner results and missing
+external prerequisites require attribution before dependent action. Read-only
+diagnosis and authorized deterministic correction continue without another
+approval. No alternate executor, model, transport, or gate is inferred from a
+blocked predicate, and one-shot external observations are never retried as a
+debugger.

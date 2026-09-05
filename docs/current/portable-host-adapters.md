@@ -88,6 +88,14 @@ claimed by successful static validation.
 
 ## What Is Shared
 
+Version 1.0.0 also supplies common execution guidance with each selected skill:
+carry the user's authorized task through appropriate verification, reuse its
+existing approval, explain confusion, and honor cancellation immediately.
+Status questions and corrections steer that task instead of resetting it.
+This guidance does not alter host permissions or create workflow authority.
+See the [Korean Astra migration guide](astra-migration-guide.ko.md) for settings
+and prompt examples.
+
 Every generated adapter points to the same Persona-owned catalog. Its
 host-facing machine name is `ph-<skill-id>`, while the description and visible
 heading begin with `(PH)`. This makes Persona-owned skills recognizable without

@@ -102,12 +102,7 @@ describe("Phase 0 system constitution hook", () => {
     const joinedSystem = output.system.join("\n")
     expect(output.system).toHaveLength(2)
     expect(joinedSystem.match(/\[Persona Harness System Constitution\]/g)).toHaveLength(1)
-    expect(joinedSystem).toContain("Turn-local intent reset")
-    expect(joinedSystem).toContain("Context-completion gate")
-    expect(joinedSystem).toContain("Finish guard")
-    expect(joinedSystem).toContain("System prompt text is still prose and may be ignored")
-    expect(joinedSystem).toContain("does not run a workflow command")
-    expect(joinedSystem).not.toContain("npx ph workflow finish implement")
+    expect(output.system[0]).toBe("Existing host system prompt.")
   })
 
   it("does not inject when systemConstitution is disabled", async () => {

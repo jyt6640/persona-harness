@@ -8,6 +8,18 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [1.0.0] - 2026-09-05
+
+- Deliver common authorization-aware skill guidance across portable host
+  adapters and managed AGENTS instructions, with Astra migration documentation.
+- Preserve task continuity through status questions and corrections; explain
+  confusion before advancing and honor stop without a new interview question.
+- Reuse existing approval for implementation and review, size verification to
+  the changed behavior, and retain workflow completion evidence requirements.
+- Block automatic OpenCode pin changes across major versions before writes;
+  retain explicit version-selected upgrades and user customization.
+- Keep Context opt-in and legacy runtime-injection defaults unchanged.
+
 ## [0.13.0] - 2026-09-03
 
 - Add a portable Socratic product-discovery core and the explicit `ph interview`

@@ -17,7 +17,7 @@ evidence claim by itself.
   automatic progression graph.
 - `externalOpenCodeModel` inside the control contract applies only to external
   OpenCode tests, demos, or fixtures that actually invoke a model. It pins the
-  configured OpenCode model to `openai/gpt-5.3-codex-spark`; unavailable is
+  configured OpenCode model to `openai/gpt-6-astra`; unavailable is
   `BLOCKED` before model or product action.
 
 ## Operating Rule

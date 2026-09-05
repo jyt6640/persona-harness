@@ -1,3 +1,5 @@
+import { PERSONA_EXECUTION_GUIDANCE } from "../runtime/skill-execution-guidance.js"
+
 export const AGENTS_START_MARKER =
   "<!-- persona-harness:agents:start schema=persona-harness.agents.v1 -->"
 export const AGENTS_END_MARKER = "<!-- persona-harness:agents:end -->"
@@ -10,6 +12,9 @@ export function backendAgentInstructions(): string {
     LEGACY_AGENTS_TITLE,
     "",
     "This project is initialized with Persona Harness for Java/Spring backend work.",
+    "",
+    "Working agreements:",
+    PERSONA_EXECUTION_GUIDANCE,
     "",
     "Project-local philosophy:",
     "- Read `.persona/project-profile.jsonc` directly. Do not rely on Glob results for hidden `.persona` paths.",

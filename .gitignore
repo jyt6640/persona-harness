@@ -27,6 +27,7 @@ experiments/*
 
 # OpenCode / Persona local runtime artifacts.
 AGENTS.md
+!/AGENTS.md
 .opencode/
 .omo/
 .persona/project-profile.jsonc

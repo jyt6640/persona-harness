@@ -3,6 +3,7 @@ import {
   resolvePersonaSharedSkill,
 } from "./persona-shared-skill-catalog.js"
 import { createOpenCodeSkillAdapter } from "./portable-skill-adapters.js"
+import { PERSONA_COMPACT_EXECUTION_GUIDANCE } from "./skill-execution-guidance.js"
 import {
   createPortableSkillCapsule,
   type PortableSkillActivationInput,
@@ -71,6 +72,7 @@ export function createOpenCodeSkillRoute(input: OpenCodeSkillRouteInput): string
     `Reason: ${boundedReason(input.reason)}`,
     `First safe action: ${input.firstAction}`,
     `Handoff: ${handoff}`,
+    PERSONA_COMPACT_EXECUTION_GUIDANCE,
     `User-visible skill notice: At the beginning of the next assistant response, write one short line in the user's language naming \`(PH) ${skill.title}\`, activation \`${input.decision}\`, and the bounded reason. Then continue with the requested help. Do not claim that the full skill body was loaded.`,
     "OpenCode activates this catalog reference for the current turn only. OpenCode advises and routes only: it does not load a full skill body. It does not create plans, tickets, branches, files, agents, or workflow state, or advance a workflow automatically.",
   ].join("\n")
