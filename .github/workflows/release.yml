@@ -45,9 +45,9 @@ jobs:
           test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_REPOSITORY" = jyt6640/persona-harness
           git fetch origin main --tags
-          package_version="$(node -p "require('./package.json').version")"
           canonical_main_sha="$(git rev-parse refs/remotes/origin/main)"
           tag_commit="$(git rev-parse "refs/tags/${TAG_NAME}^{commit}")"
+          package_version="$(git show "${tag_commit}:package.json" | node -p "JSON.parse(require('node:fs').readFileSync(0, 'utf8')).version")"
           if git merge-base --is-ancestor "$tag_commit" refs/remotes/origin/main; then
             is_ancestor=true
           else
@@ -64,6 +64,9 @@ jobs:
             --approval-scope "$APPROVAL_SCOPE" \
             --version "$package_version" \
             --dist-tag latest
+          git checkout --detach "$tag_commit"
+          test "$(git rev-parse HEAD)" = "$tag_commit"
+          echo "RELEASE_SOURCE_HEAD=$tag_commit" >> "$GITHUB_ENV"
 
       - name: Setup canonical packer Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -169,7 +172,12 @@ jobs:
             --publisher-runtime-directory "$PUBLISHER_RUNTIME_DIRECTORY" \
             --tarball "$CANONICAL_TARBALL" \
             --dry-run true
-          npm publish "$CANONICAL_TARBALL" --access public --tag latest --provenance --dry-run
+          package_version="$(node -p "require('./package.json').version")"
+          node scripts/release-registry-readback.mjs \
+            --dist-tag latest \
+            --package-facts "$CANONICAL_PACKAGE_FACTS" \
+            --source-head "$RELEASE_SOURCE_HEAD" \
+            --version "$package_version"
 
   github-release:
     name: Create approved GitHub release notes

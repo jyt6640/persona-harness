@@ -419,7 +419,7 @@ const requirements = [
     && !text.includes("npm token")
     && !text.includes("ACTIONS_ID_TOKEN_REQUEST_")
     && !text.includes("npm pack --dry-run --json")],
-  ["release canonical tar publisher dry run", ".github/workflows/release.yml", (text) =>
+  ["release canonical published artifact readback", ".github/workflows/release.yml", (text) =>
     text.includes("node-version: 20.19.0")
     && text.includes('test "$(node --version)" = "v20.19.0"')
     && text.includes('test "$(npm --version)" = "10.8.2"')
@@ -428,8 +428,19 @@ const requirements = [
     && text.includes('test "$(node --version)" = "v24.18.0"')
     && text.includes('test "$(npm --version)" = "11.16.0"')
     && text.includes("canonical-package-publisher.mjs")
-    && text.includes('npm publish "$CANONICAL_TARBALL" --access public --tag latest --provenance --dry-run')
-    && !text.includes("npm publish --dry-run --access public --tag latest")],
+    && text.includes("--dry-run true")
+    && !text.slice(0, text.indexOf("\n  github-release:")).includes("ref: ${{ inputs.tag }}")
+    && text.includes('git show "${tag_commit}:package.json"')
+    && text.includes('git checkout --detach "$tag_commit"')
+    && text.indexOf("release-workflow-policy.mjs tag-source") < text.indexOf('git checkout --detach "$tag_commit"')
+    && text.indexOf("release-workflow-policy.mjs dist-tag") < text.indexOf('git checkout --detach "$tag_commit"')
+    && text.includes('test "$(git rev-parse HEAD)" = "$tag_commit"')
+    && text.includes('echo "RELEASE_SOURCE_HEAD=$tag_commit" >> "$GITHUB_ENV"')
+    && text.includes("node scripts/release-registry-readback.mjs")
+    && text.includes('--package-facts "$CANONICAL_PACKAGE_FACTS"')
+    && text.includes('--source-head "$RELEASE_SOURCE_HEAD"')
+    && text.includes('--version "$package_version"')
+    && !text.includes("npm publish")],
   ["release manual approval", ".github/workflows/release.yml", (text) => text.includes("workflow_dispatch:") && text.includes("approval_scope:") && text.includes("          - ga-approved") && text.includes("inputs.approval_scope == 'ga-approved'") && text.includes("tag-source") && text.includes("git fetch origin main") && !text.includes("\n  push:") && !text.includes("tags:\n")],
   ["release idempotency", ".github/workflows/release.yml", (text) => text.includes("gh release view") && text.includes("release-state") && text.includes("--target \"$tag_commit\"")],
   ["release state fields", ".github/workflows/release.yml", (text) => text.includes("targetCommitish") && text.includes("isPrerelease") && text.includes("gh release create") && text.includes("--expected-prerelease false")],
