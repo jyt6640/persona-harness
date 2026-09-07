@@ -156,9 +156,109 @@ identity.
 ## Context And Runtime Boundary
 
 `context.enabled` is explicit and default-off. Static portable adapters do not
-enable it. Context delivery is currently implemented only by the optional
-OpenCode adapter, and even there a local configuration or package check cannot
-prove a live session received a Context block.
+enable it. Version 1.1.0 also bundles a read-only
+`SessionStart` guidance and `PreToolUse` Context hooks in the Codex and Claude plugins. They run only after the
+host's own enablement and trust requirements are satisfied; it never changes
+host settings or enable a project's Context configuration.
+
+For a project with no explicit personalization decision, SessionStart offers
+first-use guidance: inspect relevant code and approved decisions, ask only
+material unresolved questions, and obtain consent before personalization setup.
+An existing file with no `context.enabled` decision is not an explicit opt-out.
+For that case, guidance asks the agent to inspect and change only that field
+after consent, preserving comments and all other settings. Global harness
+disablement or explicit `context.enabled: false` suppresses setup guidance.
+The separate `scripts/context-setup.mjs` bridge reuses the existing `context
+init --enable`, `context preview`, and `philosophy` command implementations.
+It is not registered as an automatic hook. The no-overwrite initializer refuses
+every existing configuration, including an explicit opt-out; the hook does not
+turn that refusal into an overwrite. Rule persistence remains an explicit
+approved action through the append-only V1 lifecycle.
+Actual consent and the agent's subsequent minimal edit still require live host
+observation; local hook tests prove the offered instructions and absence of
+automatic writes, not the model's compliance.
+
+The plugin includes the Java programming references, their existing Bash
+`skills/programming/scripts/java/check-no-excuse-rules.sh` checker, and the
+philosophy persistence reference. The checker is explicitly invoked, not a
+hook or replacement for compilation and tests. Resolve it from the loaded
+programming skill directory, while project builds run from the consumer root.
+Its default-profile textual warnings remain subordinate to approved project
+choices; they are not a general architecture proof. Other source-only scaffold
+helpers are not included in the portable plugin.
+
+The setup bridge's `--help` is read-only and identifies supported commands and
+the installed decision-format reference without requiring bundle inspection.
+These resources are available on demand instead of being inserted
+wholesale into every model request. SessionStart guidance is classified
+separately from selected rules and does not claim a profile was delivered.
+
+The two plugins carry the same self-contained Node runtime. The hook accepts
+documented Read/Edit/Write/MultiEdit paths and apply_patch targets, including
+Codex's `tool_input.command` shape and move destinations. It does not infer file
+targets from shell commands or claim to observe arbitrary tools. Every selected
+file is checked, shared rules are deduplicated, and the complete block must fit
+the configured budget. An invalid target or overflowing union emits no rule
+payload. Missing profiles are reported as missing, not as personal philosophy.
+
+The optional OpenCode adapter accumulates targets until its next messages
+transform and re-resolves the current profile then. It suppresses a duplicate
+only when the exact synthetic Context block is visible in that model input.
+Compaction does not discard pending targets. The portable command hooks have
+no retained-message visibility, so they do not suppress later events based on
+an assumed successful delivery. This is not a measured token-saving claim.
+
+The runtime's `offered` result means JSON was prepared for host transport, not
+that the model received or followed it. In particular, PreToolUse additional
+context is read on a subsequent model request, not necessarily before the
+already proposed edit executes. See the official [Codex hook contract](https://learn.chatgpt.com/docs/hooks)
+and [Claude hook contract](https://code.claude.com/docs/en/hooks). Do not treat
+this advisory path as pre-edit enforcement or Finish authority.
+
+Budgets count the complete additional-context string, including its header,
+separators and profile notices. Codex's secondary large-output shortening is
+disabled for this already bounded hook; the PH maximum remains enforced.
+Host-added wrappers, loaded skills and full provider usage still require actual
+host measurement. Character counts are not token counts.
+
+Current evidence includes local core/transport tests, npm package installation,
+relocated plugin execution with synthetic approved profiles, and Claude Code
+2.1.132's successful manifest validation. Maintainer-authored Codex Luna Max
+observations cover normal trust approval, first-use consent, saved-rule reuse,
+answer-dependent decisions and final rule conformance after resume, compaction
+and profile refresh. They are bounded examples, not independent-user UX or
+proof of rule knowledge before the first edit. Claude model behavior remains
+unobserved; current live validation is Codex-only. Token experiments were
+explicitly stopped and are not an acceptance claim.
+
+The current source adds `context scope bind --project <approved-key>` after
+explicit checkout consent. Supported hooks and Preview reuse that connection;
+another worktree, clone or moved checkout requires a new connection. The
+personal-store record contains a checkout digest and scope key, not raw paths.
+This has local and relocated-plugin evidence. A bounded Luna Max run applied a
+project rule over a different personal default, but also read raw profile and
+observer documents; that run does not isolate automatic binding as its cause.
+Active SessionStart guidance now exposes the read-only scope/Preview bridge
+before editing rather than suggesting that the bridge is only for persistence.
+The revised guidance has local/package evidence. A later bounded Luna Max task
+observation used scope inspection and task Preview before editing.
+Session-local task connection now has a separate explicit resume/end command
+and read-only task Preview. A host-namespaced session handle identifies the
+connection, not the task: only an explicitly selected active task key can bind.
+New sessions do not inherit the last task. Supported hooks reuse that connection;
+the model must end it on completion, cancellation or task switch. Local and
+relocated-plugin tests do not prove that natural-language lifecycle behavior.
+One isolated Luna Max observation completed explicit resume, pre-edit task
+Preview, a durable Java regression and matching end, with normal one-time host
+write approvals. That observation is not universal lifecycle enforcement.
+Explicit project/task selectors still work in Preview. See the
+[project connection](personalization-profile-v1.md#checkout-local-project-connection)
+and [task connection](personalization-profile-v1.md#session-local-task-connection)
+contracts. Neither changes execution or Finish authority.
+When scoped rules exist without a supplied identity, Preview and the rule hook
+report that those rules were not applied. Same-topic ambiguity remains
+fail-closed; the host may clarify and consolidate complementary obligations
+only through an approved decision, not a guessed semantic classifier.
 
 The legacy `runtimeInjection` setting remains default-off. In an initialized
 OpenCode project, the separate `features.sharedSkillRouting` setting defaults

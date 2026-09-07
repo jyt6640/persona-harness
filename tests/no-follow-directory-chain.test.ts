@@ -24,7 +24,7 @@ afterEach(() => {
 })
 
 describe("no-follow directory chain", () => {
-  it("keeps relative writes in the reserved directory when its path is replaced", () => {
+  it("keeps relative writes reserved and reports replacement of the requested path", () => {
     const parent = temporaryRoot("persona-no-follow-directory-chain-")
     const outside = temporaryRoot("persona-no-follow-directory-chain-outside-")
     const requestedRoot = join(parent, "state")
@@ -38,7 +38,7 @@ describe("no-follow directory chain", () => {
       return true
     })
 
-    expect(result).toBe(true)
+    expect(result).toBeUndefined()
     expect(process.cwd()).toBe(originalCwd)
     expect(readFileSync(join(movedRoot, "event.jsonl"), "utf8")).toBe("reserved\n")
     expect(existsSync(join(outside, "event.jsonl"))).toBe(false)

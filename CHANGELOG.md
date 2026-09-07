@@ -8,6 +8,21 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [1.1.0] - 2026-09-07
+
+- Bundle consent/setup, targeted Context hooks and Java reference/checker assets
+  in the portable Codex and Claude plugins. Reuse approved decisions and ask
+  only about unresolved choices that change implementation.
+- Add explicit checkout-local project connections and session-local task
+  inspection/resume/Preview/end commands. Preserve profile V1, explicit opt-out,
+  unrelated user files and existing Workflow Integrity/Finish authority.
+- Share full PH-block rendering limits between Preview and delivery; preserve
+  multi-file snapshots and fail closed on invalid or incomplete selection.
+- Verification evidence includes workspace integration tests, local-tarball
+  npm-installed contracts and bounded isolated Codex Luna Max observations.
+  It is not registry smoke, universal model compliance or generated-app product
+  quality certification. Claude live behavior and token savings are not claimed.
+
 ## [1.0.0] - 2026-09-05
 
 - Deliver common authorization-aware skill guidance across portable host

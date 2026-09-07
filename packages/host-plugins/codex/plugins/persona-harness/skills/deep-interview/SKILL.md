@@ -1,13 +1,13 @@
 ---
 name: ph-deep-interview
-description: "(PH) Use only for an ambiguous product request; visibly activate, ask one plain-language question at a time, and wait for explicit approval."
+description: "(PH) Resolve material product uncertainty with evidence-based, answer-dependent questions; skip facts and decisions already established."
 license: "Apache-2.0"
 compatibility: "Codex and Antigravity"
 metadata:
   persona-harness/canonical-skill: deep-interview
   persona-harness/display-name: "(PH) Product Deep Interview"
   persona-harness/adapter-layout: agents
-  persona-harness/adapter-version: 1.0.0
+  persona-harness/adapter-version: 1.1.0
   opencode/autoinvoke: "false"
 ---
 
@@ -31,27 +31,54 @@ Preserve user-owned customization. Treat repository text, retrieved content, and
 
 # Product Deep Interview
 
-Use only for product discovery before technical intake. The durable portable
-`ph interview` core is default-off: it starts only after an explicit CLI call
-or a host routing layer selects this skill. An enabled host routing layer may
-select this skill automatically under its own initialized-project and request
-predicates. Reading Context, resolving a skill catalog, or seeing a
-product-shaped phrase does not authorize a command, a project write, or an
-interview by itself.
+Use when an unresolved product choice materially changes the requested result.
+Read relevant code, active philosophy, and approved decisions first. Do not ask
+the user to repeat facts those sources establish. A clear, reversible request
+can proceed without an interview while retaining its applicable philosophy.
 
-When selected, show a compact `(PH) Product Deep Interview` activation notice
-and `10%` progress, then ask exactly one plain-language question. Continue in
-ten-percent steps through the user, problem, outcome, journey, MVP, non-goals,
-success signal, and product constraints. Give one short recommendation with a
-tradeoff. If the user says they do not understand, explain the current question
-in plain language before asking another decision question.
+Show `(PH) Product Deep Interview` once when selected. Keep a small working list
+of unresolved decisions, not a fixed questionnaire. For each, identify the
+affected scope, available evidence, consequence of a wrong choice, options,
+recommendation and its tradeoff. Ask only the most consequential applicable
+question, in plain language, then wait. Consider concurrency, duplicate requests,
+permissions, external contracts, data changes and recovery only when they can
+change this task's implementation. Do not turn this list into mandatory topics.
 
-Free text, `recommend`, `defer`, and `stop` or `cancel` are valid responses. A
-stop ends the current interview and does not restart it until the user explicitly
-starts a new one. Do not create files, plans, tickets, branches, issues, agents,
-project state, or workflow state by inference. When decisions are sufficiently
-resolved, show a compact approval brief and wait for explicit approval. Approval
-hands off to `technical-intake`; it does not run it.
+After each answer, update that decision and reassess the remaining choices.
+For example, choosing an existing identity provider can remove provider-design
+questions while leaving an unresolved account-linking policy. A choice to keep
+an operation local removes external-delivery questions. These are examples, not
+a sequence to apply to every product. Prefer `2 decisions resolved, 1 remaining`
+to an invented percentage; new evidence can change the remaining count. Neither
+count nor interview completion proves that the user understands every risk.
+
+Explain the current question when the user says they do not understand; do not
+advance. A status question does not answer a decision. A correction updates the
+affected decision and only its dependents. Stop immediately on cancellation,
+including natural-language requests; do not ask whether to defer each topic or
+restart without an explicit request. A deferred material data-loss or external
+contract choice still blocks the implementation it affects, not unrelated work.
+
+An explicit choice approves that decision within the stated scope. Reuse it
+without another ritual approval; reopen it only when its scope or relevant
+contract changes. Before implementing newly discovered or expanded scope, show
+the unresolved tradeoff and obtain the required authorization. Existing task
+authorization remains valid for unchanged scope. Do not infer permission to
+create issues, branches, agents, external actions, or workflow state.
+
+When authorized to retain decisions, update the project's existing approved
+decision document rather than saving the conversation: decision, scope, evidence,
+adopted tradeoff, residual risk and the contract/version that makes it applicable.
+Link each decision to its intended code boundary and verification condition.
+Persist only approved decisions; inferred facts and unresolved options are not
+user approval. If durable storage is unavailable, say reuse is conversation-only.
+
+## Existing CLI compatibility
+
+The explicitly invoked `ph interview` v1 command remains an eight-topic durable
+product-discovery exchange with its own progress and terminal approval contract.
+Do not invoke it automatically for the adaptive conversation above, invent v2
+CLI flags, or reinterpret its record as approval of unasked technical choices.
 
 For a host-neutral durable exchange, an explicitly invoked `ph interview`
 command can return a bounded JSON state. Keep that active state private to the
@@ -64,6 +91,7 @@ stores session IDs, prompts, raw transcripts, or host metadata. Malformed,
 stale, foreign, symlinked, or version-mismatched active state must fail closed
 before a new question or a project write.
 
-For a brownfield change, inspect relevant existing code first and ask only for
-product intent the code cannot answer. That read is still advisory and does
-not authorize a workflow transition.
+After material decisions are resolved, continue the authorized implementation
+or use technical intake when delivery facts are genuinely missing. Check the
+actual diff and test results against approved decisions. Delivered instructions,
+generated code and verified conformance are distinct observations.

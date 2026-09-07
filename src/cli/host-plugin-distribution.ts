@@ -15,6 +15,8 @@ import {
   buildHostSkillAdapterTargets,
 } from "./host-skill-materializer.js"
 import { listPersonaSharedSkillsFromPackageRoot, type PersonaSharedSkill } from "../runtime/persona-shared-skill-catalog.js"
+import { buildHostPluginContextTargets } from "./host-plugin-context-assets.js"
+import { buildHostPluginReferenceTargets } from "./host-plugin-reference-assets.js"
 
 const PACKAGE_NAME = "persona-harness"
 const HOST_PLUGIN_ROOT = "packages/host-plugins"
@@ -168,7 +170,7 @@ function codexPluginManifest(identity: PackageIdentity): Buffer {
   return serializeJson({
     name: PACKAGE_NAME,
     version: identity.version,
-    description: "Portable Persona Harness shared skills for Codex.",
+    description: "Persona Harness shared skills and opt-in targeted Context for Codex.",
     author: {
       name: "Persona Harness",
       url: REPOSITORY_URL,
@@ -180,8 +182,8 @@ function codexPluginManifest(identity: PackageIdentity): Buffer {
     skills: "./skills/",
     interface: {
       displayName: "Persona Harness",
-      shortDescription: "Portable engineering skills for Codex.",
-      longDescription: "A versioned, canonical Persona Harness skill catalog for Codex project workflows.",
+      shortDescription: "Engineering skills and targeted Context.",
+      longDescription: "Canonical engineering skills and a read-only Context hook for explicitly enabled projects.",
       developerName: "Persona Harness",
       category: "Productivity",
       capabilities: ["Skills"],
@@ -226,7 +228,7 @@ function claudePluginManifest(identity: PackageIdentity): Buffer {
     $schema: "https://json.schemastore.org/claude-code-plugin-manifest.json",
     name: PACKAGE_NAME,
     version: identity.version,
-    description: "Portable Persona Harness shared skills for Claude Code.",
+    description: "Persona Harness shared skills and opt-in targeted Context for Claude Code.",
     author: {
       name: "Persona Harness",
       url: REPOSITORY_URL,
@@ -268,6 +270,8 @@ export function buildHostPluginDistributionTargets(packageRoot: string): readonl
   }
 
   const targets: HostPluginDistributionTarget[] = [
+    ...buildHostPluginContextTargets(root),
+    ...buildHostPluginReferenceTargets(root),
     {
       relativePath: pluginManifestPath("antigravity"),
       nextBytes: antigravityPluginManifest(),

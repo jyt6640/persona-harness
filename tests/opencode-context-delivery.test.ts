@@ -7,11 +7,6 @@ import type { Event, Part, UserMessage } from "@opencode-ai/sdk"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { readContextPreview } from "../src/cli/context-preview.js"
-import {
-  ContextDeliveryStore,
-  MAX_DELIVERED_CONTEXT_DIGESTS,
-  MAX_TRACKED_CONTEXT_SESSIONS,
-} from "../src/context-delivery/context-delivery-store.js"
 import { createOpenCodeContextHooks } from "../src/context-delivery/opencode-context-hooks.js"
 import { PersonaHarnessPlugin } from "../src/index.js"
 import type { TransformMessagesOutput } from "../src/runtime/types.js"
@@ -26,6 +21,36 @@ afterEach(() => {
 })
 
 describe("OpenCode Context delivery", () => {
+  it("uses the same complete block budget in Preview and actual delivery", async () => {
+    const projectDir = createProject({ context: { enabled: true, maxChars: 4_000 } })
+    const personalization = { storeRoot: join(projectDir, "personalization-store") }
+    const target = "src/main/java/example/CustomerService.java"
+    const initial = readContextPreview([target], projectDir, { personalization })
+    expect(initial.status).toBe("ready")
+    if (initial.status !== "ready" || initial.preview.envelope.status !== "resolved") throw new Error("fixture not ready")
+    const contents = [
+      ...initial.preview.envelope.warnings.map((warning) => warning.message),
+      ...initial.preview.envelope.selected.map((capsule) => capsule.content),
+    ]
+    const bodyChars = contents.reduce((sum, content) => sum + content.length, 0)
+    const completeBlock = `[Persona Harness Context]\n${contents.join("\n")}`
+    const configPath = join(projectDir, ".persona", "harness.jsonc")
+    writeFileSync(configPath, JSON.stringify({ context: { enabled: true, maxChars: bodyChars } }))
+
+    const tooSmall = readContextPreview([target], projectDir, { personalization })
+    expect(tooSmall).toMatchObject({ preview: { envelope: { status: "blocked", blockReason: "budget-exceeded" } } })
+
+    writeFileSync(configPath, JSON.stringify({ context: { enabled: true, maxChars: completeBlock.length } }))
+    const ready = readContextPreview([target], projectDir, { personalization })
+    const hooks = createOpenCodeContextHooks({ personalization, projectDir })
+    await observeTarget(hooks, "complete-budget", target)
+    const output = modelInput("complete-budget", "Implement this service.")
+    await hooks["experimental.chat.messages.transform"]?.({}, output)
+
+    expect(firstText(output)).toBe(completeBlock)
+    expect(ready).toMatchObject({ preview: { envelope: { budget: { usedChars: firstText(output).length } } } })
+  })
+
   it("delivers one Context block after a safe observed target while legacy runtime injection is off", async () => {
     const projectDir = createProject({ context: { enabled: true } })
     const personalization = { storeRoot: join(projectDir, "personalization-store") }
@@ -115,7 +140,7 @@ describe("OpenCode Context delivery", () => {
     expect(firstText(output)).toBe("Create the service.")
   })
 
-  it("suppresses a delivered digest until the host ends the session", async () => {
+  it("suppresses a block still visible in the current model input", async () => {
     const projectDir = createProject({ context: { enabled: true } })
     const hooks = createOpenCodeContextHooks({
       personalization: { storeRoot: join(projectDir, "personalization-store") },
@@ -130,9 +155,9 @@ describe("OpenCode Context delivery", () => {
     expect(firstText(first)).toContain("[Persona Harness Context]")
 
     await observeTarget(hooks, sessionID, target)
-    const duplicate = modelInput(sessionID, "Continue the service.")
+    const duplicate = first
     await hooks["experimental.chat.messages.transform"]?.({}, duplicate)
-    expect(firstText(duplicate)).toBe("Continue the service.")
+    expect(duplicate.messages[0]?.parts).toHaveLength(2)
 
     await hooks.event?.({
       event: sessionDeletedEvent(sessionID),
@@ -164,24 +189,6 @@ describe("OpenCode Context delivery", () => {
     const afterCompaction = modelInput(sessionID, "Create the service again.")
     await hooks["experimental.chat.messages.transform"]?.({}, afterCompaction)
     expect(firstText(afterCompaction)).toContain("[Persona Harness Context]")
-  })
-
-  it("bounds retained session and digest state deterministically", () => {
-    const store = new ContextDeliveryStore()
-    expect(MAX_TRACKED_CONTEXT_SESSIONS).toBeGreaterThan(0)
-    expect(MAX_DELIVERED_CONTEXT_DIGESTS).toBeGreaterThan(0)
-
-    for (let index = 0; index <= MAX_TRACKED_CONTEXT_SESSIONS; index += 1) {
-      store.offer(`session-${index}`, { block: `block-${index}`, digest: `digest-${index}` })
-    }
-    expect(store.offer("session-0", { block: "new", digest: "digest-0" })).toBe("offered")
-
-    for (let index = 0; index <= MAX_DELIVERED_CONTEXT_DIGESTS; index += 1) {
-      const delivery = { block: `block-${index}`, digest: `digest-${index}` }
-      store.offer("digest-session", delivery)
-      store.markDelivered("digest-session", delivery)
-    }
-    expect(store.offer("digest-session", { block: "again", digest: "digest-0" })).toBe("offered")
   })
 
   it("composes Context delivery into the package plugin without enabling legacy runtime injection", async () => {

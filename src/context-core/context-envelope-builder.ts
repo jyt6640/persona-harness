@@ -1,5 +1,6 @@
 import { DEFAULT_CONTEXT_BUDGET, type ContextBudget } from "./context-budget.js"
 import { canonicalContextDigest } from "./context-digest.js"
+import { renderContextBlock } from "./context-renderer.js"
 import {
   isSafeEnvelopeIdentifier,
   parseContextEnvelopeInput,
@@ -30,7 +31,7 @@ export function buildContextEnvelope(value: unknown): ContextEnvelope {
   const selected = normalizeSelections(parsed.resolution.selected)
   if (selected === undefined) return blockedEnvelope("unsafe-content", parsed.target, [], parsed.budget, 0, 0)
   const usedCapsules = selected.length
-  const usedChars = selected.reduce((total, capsule) => total + capsule.content.length, 0)
+  const usedChars = renderContextBlock(selected.map((capsule) => capsule.content)).length
   if (usedCapsules > parsed.budget.maxCapsules || usedChars > parsed.budget.maxChars) {
     return blockedEnvelope("budget-exceeded", parsed.target, [], parsed.budget, usedCapsules, usedChars)
   }

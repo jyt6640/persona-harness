@@ -3,6 +3,8 @@ import process from "node:process"
 import { runContextExplainCommand } from "./context-explain.js"
 import { runContextInitCommand } from "./context-init.js"
 import { runContextPreviewCommand } from "./context-preview.js"
+import { runContextScopeCommand } from "./context-scope-command.js"
+import { runContextTaskCommand } from "./context-task-command.js"
 import { renderContextDoctor } from "./context-doctor.js"
 import { readContextStatus, renderContextStatus } from "./context-status.js"
 import type { PersonalizationStoreOptions } from "./personalization-profile-store.js"
@@ -33,6 +35,14 @@ export function runContextCommand(
     return runContextInitCommand(args.slice(1), options.projectDir ?? process.cwd())
   }
 
+  if (command === "scope") {
+    return runContextScopeCommand(args.slice(1), options.projectDir ?? process.cwd(), options.personalization)
+  }
+
+  if (command === "task") {
+    return runContextTaskCommand(args.slice(1), options.projectDir ?? process.cwd(), options.personalization)
+  }
+
   if (command === "status") {
     if (args.length !== 1) return invalidArguments(invocationName)
     return success(renderContextStatus(readContextStatus(options.projectDir ?? process.cwd())))
@@ -60,7 +70,7 @@ export function runContextCommand(
 
 export function contextUsage(invocationName: string): string {
   return [
-    `Usage: ${invocationName} context <init|status|preview|explain|doctor>`,
+    `Usage: ${invocationName} context <init|status|preview|explain|doctor|scope|task>`,
     "",
     "Context Personalization (Experimental, default-off)",
     "",
@@ -70,8 +80,11 @@ export function contextUsage(invocationName: string): string {
     "  preview <target-file> [--json] [--project <key>] [--task <key>] [--topic <topic>]",
     "  explain <target-file> [--project <key>] [--task <key>] [--topic <topic>]",
     "  doctor                       Diagnose only the local Context track.",
+    "  scope [bind|unbind --project <key>]  Inspect or explicitly change this checkout's project binding.",
+    "  task --session <handle> [resume|end --task <key>]  Inspect or explicitly change a session's task connection.",
+    "  task --session <handle> preview <target-file> [--json] [--topic <topic>]",
     "",
-    "Preview and explanation are read-only; init writes only with explicit --enable.",
+    "Preview, explanation and scope/task inspection are read-only. Scope bind/unbind and task resume/end are explicit local writes; init requires --enable.",
   ].join("\n")
 }
 

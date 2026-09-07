@@ -7,7 +7,7 @@ metadata:
   persona-harness/canonical-skill: plan
   persona-harness/display-name: "(PH) Delivery Plan"
   persona-harness/adapter-layout: agents
-  persona-harness/adapter-version: 1.0.0
+  persona-harness/adapter-version: 1.1.0
   opencode/autoinvoke: "false"
 ---
 

@@ -7,7 +7,7 @@ metadata:
   persona-harness/canonical-skill: debug
   persona-harness/display-name: "(PH) Debug"
   persona-harness/adapter-layout: claude
-  persona-harness/adapter-version: 1.0.0
+  persona-harness/adapter-version: 1.1.0
   opencode/autoinvoke: "false"
 ---
 

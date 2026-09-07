@@ -47,7 +47,7 @@ describe("host-neutral Context Envelope", () => {
         topic: "style",
       },
     ])
-    expect(first.budget).toEqual({ maxCapsules: 8, maxChars: 1_600, usedCapsules: 2, usedChars: 51 })
+    expect(first.budget).toEqual({ maxCapsules: 8, maxChars: 1_600, usedCapsules: 2, usedChars: 78 })
     expect(first.digest).toBe(second.digest)
     expect(first.digest).toMatch(/^[0-9a-f]{64}$/u)
   })
@@ -70,7 +70,7 @@ describe("host-neutral Context Envelope", () => {
 
     expect(result).toMatchObject({
       blockReason: "budget-exceeded",
-      budget: { maxCapsules: 1, maxChars: 1_600, usedCapsules: 2, usedChars: 6 },
+      budget: { maxCapsules: 1, maxChars: 1_600, usedCapsules: 2, usedChars: 33 },
       selected: [],
       status: "blocked",
     })

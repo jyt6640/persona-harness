@@ -24,8 +24,8 @@ describe("context-only CLI routing", () => {
     expect(rootHelp.stdout).toContain("Context Personalization (Experimental)")
     expect(rootHelp.stdout).toContain("  context")
     expect(contextHelp.status).toBe(0)
-    expect(contextHelp.stdout).toContain("Usage: ph context <init|status|preview|explain|doctor>")
-    for (const command of ["init", "status", "preview <target-file>", "explain <target-file>", "doctor"]) {
+    expect(contextHelp.stdout).toContain("Usage: ph context <init|status|preview|explain|doctor|scope|task>")
+    for (const command of ["init", "status", "preview <target-file>", "explain <target-file>", "doctor", "scope [bind|unbind --project <key>]", "task --session <handle>"]) {
       expect(contextHelp.stdout).toContain(command)
     }
   })

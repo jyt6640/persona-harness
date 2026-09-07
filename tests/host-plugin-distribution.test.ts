@@ -30,6 +30,9 @@ function createPackageRoot(): string {
   temporaryPackageRoots.push(root)
   cpSync(join(process.cwd(), "package.json"), join(root, "package.json"))
   cpSync(join(process.cwd(), "packages", "shared-skills"), join(root, "packages", "shared-skills"), { recursive: true })
+  mkdirSync(join(root, "dist", "context-delivery"), { recursive: true })
+  writeFileSync(join(root, "dist", "context-delivery", "portable-context-runtime.mjs"), "// distribution fixture, not runtime proof\n")
+  writeFileSync(join(root, "dist", "context-delivery", "portable-context-setup.mjs"), "// setup distribution fixture\n")
   return root
 }
 
@@ -55,11 +58,20 @@ afterEach(() => {
 
 describe("host plugin distribution", () => {
   it("renders Antigravity, Codex, and Claude plugin skills byte-bound to canonical host adapters", () => {
-    const targets = buildHostPluginDistributionTargets(process.cwd())
+    const targets = buildHostPluginDistributionTargets(createPackageRoot())
     const adapters = buildHostSkillAdapterTargets(process.cwd())
     const skills = listPersonaSharedSkills()
 
-    expect(targets).toHaveLength((skills.length * 3) + 4)
+    expect(targets.filter((target) => target.relativePath.endsWith("/SKILL.md"))).toHaveLength(skills.length * 3)
+    for (const prefix of ["antigravity", "claude", "codex/plugins/persona-harness"]) {
+      const reference = "skills/programming/references/java/concurrency-discipline.md"
+      expect(findTarget(targets, `packages/host-plugins/${prefix}/${reference}`).nextBytes)
+        .toEqual(readFileSync(join(process.cwd(), "packages/shared-skills", reference)))
+      expect(findTarget(targets, `packages/host-plugins/${prefix}/skills/philosophy-refinement/references/persistence.md`).nextBytes.length).toBeGreaterThan(0)
+      const checker = "skills/programming/scripts/java/check-no-excuse-rules.sh"
+      expect(findTarget(targets, `packages/host-plugins/${prefix}/${checker}`).nextBytes)
+        .toEqual(readFileSync(join(process.cwd(), "packages/shared-skills", checker)))
+    }
     const antigravityManifest = JSON.parse(findTarget(targets, "packages/host-plugins/antigravity/plugin.json").nextBytes.toString("utf8"))
     expect(antigravityManifest).toEqual({
       $schema: "https://antigravity.google/schemas/v1/plugin.json",

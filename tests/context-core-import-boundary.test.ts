@@ -53,6 +53,7 @@ describe("pure Context Core boundary", () => {
       "context-envelope-builder.ts",
       "context-envelope-input.ts",
       "context-envelope.ts",
+      "context-renderer.ts",
       "effective-context-input.ts",
       "effective-context-v2-input.ts",
       "effective-context-v2.ts",

@@ -105,6 +105,7 @@ try {
   if (!contextDelivery.stdout.includes("installed-opencode-context-delivery: PASS")) {
     throw new PackageSmokeError("installed-opencode-context-delivery")
   }
+  run(process.execPath, [join(repositoryRoot, "scripts/test-installed-context-scope.mjs"), cliPath, consumerRoot], consumerRoot, "installed-context-scope")
 
   run(
     process.execPath,
@@ -192,6 +193,9 @@ function assertPackedFiles(files) {
     "dist/index.js",
     "docs/current/context-external-validation-status.json",
     "docs/current/context-external-validation.md",
+    "packages/shared-skills/skills/programming/scripts/java/check-no-excuse-rules.sh",
+    "packages/host-plugins/codex/plugins/persona-harness/skills/programming/scripts/java/check-no-excuse-rules.sh",
+    "packages/host-plugins/claude/skills/programming/scripts/java/check-no-excuse-rules.sh",
     "package.json",
   ]) {
     if (!paths.has(required)) throw new PackageSmokeError("package-file-list")

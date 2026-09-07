@@ -99,18 +99,15 @@ function unsnapshottedWorkspaceIdentity(projectDir: string): PosixPathIdentity {
 }
 
 function unsnapshottedCooperativeFinishContext(projectDir: string): CooperativeFinishContextResult {
-  // `loadHarnessConfigResult` already accepts an absent boundary and reads
-  // `.persona/harness.jsonc` directly, so nothing here weakens config loading
-  // beyond the boundary that does not exist on this platform.
-  const config = loadHarnessConfigResult(projectDir)
-  if (!config.safe) return { code: "harness-config-invalid", kind: "blocked" }
-
   let workspace: PosixPathIdentity
   try {
     workspace = unsnapshottedWorkspaceIdentity(projectDir)
   } catch {
     return { code: "workspace-root-unavailable", kind: "blocked" }
   }
+
+  const config = loadHarnessConfigResult(projectDir)
+  if (!config.safe) return { code: "harness-config-invalid", kind: "blocked" }
 
   const evidenceRoot = resolveConfiguredPathResult(workspace.realpath, config.config.evidenceDir)
   if (!evidenceRoot.ok) return { code: "evidence-path-unsafe", kind: "blocked" }

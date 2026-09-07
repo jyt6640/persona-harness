@@ -1,11 +1,10 @@
 import type { Hooks } from "@opencode-ai/plugin"
 
-import { readContextPreview, type ContextPreviewOptions } from "../cli/context-preview.js"
-import { resolveContainedPath } from "../io/bounded-path-walker.js"
-import { extractTargetFile, isInstalledPersonaHarnessPackageFile } from "../io/tool-target.js"
-import { ContextDeliveryStore, type PendingContextDelivery } from "./context-delivery-store.js"
+import type { ContextPreviewOptions } from "../cli/context-preview.js"
+import { ContextDeliveryStore } from "./context-delivery-store.js"
+import { selectContextForTargets } from "./context-target-selection.js"
+import { extractContextTargets } from "./context-tool-targets.js"
 
-const CONTEXT_DELIVERY_MARKER = "[Persona Harness Context]"
 const CONTEXT_DELIVERY_PART_ID = "persona-harness-context"
 
 type HookHandler<T> = NonNullable<T>
@@ -14,32 +13,35 @@ type ContextToolAfterInput = Parameters<HookHandler<Hooks["tool.execute.after"]>
 type ContextMessagesOutput = Parameters<HookHandler<Hooks["experimental.chat.messages.transform"]>>[1]
 
 export type OpenCodeContextHookOptions = {
+  readonly onObservation?: (observation: OpenCodeContextObservation) => void
   readonly personalization?: ContextPreviewOptions["personalization"]
   readonly projectDir: string
   readonly store?: ContextDeliveryStore
 }
 
+export type OpenCodeContextObservation =
+  | { readonly status: "selected" | "offered"; readonly digest: string; readonly ruleIds: readonly string[]; readonly usedChars: number }
+  | { readonly status: "skipped" | "blocked"; readonly reason: string }
+
 export type OpenCodeContextHooks = Pick<Hooks, "event" | "experimental.chat.messages.transform" | "tool.execute.after">
 
 export function createOpenCodeContextHooks(options: OpenCodeContextHookOptions): OpenCodeContextHooks {
   const store = options.store ?? new ContextDeliveryStore()
+  const report = (observation: OpenCodeContextObservation): void => {
+    try { options.onObservation?.(observation) } catch {}
+  }
 
   return {
     event: async (input: ContextEventInput): Promise<void> => {
-      const sessionID = terminalSessionID(input.event)
-      if (sessionID !== undefined) store.clear(sessionID)
+      if (input.event.type === "session.deleted") store.clear(input.event.properties.info.id)
     },
     "tool.execute.after": async (input: ContextToolAfterInput): Promise<void> => {
       const sessionID = typeof input.sessionID === "string" ? input.sessionID : undefined
-      const args = asRecord(input.args)
-      if (sessionID === undefined || args === undefined) return
-      const targetFile = extractTargetFile(input.tool, args)
-      if (targetFile === undefined || isInstalledPersonaHarnessPackageFile(targetFile)) return
-
-      const containedTarget = resolveContainedPath(options.projectDir, targetFile)
-      if (!containedTarget.ok) return
-      const delivery = resolveDelivery(options.projectDir, containedTarget.relativePath, options.personalization)
-      if (delivery !== undefined) store.offer(sessionID, delivery)
+      if (sessionID === undefined) return report({ status: "blocked", reason: "session-invalid" })
+      const targets = extractContextTargets(input.tool, input.args)
+      if (targets.kind === "unsupported") return report({ status: "skipped", reason: "tool-unsupported" })
+      const pending = store.observe(sessionID, targets)
+      if (pending.kind === "blocked") report({ status: "blocked", reason: pending.reason })
     },
     "experimental.chat.messages.transform": async (
       _input: unknown,
@@ -47,34 +49,27 @@ export function createOpenCodeContextHooks(options: OpenCodeContextHookOptions):
     ): Promise<void> => {
       const sessionID = latestUserSessionID(output)
       if (sessionID === undefined) return
-      const delivery = store.take(sessionID)
-      if (delivery === undefined) return
-      if (injectContextBlock(output, sessionID, delivery.block)) store.markDelivered(sessionID, delivery)
+      const targets = store.take(sessionID)
+      if (targets === undefined) return
+      if (targets.kind === "blocked") return report({ status: "blocked", reason: targets.reason })
+      try {
+        const selection = selectContextForTargets(options.projectDir, targets.paths, { personalization: options.personalization })
+        if (selection.status !== "selected") return report(selection)
+        const metadata = { digest: selection.digest, ruleIds: selection.ruleIds, usedChars: selection.usedChars }
+        report({ status: "selected", ...metadata })
+        if (containsContextBlock(output, sessionID, selection.block)) return report({ status: "skipped", reason: "context-present" })
+        if (injectContextBlock(output, sessionID, selection.block)) report({ status: "offered", ...metadata })
+      } catch {
+        report({ status: "blocked", reason: "context-unavailable" })
+      }
     },
   }
 }
 
-function resolveDelivery(
-  projectDir: string,
-  targetPath: string,
-  personalization: ContextPreviewOptions["personalization"],
-): PendingContextDelivery | undefined {
-  try {
-    const result = readContextPreview([targetPath], projectDir, { personalization })
-    if (result.status === "blocked" || !result.preview.contextEnabled || result.preview.envelope.status !== "resolved") {
-      return undefined
-    }
-    const block = renderContextBlock(result.preview.envelope.selected.map((capsule) => capsule.content))
-    return block.length <= result.preview.envelope.budget.maxChars
-      ? { block, digest: result.preview.envelope.digest }
-      : undefined
-  } catch {
-    return undefined
-  }
-}
-
-function renderContextBlock(capsules: readonly string[]): string {
-  return `${CONTEXT_DELIVERY_MARKER}\n${capsules.join("\n")}`
+function containsContextBlock(output: ContextMessagesOutput, sessionID: string, block: string): boolean {
+  return output.messages.some((message) => message.info.sessionID === sessionID && message.parts.some((part) =>
+    part.id === CONTEXT_DELIVERY_PART_ID && part.type === "text" && part.synthetic === true && part.text === block,
+  ))
 }
 
 function injectContextBlock(output: ContextMessagesOutput, sessionID: string, block: string): boolean {
@@ -100,18 +95,4 @@ function latestUserSessionID(output: ContextMessagesOutput): string | undefined 
     if (message?.info.role === "user" && typeof message.info.sessionID === "string") return message.info.sessionID
   }
   return undefined
-}
-
-function terminalSessionID(event: ContextEventInput["event"]): string | undefined {
-  if (event.type === "session.compacted") return event.properties.sessionID
-  if (event.type === "session.deleted") return event.properties.info.id
-  return undefined
-}
-
-function asRecord(value: unknown): Readonly<Record<string, unknown>> | undefined {
-  return isRecord(value) ? value : undefined
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
