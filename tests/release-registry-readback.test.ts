@@ -24,6 +24,21 @@ const CONTENT_IDENTITY = {
 }
 
 describe("release registry readback", () => {
+  it("accepts an already published stable package only through exact latest and canonical-byte readback", () => {
+    // Given
+    const input = validInput()
+    const stable = {
+      ...input, distTag: "latest", distTagsText: "latest: 1.1.0\n", expectedVersion: "1.1.0",
+      metadata: { ...input.metadata, version: "1.1.0" },
+    }
+
+    // When
+    const result = assessReleaseRegistryReadback(stable)
+
+    // Then
+    expect(result).toMatchObject({ status: "passed", diagnostics: [], version: "1.1.0", registryMutation: "not-performed" })
+  })
+
   it("binds a workflow-verified source to the fixed staging beta tag, metadata, and downloaded tarball without registry gitHead", () => {
     const result = assessReleaseRegistryReadback(validInput())
 

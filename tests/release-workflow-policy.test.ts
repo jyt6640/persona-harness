@@ -77,7 +77,7 @@ describe("release workflow policy", () => {
     expect(workflow).not.toContain("ACTIONS_ID_TOKEN_REQUEST_")
   })
 
-  it("uses the identical canonical-tar Node24 dry-run publisher route for manual release verification", () => {
+  it("verifies the canonical published artifact without republishing during manual release verification", () => {
     const workflow = readFileSync(join(repositoryRoot, ".github", "workflows", "release.yml"), "utf8")
 
     expect(workflow).toContain("node-version: 20.19.0")
@@ -86,8 +86,11 @@ describe("release workflow policy", () => {
     expect(workflow).toContain("node-version: 24.18.0")
     expect(workflow).toContain('test "$(npm --version)" = "11.16.0"')
     expect(workflow).toContain("canonical-package-publisher.mjs")
-    expect(workflow).toContain('npm publish "$CANONICAL_TARBALL" --access public --tag latest --provenance --dry-run')
-    expect(workflow).not.toContain("npm publish --dry-run --access public --tag latest")
+    expect(workflow).toContain("--dry-run true")
+    expect(workflow).toContain("node scripts/release-registry-readback.mjs")
+    expect(workflow).toContain('--package-facts "$CANONICAL_PACKAGE_FACTS"')
+    expect(workflow).toContain('--source-head "$RELEASE_SOURCE_HEAD"')
+    expect(workflow).not.toContain("npm publish")
     expect(workflow).not.toContain("npm whoami")
     expect(workflow).not.toContain("npm token")
   })
