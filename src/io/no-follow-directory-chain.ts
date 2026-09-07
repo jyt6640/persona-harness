@@ -1,6 +1,7 @@
 import {
   closeSync,
   constants,
+  fchmodSync,
   fstatSync,
   lstatSync,
   mkdirSync,
@@ -12,7 +13,6 @@ import process from "node:process"
 import {
   captureNoFollowDirectory,
   noFollowPathIdentityFromStat,
-  sameNoFollowPathIdentity,
   sameNoFollowPathLocation,
   type NoFollowPathIdentity,
 } from "./no-follow-file.js"
@@ -32,8 +32,8 @@ class NoFollowDirectoryChainError extends Error {
 
 export function withNoFollowDirectoryChain<T>(
   requestedPath: string,
-  mode: number,
-  operation: () => T,
+  mode: number | undefined,
+  operation: (assertLocation: () => void) => T,
 ): T | undefined {
   let current: DirectoryReservation | undefined
   let previous: DirectoryReservation | undefined
@@ -42,14 +42,32 @@ export function withNoFollowDirectoryChain<T>(
     previous = reserveCurrentDirectory()
     process.chdir(parse(absolutePath).root)
     current = reserveCurrentDirectory()
+    const chain = [current]
 
     for (const segment of childSegments(absolutePath)) {
       const parent = current
       current = reserveOrCreateCurrentChildDirectory(parent, segment, mode)
+      chain.push(current)
       closeSync(parent.descriptor)
     }
-    assertCurrentDirectory(current)
-    return operation()
+    if (mode !== undefined && process.platform !== "win32") {
+      assertCurrentDirectory(current)
+      assertDirectoryChainLocations(chain)
+      fchmodSync(current.descriptor, mode)
+      const identity = noFollowPathIdentityFromStat(fstatSync(current.descriptor, { bigint: true }))
+      if (sameNoFollowPathLocation(previous.identity, current.identity)) previous = { ...previous, identity }
+      current = { ...current, identity }
+      chain[chain.length - 1] = current
+    }
+    const reserved = current
+    const assertLocation = () => {
+      assertCurrentDirectory(reserved)
+      assertDirectoryChainLocations(chain)
+    }
+    assertLocation()
+    const result = operation(assertLocation)
+    assertLocation()
+    return result
   } catch {
     return undefined
   } finally {
@@ -97,13 +115,15 @@ function reserveCurrentDirectory(): DirectoryReservation {
 function reserveOrCreateCurrentChildDirectory(
   parent: DirectoryReservation,
   name: string,
-  mode: number,
+  mode: number | undefined,
 ): DirectoryReservation {
   assertCurrentDirectory(parent)
-  try {
-    mkdirSync(name, { mode })
-  } catch (error) {
-    if (errorCode(error) !== "EEXIST") throw new NoFollowDirectoryChainError()
+  if (mode !== undefined) {
+    try {
+      mkdirSync(name, { mode })
+    } catch (error) {
+      if (errorCode(error) !== "EEXIST") throw new NoFollowDirectoryChainError()
+    }
   }
 
   let descriptor: number | undefined
@@ -112,9 +132,13 @@ function reserveOrCreateCurrentChildDirectory(
     if (!beforeStat.isDirectory() || beforeStat.isSymbolicLink()) throw new NoFollowDirectoryChainError()
     const before = noFollowPathIdentityFromStat(beforeStat)
     descriptor = openNoFollowDirectory(name)
-    const descriptorIdentity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }))
-    const after = noFollowPathIdentityFromStat(lstatSync(name, { bigint: true }))
-    if (!sameNoFollowPathIdentity(before, after) || !sameNoFollowPathLocation(after, descriptorIdentity)) {
+    const openedStat = fstatSync(descriptor, { bigint: true })
+    const descriptorIdentity = noFollowPathIdentityFromStat(openedStat)
+    const afterStat = lstatSync(name, { bigint: true })
+    const after = noFollowPathIdentityFromStat(afterStat)
+    // Sibling writes change directory timestamps, not the reserved directory identity.
+    if (!sameNoFollowPathLocation(before, after) || !sameNoFollowPathLocation(after, descriptorIdentity)
+      || beforeStat.birthtimeNs !== openedStat.birthtimeNs || afterStat.birthtimeNs !== openedStat.birthtimeNs) {
       throw new NoFollowDirectoryChainError()
     }
     const reservation = { descriptor, identity: after, path: join(parent.path, name) }
@@ -135,6 +159,15 @@ function assertCurrentDirectory(reservation: DirectoryReservation): void {
     if (!sameNoFollowPathLocation(reservation.identity, current)) throw new NoFollowDirectoryChainError()
   } finally {
     if (descriptor !== undefined) closeReservedDescriptor(descriptor)
+  }
+}
+
+function assertDirectoryChainLocations(chain: readonly DirectoryReservation[]): void {
+  for (const reservation of chain) {
+    const current = captureNoFollowDirectory(reservation.path)
+    if (current.kind !== "ready" || !sameNoFollowPathLocation(reservation.identity, current.value)) {
+      throw new NoFollowDirectoryChainError()
+    }
   }
 }
 

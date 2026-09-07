@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
+import { readNoFollowProjectFile } from "../io/no-follow-file.js"
 
 import type { Phase0Scenario } from "../rules/rule-frontmatter.js"
 import {
@@ -615,18 +615,25 @@ export function loadHarnessConfigResult(
   projectDir: string,
   projectReadBoundary?: HarnessConfigReadBoundary,
 ): HarnessConfigLoadResult {
-  const harnessPath = join(projectDir, ".persona", "harness.jsonc")
-  const bytes = projectReadBoundary?.readProjectFile(".persona/harness.jsonc")
-  if (projectReadBoundary !== undefined && bytes === undefined) {
-    return { config: DEFAULT_CONFIG, contextDiagnostics: [], diagnostics: [], safe: true }
+  const file = projectReadBoundary === undefined
+    ? readNoFollowProjectFile(projectDir, ".persona/harness.jsonc", 8 * 1024 * 1024)
+    : undefined
+  if (file?.kind === "blocked") {
+    return {
+      config: FAIL_CLOSED_CONFIG, contextDiagnostics: [], safe: false,
+      diagnostics: [configDiagnostic("config_read_failed", "Persona Harness configuration could not be read safely; read-only recovery is required.")],
+    }
   }
-  if (projectReadBoundary === undefined && !existsSync(harnessPath)) {
+  const bytes = projectReadBoundary === undefined
+    ? file?.kind === "ready" ? file.value.bytes : undefined
+    : projectReadBoundary.readProjectFile(".persona/harness.jsonc")
+  if (bytes === undefined) {
     return { config: DEFAULT_CONFIG, contextDiagnostics: [], diagnostics: [], safe: true }
   }
 
   let parsed: unknown
   try {
-    parsed = JSON.parse(stripJsonComments(bytes?.toString("utf8") ?? readFileSync(harnessPath, "utf8")))
+    parsed = JSON.parse(stripJsonComments(bytes.toString("utf8")))
   } catch (error) {
     return {
       config: FAIL_CLOSED_CONFIG,

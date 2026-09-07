@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { readFileSync } from "node:fs"
+import { readFileSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import process from "node:process"
 
@@ -57,4 +57,34 @@ assert.deepEqual(invoke(["context", "task", "--session", "b".repeat(64)]), { sta
 assert.deepEqual(invoke([...task, "end", "--task", "installed-task"]), { status: "unbound" })
 assert.deepEqual(readFileSync(join(profileRoot, "profile.json")), taskProfile)
 assert.deepEqual(readFileSync(join(projectDir, ".persona", "harness.jsonc")), config)
+const profileLock = join(profileRoot, "profile.json.lock")
+writeFileSync(profileLock, "", { flag: "wx", mode: 0o600 })
+try {
+  const locked = spawnSync(process.execPath, [cliPath, "philosophy", "rollback", "rule-installed-task"], {
+    cwd: projectDir, env, encoding: "utf8", timeout: 10_000,
+  })
+  assert.equal(locked.status, 1, "installed-profile-lock-rejected")
+  assert.equal(locked.stdout, "", "installed-profile-lock-no-success")
+  assert.equal(locked.stderr, "personalization-store-busy\n")
+  assert.deepEqual(readFileSync(join(profileRoot, "profile.json")), taskProfile)
+} finally {
+  unlinkSync(profileLock)
+}
+const configPath = join(projectDir, ".persona", "harness.jsonc")
+const externalConfig = join(dirname(projectDir), "external-harness.jsonc")
+writeFileSync(externalConfig, config)
+unlinkSync(configPath)
+symlinkSync(externalConfig, configPath, "file")
+try {
+  const linkedPreview = spawnSync(process.execPath, [cliPath, "context", "preview", "src/main/java/example/CustomerService.java", "--json"], {
+    cwd: projectDir, env, encoding: "utf8", timeout: 10_000,
+  })
+  assert.equal(linkedPreview.status, 1, "installed-config-symlink-rejected")
+  assert.equal(linkedPreview.stdout, "", "installed-config-symlink-no-context")
+  assert.equal(linkedPreview.stderr, "context-config-unavailable\n")
+  assert.deepEqual(readFileSync(externalConfig), config)
+} finally {
+  unlinkSync(configPath)
+  writeFileSync(configPath, config)
+}
 process.stdout.write("installed-context-scope: PASS\n")

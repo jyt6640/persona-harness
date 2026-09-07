@@ -13,8 +13,7 @@ import {
 } from "./personalization-profile-model.js"
 import {
   PersonalizationStoreError,
-  readPersonalizationStore,
-  writePersonalizationStore,
+  mutatePersonalizationStore,
   type PersonalizationStoreOptions,
 } from "./personalization-store-io.js"
 
@@ -39,44 +38,42 @@ export function proposePersonalizationCandidate(
   } catch {
     throw new PersonalizationStoreError("personalization-candidate-invalid")
   }
-  const current = readPersonalizationStore(options)
-  if (current.profile.activeRules.some((rule) => rule.ruleId === `rule-${candidate.candidateId}`) || current.profile.pendingCandidates.some((item) => item.candidateId === candidate.candidateId)) {
-    throw new PersonalizationStoreError("personalization-candidate-invalid")
-  }
-  const now = timestamp(options)
-  const decisionId = createId(options, "decision")
-  const eventId = createId(options, "event")
-  const conflict = findConflictingRule(current.profile.activeRules, candidate)
-  if (explicitPending) {
-    const event = historyEvent(eventId, "pending", now, decisionId, candidate.candidateId, null)
-    const document = withMutation(current, {
-      action: "pending",
-      candidate,
-      decisionId,
-      event,
-      ruleId: null,
-    })
-    writePersonalizationStore(document, options)
-    return { document, event, status: "pending" }
-  }
-  if (conflict !== undefined) {
-    const event = historyEvent(eventId, "conflict", now, decisionId, candidate.candidateId, null)
-    const document = withMutation(current, {
-      action: "pending",
-      candidate,
-      decisionId,
-      event,
-      ruleId: null,
-    })
-    writePersonalizationStore(document, options)
-    return { document, event, status: "conflict" }
-  }
-  const ruleId = `rule-${candidate.candidateId}`
-  const rule = ruleFromCandidate(candidate, ruleId, now)
-  const event = historyEvent(eventId, "activated", now, decisionId, candidate.candidateId, ruleId)
-  const document = withMutation(current, { action: "activate", candidate, decisionId, event, removeCandidate: true, rule, ruleId })
-  writePersonalizationStore(document, options)
-  return { document, event, status: "activated" }
+  return mutatePersonalizationStore(options, (current) => {
+    if (current.profile.activeRules.some((rule) => rule.ruleId === `rule-${candidate.candidateId}`) || current.profile.pendingCandidates.some((item) => item.candidateId === candidate.candidateId)) {
+      throw new PersonalizationStoreError("personalization-candidate-invalid")
+    }
+    const now = timestamp(options)
+    const decisionId = createId(options, "decision")
+    const eventId = createId(options, "event")
+    const conflict = findConflictingRule(current.profile.activeRules, candidate)
+    if (explicitPending) {
+      const event = historyEvent(eventId, "pending", now, decisionId, candidate.candidateId, null)
+      const document = withMutation(current, {
+        action: "pending",
+        candidate,
+        decisionId,
+        event,
+        ruleId: null,
+      })
+      return { document, event, status: "pending" }
+    }
+    if (conflict !== undefined) {
+      const event = historyEvent(eventId, "conflict", now, decisionId, candidate.candidateId, null)
+      const document = withMutation(current, {
+        action: "pending",
+        candidate,
+        decisionId,
+        event,
+        ruleId: null,
+      })
+      return { document, event, status: "conflict" }
+    }
+    const ruleId = `rule-${candidate.candidateId}`
+    const rule = ruleFromCandidate(candidate, ruleId, now)
+    const event = historyEvent(eventId, "activated", now, decisionId, candidate.candidateId, ruleId)
+    const document = withMutation(current, { action: "activate", candidate, decisionId, event, removeCandidate: true, rule, ruleId })
+    return { document, event, status: "activated" }
+  })
 }
 
 export function resolvePersonalizationCandidate(
@@ -85,51 +82,51 @@ export function resolvePersonalizationCandidate(
   options: PersonalizationStoreOptions = {},
   exceptionScope?: PersonalizationScope,
 ): PersonalizationMutationResult {
-  const current = readPersonalizationStore(options)
-  const candidate = current.profile.pendingCandidates.find((item) => item.candidateId === candidateId)
-  if (candidate === undefined) throw new PersonalizationStoreError("personalization-candidate-missing")
-  const now = timestamp(options)
-  const decisionId = createId(options, "decision")
-  const eventId = createId(options, "event")
-  if (action === "exception" && (exceptionScope === undefined || exceptionScope.kind === "personal")) throw new PersonalizationStoreError("personalization-resolution-invalid")
-  const selectedScope = action === "exception" ? exceptionScope : candidate.scope
-  const conflict = current.profile.activeRules.find((rule) => rule.topic === candidate.topic && selectedScope !== undefined && scopesOverlap(rule.scope, selectedScope))
-  if (action === "exception" && conflict !== undefined) throw new PersonalizationStoreError("personalization-candidate-conflict")
-  if (action === "supersede" && conflict === undefined) throw new PersonalizationStoreError("personalization-resolution-invalid")
-  const ruleId = action === "exception" || action === "supersede" ? `rule-${candidate.candidateId}` : null
-  const rule = ruleId === null ? undefined : ruleFromCandidate(candidate, ruleId, now, selectedScope)
-  const eventName: PersonalizationHistoryEvent["event"] = action === "pending"
-    ? "pending"
-    : action === "retain"
-      ? "retained"
-      : action === "supersede"
-        ? "superseded"
-        : "exception"
-  const event = historyEvent(eventId, eventName, now, decisionId, candidateId, ruleId)
-  const document = withMutation(current, {
-    action,
-    candidate,
-    decisionId,
-    event,
-    replaceRule: action === "supersede" ? conflict : undefined,
-    rule,
-    ruleId,
-    removeCandidate: action !== "pending",
+  return mutatePersonalizationStore(options, (current) => {
+    const candidate = current.profile.pendingCandidates.find((item) => item.candidateId === candidateId)
+    if (candidate === undefined) throw new PersonalizationStoreError("personalization-candidate-missing")
+    const now = timestamp(options)
+    const decisionId = createId(options, "decision")
+    const eventId = createId(options, "event")
+    if (action === "exception" && (exceptionScope === undefined || exceptionScope.kind === "personal")) throw new PersonalizationStoreError("personalization-resolution-invalid")
+    const selectedScope = action === "exception" ? exceptionScope : candidate.scope
+    const conflict = current.profile.activeRules.find((rule) => rule.topic === candidate.topic && selectedScope !== undefined && scopesOverlap(rule.scope, selectedScope))
+    if (action === "exception" && conflict !== undefined) throw new PersonalizationStoreError("personalization-candidate-conflict")
+    if (action === "supersede" && conflict === undefined) throw new PersonalizationStoreError("personalization-resolution-invalid")
+    const ruleId = action === "exception" || action === "supersede" ? `rule-${candidate.candidateId}` : null
+    const rule = ruleId === null ? undefined : ruleFromCandidate(candidate, ruleId, now, selectedScope)
+    const eventName: PersonalizationHistoryEvent["event"] = action === "pending"
+      ? "pending"
+      : action === "retain"
+        ? "retained"
+        : action === "supersede"
+          ? "superseded"
+          : "exception"
+    const event = historyEvent(eventId, eventName, now, decisionId, candidateId, ruleId)
+    const document = withMutation(current, {
+      action,
+      candidate,
+      decisionId,
+      event,
+      replaceRule: action === "supersede" ? conflict : undefined,
+      rule,
+      ruleId,
+      removeCandidate: action !== "pending",
+    })
+    return { document, event, status: eventName }
   })
-  writePersonalizationStore(document, options)
-  return { document, event, status: eventName }
 }
 
 export function rollbackPersonalizationRule(ruleId: string, options: PersonalizationStoreOptions = {}): PersonalizationMutationResult {
-  const current = readPersonalizationStore(options)
-  const rule = current.profile.activeRules.find((item) => item.ruleId === ruleId)
-  if (rule === undefined) throw new PersonalizationStoreError("personalization-rule-missing")
-  const now = timestamp(options)
-  const decisionId = createId(options, "decision")
-  const event = historyEvent(createId(options, "event"), "rollback", now, decisionId, null, ruleId)
-  const document = withMutation(current, { action: "rollback", decisionId, event, removeRule: ruleId, ruleId })
-  writePersonalizationStore(document, options)
-  return { document, event, status: "rollback" }
+  return mutatePersonalizationStore(options, (current) => {
+    const rule = current.profile.activeRules.find((item) => item.ruleId === ruleId)
+    if (rule === undefined) throw new PersonalizationStoreError("personalization-rule-missing")
+    const now = timestamp(options)
+    const decisionId = createId(options, "decision")
+    const event = historyEvent(createId(options, "event"), "rollback", now, decisionId, null, ruleId)
+    const document = withMutation(current, { action: "rollback", decisionId, event, removeRule: ruleId, ruleId })
+    return { document, event, status: "rollback" }
+  })
 }
 
 function withMutation(

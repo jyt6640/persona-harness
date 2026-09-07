@@ -214,6 +214,16 @@ unsafe roots, symlinked files, invalid transitions, and interrupted/partial
 state are fail-closed. Atomic private writes either publish a complete valid
 document or leave the prior active projection unchanged.
 
+Profile reads use no-follow descriptors inside a checked directory chain and
+reject files larger than 8 MiB before parsing. The byte bound also bounds the
+serialized collections; oversized history is not silently truncated. Mutations
+hold one exclusive `profile.json.lock` across read, decision and publication.
+Contention returns `personalization-store-busy`, never a success that discards
+another approved decision. Interrupted locks are not automatically stolen or
+retried. Reads remain read-only, and private file/directory modes are retained.
+Project configuration uses the same bounded no-follow file-read primitive;
+linked configuration cannot enable Context delivery.
+
 The public surface is intentionally small:
 
 ```text

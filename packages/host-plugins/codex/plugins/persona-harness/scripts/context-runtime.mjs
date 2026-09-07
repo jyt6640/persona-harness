@@ -1,8 +1,8 @@
 import process$1 from "node:process";
-import { dirname, isAbsolute, join, posix, relative, resolve, sep, win32 } from "node:path";
+import { dirname, isAbsolute, join, parse, posix, relative, resolve, sep, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
-import { closeSync, constants, existsSync, fstatSync, lstatSync, openSync, readFileSync, readSync, realpathSync } from "node:fs";
+import { closeSync, constants, fchmodSync, fstatSync, lstatSync, mkdirSync, openSync, readSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 //#region dist/io/no-follow-file.js
 function captureNoFollowDirectory(path) {
@@ -1330,15 +1330,15 @@ function isContextPersonalizationEnabled(configResult) {
 	return configResult.safe && configResult.contextDiagnostics.length === 0 && configResult.config.enabled && configResult.config.context.enabled;
 }
 function loadHarnessConfigResult(projectDir, projectReadBoundary) {
-	const harnessPath = join(projectDir, ".persona", "harness.jsonc");
-	const bytes = projectReadBoundary?.readProjectFile(".persona/harness.jsonc");
-	if (projectReadBoundary !== void 0 && bytes === void 0) return {
-		config: DEFAULT_CONFIG,
+	const file = projectReadBoundary === void 0 ? readNoFollowProjectFile(projectDir, ".persona/harness.jsonc", 8 * 1024 * 1024) : void 0;
+	if (file?.kind === "blocked") return {
+		config: FAIL_CLOSED_CONFIG,
 		contextDiagnostics: [],
-		diagnostics: [],
-		safe: true
+		safe: false,
+		diagnostics: [configDiagnostic("config_read_failed", "Persona Harness configuration could not be read safely; read-only recovery is required.")]
 	};
-	if (projectReadBoundary === void 0 && !existsSync(harnessPath)) return {
+	const bytes = projectReadBoundary === void 0 ? file?.kind === "ready" ? file.value.bytes : void 0 : projectReadBoundary.readProjectFile(".persona/harness.jsonc");
+	if (bytes === void 0) return {
 		config: DEFAULT_CONFIG,
 		contextDiagnostics: [],
 		diagnostics: [],
@@ -1346,7 +1346,7 @@ function loadHarnessConfigResult(projectDir, projectReadBoundary) {
 	};
 	let parsed;
 	try {
-		parsed = JSON.parse(stripJsonComments(bytes?.toString("utf8") ?? readFileSync(harnessPath, "utf8")));
+		parsed = JSON.parse(stripJsonComments(bytes.toString("utf8")));
 	} catch (error) {
 		return {
 			config: FAIL_CLOSED_CONFIG,
@@ -1815,6 +1815,216 @@ function isRecord$2(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 //#endregion
+//#region dist/io/no-follow-directory-chain.js
+var NoFollowDirectoryChainError = class extends Error {
+	constructor() {
+		super("directory chain is unsafe");
+		this.name = "NoFollowDirectoryChainError";
+	}
+};
+function withNoFollowDirectoryChain(requestedPath, mode, operation) {
+	let current;
+	let previous;
+	try {
+		const absolutePath = absoluteDirectoryPath(requestedPath);
+		previous = reserveCurrentDirectory();
+		process$1.chdir(parse(absolutePath).root);
+		current = reserveCurrentDirectory();
+		const chain = [current];
+		for (const segment of childSegments(absolutePath)) {
+			const parent = current;
+			current = reserveOrCreateCurrentChildDirectory(parent, segment, mode);
+			chain.push(current);
+			closeSync(parent.descriptor);
+		}
+		if (mode !== void 0 && process$1.platform !== "win32") {
+			assertCurrentDirectory(current);
+			assertDirectoryChainLocations(chain);
+			fchmodSync(current.descriptor, mode);
+			const identity = noFollowPathIdentityFromStat(fstatSync(current.descriptor, { bigint: true }));
+			if (sameNoFollowPathLocation(previous.identity, current.identity)) previous = {
+				...previous,
+				identity
+			};
+			current = {
+				...current,
+				identity
+			};
+			chain[chain.length - 1] = current;
+		}
+		const reserved = current;
+		const assertLocation = () => {
+			assertCurrentDirectory(reserved);
+			assertDirectoryChainLocations(chain);
+		};
+		assertLocation();
+		const result = operation(assertLocation);
+		assertLocation();
+		return result;
+	} catch {
+		return;
+	} finally {
+		if (current !== void 0) closeReservedDirectory(current);
+		if (previous !== void 0) {
+			restoreCurrentDirectory(previous);
+			closeReservedDirectory(previous);
+		}
+	}
+}
+function absoluteDirectoryPath(path) {
+	if (!isAbsolute(path) || path.includes("\0")) throw new NoFollowDirectoryChainError();
+	return resolve(path);
+}
+function childSegments(absolutePath) {
+	const root = parse(absolutePath).root;
+	const childPath = relative(root, absolutePath);
+	if (childPath.length === 0) return [];
+	const segments = childPath.split(sep);
+	if (segments.some((segment) => segment.length === 0 || segment === "." || segment === "..")) throw new NoFollowDirectoryChainError();
+	return segments;
+}
+function reserveCurrentDirectory() {
+	const path = process$1.cwd();
+	const current = captureNoFollowDirectory(path);
+	if (current.kind !== "ready") throw new NoFollowDirectoryChainError();
+	let descriptor;
+	try {
+		descriptor = openNoFollowDirectory(".");
+		const identity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }));
+		if (!sameNoFollowPathLocation(current.value, identity)) throw new NoFollowDirectoryChainError();
+		const reservation = {
+			descriptor,
+			identity,
+			path
+		};
+		descriptor = void 0;
+		return reservation;
+	} finally {
+		if (descriptor !== void 0) closeReservedDescriptor(descriptor);
+	}
+}
+function reserveOrCreateCurrentChildDirectory(parent, name, mode) {
+	assertCurrentDirectory(parent);
+	if (mode !== void 0) try {
+		mkdirSync(name, { mode });
+	} catch (error) {
+		if (errorCode(error) !== "EEXIST") throw new NoFollowDirectoryChainError();
+	}
+	let descriptor;
+	try {
+		const beforeStat = lstatSync(name, { bigint: true });
+		if (!beforeStat.isDirectory() || beforeStat.isSymbolicLink()) throw new NoFollowDirectoryChainError();
+		const before = noFollowPathIdentityFromStat(beforeStat);
+		descriptor = openNoFollowDirectory(name);
+		const openedStat = fstatSync(descriptor, { bigint: true });
+		const descriptorIdentity = noFollowPathIdentityFromStat(openedStat);
+		const afterStat = lstatSync(name, { bigint: true });
+		const after = noFollowPathIdentityFromStat(afterStat);
+		if (!sameNoFollowPathLocation(before, after) || !sameNoFollowPathLocation(after, descriptorIdentity) || beforeStat.birthtimeNs !== openedStat.birthtimeNs || afterStat.birthtimeNs !== openedStat.birthtimeNs) throw new NoFollowDirectoryChainError();
+		const reservation = {
+			descriptor,
+			identity: after,
+			path: join(parent.path, name)
+		};
+		process$1.chdir(name);
+		assertCurrentDirectory(reservation);
+		descriptor = void 0;
+		return reservation;
+	} finally {
+		if (descriptor !== void 0) closeReservedDescriptor(descriptor);
+	}
+}
+function assertCurrentDirectory(reservation) {
+	let descriptor;
+	try {
+		descriptor = openNoFollowDirectory(".");
+		const current = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }));
+		if (!sameNoFollowPathLocation(reservation.identity, current)) throw new NoFollowDirectoryChainError();
+	} finally {
+		if (descriptor !== void 0) closeReservedDescriptor(descriptor);
+	}
+}
+function assertDirectoryChainLocations(chain) {
+	for (const reservation of chain) {
+		const current = captureNoFollowDirectory(reservation.path);
+		if (current.kind !== "ready" || !sameNoFollowPathLocation(reservation.identity, current.value)) throw new NoFollowDirectoryChainError();
+	}
+}
+function openNoFollowDirectory(path) {
+	const descriptor = openSync(path, process$1.platform === "win32" ? constants.O_RDONLY : constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
+	try {
+		if (!fstatSync(descriptor, { bigint: true }).isDirectory()) throw new NoFollowDirectoryChainError();
+		return descriptor;
+	} catch (error) {
+		closeReservedDescriptor(descriptor);
+		throw error;
+	}
+}
+function restoreCurrentDirectory(previous) {
+	try {
+		const current = captureNoFollowDirectory(previous.path);
+		if (current.kind === "ready" && sameNoFollowPathLocation(current.value, previous.identity)) {
+			process$1.chdir(previous.path);
+			assertCurrentDirectory(previous);
+			return;
+		}
+	} catch {}
+	try {
+		process$1.chdir(parse(previous.path).root);
+	} catch {}
+}
+function closeReservedDirectory(reservation) {
+	closeReservedDescriptor(reservation.descriptor);
+}
+function closeReservedDescriptor(descriptor) {
+	try {
+		closeSync(descriptor);
+	} catch {}
+}
+function errorCode(error) {
+	return error !== null && typeof error === "object" && "code" in error && typeof error.code === "string" ? error.code : void 0;
+}
+//#endregion
+//#region dist/cli/personalization-file-boundary.js
+const MAX_PERSONALIZATION_FILE_BYTES = 8 * 1024 * 1024;
+var PersonalizationFileError = class extends Error {
+	code;
+	constructor(code) {
+		super(code);
+		this.code = code;
+		this.name = "PersonalizationFileError";
+	}
+};
+function readPersonalizationFile(root) {
+	const directory = captureNoFollowDirectory(root);
+	if (directory.kind === "absent") return { kind: "absent" };
+	if (directory.kind === "blocked") throw new PersonalizationFileError("unsafe");
+	return withStoreDirectory(root, void 0, readCurrentFile);
+}
+function withStoreDirectory(root, mode, operation) {
+	const result = withNoFollowDirectoryChain(root, mode, (assertLocation) => {
+		try {
+			return {
+				kind: "ready",
+				value: operation(assertLocation)
+			};
+		} catch (error) {
+			return {
+				kind: "failed",
+				error
+			};
+		}
+	});
+	if (result === void 0) throw new PersonalizationFileError("unsafe");
+	if (result.kind === "failed") throw result.error;
+	return result.value;
+}
+function readCurrentFile() {
+	const file = readNoFollowRegularFile("profile.json", MAX_PERSONALIZATION_FILE_BYTES, ".");
+	if (file.kind === "blocked") throw new PersonalizationFileError("unsafe");
+	return file;
+}
+//#endregion
 //#region dist/cli/personalization-store-io.js
 var PersonalizationStoreError = class extends Error {
 	code;
@@ -1845,32 +2055,19 @@ function personalizationStorePath(options = {}) {
 	return path.join(assertSafeStoreRoot(root, path), "profile.json");
 }
 function readPersonalizationStoreSnapshot(options = {}) {
-	const path = personalizationStorePath(options);
-	const root = dirname(path);
-	try {
-		const rootStat = lstatSync(root);
-		if (rootStat.isSymbolicLink() || !rootStat.isDirectory()) throw new PersonalizationStoreError("personalization-store-unsafe");
-	} catch (error) {
-		if (error instanceof PersonalizationStoreError) throw error;
-		if (isMissingPathError(error)) return {
-			status: "missing",
-			document: emptyPersonalizationStore()
-		};
-		throw new PersonalizationStoreError("personalization-store-unsafe");
-	}
+	return withStoreErrors(() => parseFileSnapshot(readPersonalizationFile(dirname(personalizationStorePath(options)))));
+}
+function parseFileSnapshot(file) {
+	if (file.kind === "absent") return {
+		status: "missing",
+		document: emptyPersonalizationStore()
+	};
 	let parsed;
 	try {
-		const stat = lstatSync(path);
-		if (stat.isSymbolicLink()) throw new PersonalizationStoreError("personalization-store-unsafe");
-		if (!stat.isFile() || stat.isSymbolicLink()) throw new PersonalizationStoreError("personalization-store-unsafe");
-		parsed = JSON.parse(readFileSync(path, "utf8"));
+		parsed = JSON.parse(file.value.bytes.toString("utf8"));
 	} catch (error) {
-		if (error instanceof PersonalizationStoreError) throw error;
-		if (isMissingPathError(error)) return {
-			status: "missing",
-			document: emptyPersonalizationStore()
-		};
-		throw new PersonalizationStoreError("personalization-store-corrupt");
+		if (error instanceof SyntaxError) throw new PersonalizationStoreError("personalization-store-corrupt");
+		throw error;
 	}
 	try {
 		return {
@@ -1879,6 +2076,14 @@ function readPersonalizationStoreSnapshot(options = {}) {
 		};
 	} catch (error) {
 		if (error instanceof PersonalizationValidationError && error.code === "personalization-store-corrupt") throw new PersonalizationStoreError("personalization-store-corrupt");
+		throw error;
+	}
+}
+function withStoreErrors(operation) {
+	try {
+		return operation();
+	} catch (error) {
+		if (error instanceof PersonalizationFileError) throw new PersonalizationStoreError(error.code === "busy" ? "personalization-store-busy" : "personalization-store-unsafe");
 		throw error;
 	}
 }

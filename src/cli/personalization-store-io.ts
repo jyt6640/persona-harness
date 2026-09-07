@@ -1,8 +1,8 @@
-import { lstatSync, readFileSync, realpathSync } from "node:fs"
+import { lstatSync, realpathSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, posix, win32 } from "node:path"
 
-import { ensurePrivateDirectory, writePrivateFileAtomic } from "../io/atomic-file.js"
+import { PersonalizationFileError, readPersonalizationFile, withPersonalizationFileMutation } from "./personalization-file-boundary.js"
 import {
   emptyPersonalizationStore,
   parsePersonalizationStore,
@@ -20,7 +20,7 @@ export type PersonalizationStoreOptions = {
 }
 
 export class PersonalizationStoreError extends Error {
-  readonly code: "personalization-store-unsafe" | "personalization-store-corrupt" | "personalization-candidate-invalid" | "personalization-candidate-conflict" | "personalization-candidate-missing" | "personalization-resolution-invalid" | "personalization-rule-missing"
+  readonly code: "personalization-store-unsafe" | "personalization-store-busy" | "personalization-store-corrupt" | "personalization-candidate-invalid" | "personalization-candidate-conflict" | "personalization-candidate-missing" | "personalization-resolution-invalid" | "personalization-rule-missing"
 
   constructor(code: PersonalizationStoreError["code"]) {
     super(code)
@@ -61,26 +61,17 @@ export function readPersonalizationStore(options: PersonalizationStoreOptions = 
 }
 
 export function readPersonalizationStoreSnapshot(options: PersonalizationStoreOptions = {}): PersonalizationStoreSnapshot {
-  const path = personalizationStorePath(options)
-  const root = dirname(path)
-  try {
-    const rootStat = lstatSync(root)
-    if (rootStat.isSymbolicLink() || !rootStat.isDirectory()) throw new PersonalizationStoreError("personalization-store-unsafe")
-  } catch (error) {
-    if (error instanceof PersonalizationStoreError) throw error
-    if (isMissingPathError(error)) return { status: "missing", document: emptyPersonalizationStore() }
-    throw new PersonalizationStoreError("personalization-store-unsafe")
-  }
+  return withStoreErrors(() => parseFileSnapshot(readPersonalizationFile(dirname(personalizationStorePath(options)))))
+}
+
+function parseFileSnapshot(file: ReturnType<typeof readPersonalizationFile>): PersonalizationStoreSnapshot {
+  if (file.kind === "absent") return { status: "missing", document: emptyPersonalizationStore() }
   let parsed: unknown
   try {
-    const stat = lstatSync(path)
-    if (stat.isSymbolicLink()) throw new PersonalizationStoreError("personalization-store-unsafe")
-    if (!stat.isFile() || stat.isSymbolicLink()) throw new PersonalizationStoreError("personalization-store-unsafe")
-    parsed = JSON.parse(readFileSync(path, "utf8"))
+    parsed = JSON.parse(file.value.bytes.toString("utf8"))
   } catch (error) {
-    if (error instanceof PersonalizationStoreError) throw error
-    if (isMissingPathError(error)) return { status: "missing", document: emptyPersonalizationStore() }
-    throw new PersonalizationStoreError("personalization-store-corrupt")
+    if (error instanceof SyntaxError) throw new PersonalizationStoreError("personalization-store-corrupt")
+    throw error
   }
   try {
     return { status: "ready", document: parsePersonalizationStore(parsed) }
@@ -93,18 +84,40 @@ export function readPersonalizationStoreSnapshot(options: PersonalizationStoreOp
 }
 
 export function writePersonalizationStore(document: PersonalizationStoreDocument, options: PersonalizationStoreOptions = {}): void {
+  const bytes = serializedStore(document)
+  withStoreErrors(() => withPersonalizationFileMutation(dirname(personalizationStorePath(options)), (file) => file.publish(bytes)))
+}
+
+export function mutatePersonalizationStore<T extends { readonly document: PersonalizationStoreDocument }>(
+  options: PersonalizationStoreOptions,
+  mutation: (current: PersonalizationStoreDocument) => T,
+): T {
+  return withStoreErrors(() => withPersonalizationFileMutation(dirname(personalizationStorePath(options)), (file) => {
+    const result = mutation(parseFileSnapshot(file.snapshot).document)
+    file.publish(serializedStore(result.document))
+    return result
+  }))
+}
+
+function serializedStore(document: PersonalizationStoreDocument): Buffer {
   let validated: PersonalizationStoreDocument
   try {
     validated = parsePersonalizationStore(document)
-  } catch {
-    throw new PersonalizationStoreError("personalization-store-corrupt")
+  } catch (error) {
+    if (error instanceof PersonalizationValidationError) throw new PersonalizationStoreError("personalization-store-corrupt")
+    throw error
   }
-  const path = personalizationStorePath(options)
-  const root = dirname(path)
-  assertSafeStoreRoot(root, options.platform === "win32" ? win32 : posix)
-  assertWritableStoreFile(path)
-  ensurePrivateDirectory(root)
-  writePrivateFileAtomic(path, `${JSON.stringify(validated, null, 2)}\n`)
+  return Buffer.from(`${JSON.stringify(validated, null, 2)}\n`)
+}
+
+function withStoreErrors<T>(operation: () => T): T {
+  try { return operation() }
+  catch (error) {
+    if (error instanceof PersonalizationFileError) {
+      throw new PersonalizationStoreError(error.code === "busy" ? "personalization-store-busy" : "personalization-store-unsafe")
+    }
+    throw error
+  }
 }
 
 function assertSafeStoreRoot(root: string, path: typeof posix | typeof win32): string {
@@ -132,16 +145,6 @@ function validateExistingDirectory(candidate: string): "present" | "missing" {
     if (error instanceof PersonalizationStoreError) throw error
     if (isMissingPathError(error)) return "missing"
     throw new PersonalizationStoreError("personalization-store-unsafe")
-  }
-}
-
-function assertWritableStoreFile(path: string): void {
-  try {
-    const stat = lstatSync(path)
-    if (stat.isSymbolicLink() || !stat.isFile()) throw new PersonalizationStoreError("personalization-store-unsafe")
-  } catch (error) {
-    if (error instanceof PersonalizationStoreError) throw error
-    if (!isMissingPathError(error)) throw new PersonalizationStoreError("personalization-store-unsafe")
   }
 }
 

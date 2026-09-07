@@ -1,6 +1,6 @@
 import process$1 from "node:process";
 import { fileURLToPath } from "node:url";
-import { chmodSync, closeSync, constants, existsSync, fstatSync, fsyncSync, linkSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, realpathSync, renameSync, rmSync, rmdirSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, linkSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, realpathSync, renameSync, rmdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, parse, posix, relative, resolve, sep, win32 } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { homedir } from "node:os";
@@ -1486,15 +1486,15 @@ function isProjectPhilosophyInjectionEnabled(config) {
 	return config.enabled && config.features.projectPhilosophyInjection;
 }
 function loadHarnessConfigResult(projectDir, projectReadBoundary) {
-	const harnessPath = join(projectDir, ".persona", "harness.jsonc");
-	const bytes = projectReadBoundary?.readProjectFile(".persona/harness.jsonc");
-	if (projectReadBoundary !== void 0 && bytes === void 0) return {
-		config: DEFAULT_CONFIG,
+	const file = projectReadBoundary === void 0 ? readNoFollowProjectFile(projectDir, ".persona/harness.jsonc", 8 * 1024 * 1024) : void 0;
+	if (file?.kind === "blocked") return {
+		config: FAIL_CLOSED_CONFIG,
 		contextDiagnostics: [],
-		diagnostics: [],
-		safe: true
+		safe: false,
+		diagnostics: [configDiagnostic("config_read_failed", "Persona Harness configuration could not be read safely; read-only recovery is required.")]
 	};
-	if (projectReadBoundary === void 0 && !existsSync(harnessPath)) return {
+	const bytes = projectReadBoundary === void 0 ? file?.kind === "ready" ? file.value.bytes : void 0 : projectReadBoundary.readProjectFile(".persona/harness.jsonc");
+	if (bytes === void 0) return {
 		config: DEFAULT_CONFIG,
 		contextDiagnostics: [],
 		diagnostics: [],
@@ -1502,7 +1502,7 @@ function loadHarnessConfigResult(projectDir, projectReadBoundary) {
 	};
 	let parsed;
 	try {
-		parsed = JSON.parse(stripJsonComments(bytes?.toString("utf8") ?? readFileSync(harnessPath, "utf8")));
+		parsed = JSON.parse(stripJsonComments(bytes.toString("utf8")));
 	} catch (error) {
 		return {
 			config: FAIL_CLOSED_CONFIG,
@@ -1985,65 +1985,265 @@ function isRecord$1(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 //#endregion
-//#region dist/io/atomic-file.js
-var PrivateFilePermissionError = class extends Error {
-	targetPath;
-	expectedMode;
-	actualMode;
-	constructor(targetPath, expectedMode, actualMode) {
-		super(`Persona Harness could not enforce private permissions on ${targetPath}: expected ${modeText(expectedMode)}, observed ${modeText(actualMode)}.`);
-		this.targetPath = targetPath;
-		this.expectedMode = expectedMode;
-		this.actualMode = actualMode;
-		this.name = "PrivateFilePermissionError";
+//#region dist/io/no-follow-directory-chain.js
+var NoFollowDirectoryChainError = class extends Error {
+	constructor() {
+		super("directory chain is unsafe");
+		this.name = "NoFollowDirectoryChainError";
 	}
 };
-function atomicTempPath(targetPath) {
-	return join(dirname(targetPath), `.${basename(targetPath).replace(/[^a-zA-Z0-9._-]/gu, "_")}.${randomUUID()}.tmp`);
-}
-function writePrivateFileAtomic(targetPath, data, options = {}) {
-	writeFileAtomicWithModes(targetPath, data, options, 448, 384);
-}
-function ensurePrivateDirectory(targetPath) {
-	mkdirSync(targetPath, {
-		mode: 448,
-		recursive: true
-	});
-	enforceMode(targetPath, 448);
-}
-function supportsPosixFileModes(platform = process$1.platform) {
-	return platform !== "win32";
-}
-function writeFileAtomicWithModes(targetPath, data, options, directoryMode, fileMode) {
-	const dir = dirname(targetPath);
-	if (directoryMode === void 0) mkdirSync(dir, { recursive: true });
-	else ensurePrivateDirectory(dir);
-	const tempPath = atomicTempPath(targetPath);
+function withNoFollowDirectoryChain(requestedPath, mode, operation) {
+	let current;
+	let previous;
 	try {
-		writeFileSync(tempPath, data, {
-			encoding: options.encoding ?? "utf8",
-			flag: "wx",
-			...fileMode === void 0 ? {} : { mode: fileMode }
-		});
-		if (fileMode !== void 0) enforceMode(tempPath, fileMode);
-		renameSync(tempPath, targetPath);
-		if (fileMode !== void 0) verifyMode(targetPath, fileMode);
+		const absolutePath = absoluteDirectoryPath(requestedPath);
+		previous = reserveCurrentDirectory();
+		process$1.chdir(parse(absolutePath).root);
+		current = reserveCurrentDirectory();
+		const chain = [current];
+		for (const segment of childSegments(absolutePath)) {
+			const parent = current;
+			current = reserveOrCreateCurrentChildDirectory(parent, segment, mode);
+			chain.push(current);
+			closeSync(parent.descriptor);
+		}
+		if (mode !== void 0 && process$1.platform !== "win32") {
+			assertCurrentDirectory(current);
+			assertDirectoryChainLocations(chain);
+			fchmodSync(current.descriptor, mode);
+			const identity = noFollowPathIdentityFromStat(fstatSync(current.descriptor, { bigint: true }));
+			if (sameNoFollowPathLocation(previous.identity, current.identity)) previous = {
+				...previous,
+				identity
+			};
+			current = {
+				...current,
+				identity
+			};
+			chain[chain.length - 1] = current;
+		}
+		const reserved = current;
+		const assertLocation = () => {
+			assertCurrentDirectory(reserved);
+			assertDirectoryChainLocations(chain);
+		};
+		assertLocation();
+		const result = operation(assertLocation);
+		assertLocation();
+		return result;
+	} catch {
+		return;
 	} finally {
-		if (existsSync(tempPath)) rmSync(tempPath, { force: true });
+		if (current !== void 0) closeReservedDirectory(current);
+		if (previous !== void 0) {
+			restoreCurrentDirectory(previous);
+			closeReservedDirectory(previous);
+		}
 	}
 }
-function enforceMode(targetPath, expectedMode) {
-	if (!supportsPosixFileModes()) return;
-	chmodSync(targetPath, expectedMode);
-	verifyMode(targetPath, expectedMode);
+function absoluteDirectoryPath(path) {
+	if (!isAbsolute(path) || path.includes("\0")) throw new NoFollowDirectoryChainError();
+	return resolve(path);
 }
-function verifyMode(targetPath, expectedMode) {
-	if (!supportsPosixFileModes()) return;
-	const actualMode = statSync(targetPath).mode & 511;
-	if (actualMode !== expectedMode) throw new PrivateFilePermissionError(targetPath, expectedMode, actualMode);
+function childSegments(absolutePath) {
+	const root = parse(absolutePath).root;
+	const childPath = relative(root, absolutePath);
+	if (childPath.length === 0) return [];
+	const segments = childPath.split(sep);
+	if (segments.some((segment) => segment.length === 0 || segment === "." || segment === "..")) throw new NoFollowDirectoryChainError();
+	return segments;
 }
-function modeText(mode) {
-	return `0${mode.toString(8).padStart(3, "0")}`;
+function reserveCurrentDirectory() {
+	const path = process$1.cwd();
+	const current = captureNoFollowDirectory(path);
+	if (current.kind !== "ready") throw new NoFollowDirectoryChainError();
+	let descriptor;
+	try {
+		descriptor = openNoFollowDirectory(".");
+		const identity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }));
+		if (!sameNoFollowPathLocation(current.value, identity)) throw new NoFollowDirectoryChainError();
+		const reservation = {
+			descriptor,
+			identity,
+			path
+		};
+		descriptor = void 0;
+		return reservation;
+	} finally {
+		if (descriptor !== void 0) closeReservedDescriptor(descriptor);
+	}
+}
+function reserveOrCreateCurrentChildDirectory(parent, name, mode) {
+	assertCurrentDirectory(parent);
+	if (mode !== void 0) try {
+		mkdirSync(name, { mode });
+	} catch (error) {
+		if (errorCode(error) !== "EEXIST") throw new NoFollowDirectoryChainError();
+	}
+	let descriptor;
+	try {
+		const beforeStat = lstatSync(name, { bigint: true });
+		if (!beforeStat.isDirectory() || beforeStat.isSymbolicLink()) throw new NoFollowDirectoryChainError();
+		const before = noFollowPathIdentityFromStat(beforeStat);
+		descriptor = openNoFollowDirectory(name);
+		const openedStat = fstatSync(descriptor, { bigint: true });
+		const descriptorIdentity = noFollowPathIdentityFromStat(openedStat);
+		const afterStat = lstatSync(name, { bigint: true });
+		const after = noFollowPathIdentityFromStat(afterStat);
+		if (!sameNoFollowPathLocation(before, after) || !sameNoFollowPathLocation(after, descriptorIdentity) || beforeStat.birthtimeNs !== openedStat.birthtimeNs || afterStat.birthtimeNs !== openedStat.birthtimeNs) throw new NoFollowDirectoryChainError();
+		const reservation = {
+			descriptor,
+			identity: after,
+			path: join(parent.path, name)
+		};
+		process$1.chdir(name);
+		assertCurrentDirectory(reservation);
+		descriptor = void 0;
+		return reservation;
+	} finally {
+		if (descriptor !== void 0) closeReservedDescriptor(descriptor);
+	}
+}
+function assertCurrentDirectory(reservation) {
+	let descriptor;
+	try {
+		descriptor = openNoFollowDirectory(".");
+		const current = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }));
+		if (!sameNoFollowPathLocation(reservation.identity, current)) throw new NoFollowDirectoryChainError();
+	} finally {
+		if (descriptor !== void 0) closeReservedDescriptor(descriptor);
+	}
+}
+function assertDirectoryChainLocations(chain) {
+	for (const reservation of chain) {
+		const current = captureNoFollowDirectory(reservation.path);
+		if (current.kind !== "ready" || !sameNoFollowPathLocation(reservation.identity, current.value)) throw new NoFollowDirectoryChainError();
+	}
+}
+function openNoFollowDirectory(path) {
+	const descriptor = openSync(path, process$1.platform === "win32" ? constants.O_RDONLY : constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
+	try {
+		if (!fstatSync(descriptor, { bigint: true }).isDirectory()) throw new NoFollowDirectoryChainError();
+		return descriptor;
+	} catch (error) {
+		closeReservedDescriptor(descriptor);
+		throw error;
+	}
+}
+function restoreCurrentDirectory(previous) {
+	try {
+		const current = captureNoFollowDirectory(previous.path);
+		if (current.kind === "ready" && sameNoFollowPathLocation(current.value, previous.identity)) {
+			process$1.chdir(previous.path);
+			assertCurrentDirectory(previous);
+			return;
+		}
+	} catch {}
+	try {
+		process$1.chdir(parse(previous.path).root);
+	} catch {}
+}
+function closeReservedDirectory(reservation) {
+	closeReservedDescriptor(reservation.descriptor);
+}
+function closeReservedDescriptor(descriptor) {
+	try {
+		closeSync(descriptor);
+	} catch {}
+}
+function errorCode(error) {
+	return error !== null && typeof error === "object" && "code" in error && typeof error.code === "string" ? error.code : void 0;
+}
+//#endregion
+//#region dist/cli/personalization-file-boundary.js
+const MAX_PERSONALIZATION_FILE_BYTES = 8 * 1024 * 1024;
+var PersonalizationFileError = class extends Error {
+	code;
+	constructor(code) {
+		super(code);
+		this.code = code;
+		this.name = "PersonalizationFileError";
+	}
+};
+function readPersonalizationFile(root) {
+	const directory = captureNoFollowDirectory(root);
+	if (directory.kind === "absent") return { kind: "absent" };
+	if (directory.kind === "blocked") throw new PersonalizationFileError("unsafe");
+	return withStoreDirectory(root, void 0, readCurrentFile);
+}
+function withPersonalizationFileMutation(root, operation) {
+	return withStoreDirectory(root, 448, (assertLocation) => {
+		let lock;
+		try {
+			lock = openSync("profile.json.lock", constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 384);
+		} catch (error) {
+			throw new PersonalizationFileError(error !== null && typeof error === "object" && "code" in error && error.code === "EEXIST" ? "busy" : "unsafe");
+		}
+		try {
+			const snapshot = readCurrentFile();
+			return operation({
+				snapshot,
+				publish: (bytes) => publishCurrentFile(bytes, snapshot, assertLocation)
+			});
+		} finally {
+			try {
+				const opened = noFollowPathIdentityFromStat(fstatSync(lock, { bigint: true }));
+				const current = lstatSync("profile.json.lock", { bigint: true });
+				if (current.isSymbolicLink() || !sameNoFollowPathLocation(opened, noFollowPathIdentityFromStat(current))) throw new PersonalizationFileError("unsafe");
+				unlinkSync("profile.json.lock");
+			} finally {
+				closeSync(lock);
+			}
+		}
+	});
+}
+function withStoreDirectory(root, mode, operation) {
+	const result = withNoFollowDirectoryChain(root, mode, (assertLocation) => {
+		try {
+			return {
+				kind: "ready",
+				value: operation(assertLocation)
+			};
+		} catch (error) {
+			return {
+				kind: "failed",
+				error
+			};
+		}
+	});
+	if (result === void 0) throw new PersonalizationFileError("unsafe");
+	if (result.kind === "failed") throw result.error;
+	return result.value;
+}
+function readCurrentFile() {
+	const file = readNoFollowRegularFile("profile.json", MAX_PERSONALIZATION_FILE_BYTES, ".");
+	if (file.kind === "blocked") throw new PersonalizationFileError("unsafe");
+	return file;
+}
+function sameSnapshot(left, right) {
+	return left.kind === "absent" ? right.kind === "absent" : right.kind === "ready" && sameNoFollowPathIdentity(left.value.identity, right.value.identity);
+}
+function publishCurrentFile(bytes, expected, assertLocation) {
+	assertLocation();
+	if (bytes.byteLength > 8388608 || !sameSnapshot(expected, readCurrentFile())) throw new PersonalizationFileError("unsafe");
+	const temporary = `.profile-${randomUUID()}.tmp`;
+	const descriptor = openSync(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 384);
+	let temporaryPresent = true;
+	try {
+		if (process.platform !== "win32") fchmodSync(descriptor, 384);
+		writeFileSync(descriptor, bytes);
+		fsyncSync(descriptor);
+		assertLocation();
+		if (!sameSnapshot(expected, readCurrentFile())) throw new PersonalizationFileError("unsafe");
+		renameSync(temporary, "profile.json");
+		temporaryPresent = false;
+		const opened = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }));
+		const published = readCurrentFile();
+		if (published.kind !== "ready" || !sameNoFollowPathIdentity(opened, published.value.identity)) throw new PersonalizationFileError("unsafe");
+	} finally {
+		closeSync(descriptor);
+		if (temporaryPresent) unlinkSync(temporary);
+	}
 }
 //#endregion
 //#region dist/cli/personalization-store-io.js
@@ -2079,32 +2279,19 @@ function readPersonalizationStore(options = {}) {
 	return readPersonalizationStoreSnapshot(options).document;
 }
 function readPersonalizationStoreSnapshot(options = {}) {
-	const path = personalizationStorePath(options);
-	const root = dirname(path);
-	try {
-		const rootStat = lstatSync(root);
-		if (rootStat.isSymbolicLink() || !rootStat.isDirectory()) throw new PersonalizationStoreError("personalization-store-unsafe");
-	} catch (error) {
-		if (error instanceof PersonalizationStoreError) throw error;
-		if (isMissingPathError(error)) return {
-			status: "missing",
-			document: emptyPersonalizationStore()
-		};
-		throw new PersonalizationStoreError("personalization-store-unsafe");
-	}
+	return withStoreErrors(() => parseFileSnapshot(readPersonalizationFile(dirname(personalizationStorePath(options)))));
+}
+function parseFileSnapshot(file) {
+	if (file.kind === "absent") return {
+		status: "missing",
+		document: emptyPersonalizationStore()
+	};
 	let parsed;
 	try {
-		const stat = lstatSync(path);
-		if (stat.isSymbolicLink()) throw new PersonalizationStoreError("personalization-store-unsafe");
-		if (!stat.isFile() || stat.isSymbolicLink()) throw new PersonalizationStoreError("personalization-store-unsafe");
-		parsed = JSON.parse(readFileSync(path, "utf8"));
+		parsed = JSON.parse(file.value.bytes.toString("utf8"));
 	} catch (error) {
-		if (error instanceof PersonalizationStoreError) throw error;
-		if (isMissingPathError(error)) return {
-			status: "missing",
-			document: emptyPersonalizationStore()
-		};
-		throw new PersonalizationStoreError("personalization-store-corrupt");
+		if (error instanceof SyntaxError) throw new PersonalizationStoreError("personalization-store-corrupt");
+		throw error;
 	}
 	try {
 		return {
@@ -2116,19 +2303,30 @@ function readPersonalizationStoreSnapshot(options = {}) {
 		throw error;
 	}
 }
-function writePersonalizationStore(document, options = {}) {
+function mutatePersonalizationStore(options, mutation) {
+	return withStoreErrors(() => withPersonalizationFileMutation(dirname(personalizationStorePath(options)), (file) => {
+		const result = mutation(parseFileSnapshot(file.snapshot).document);
+		file.publish(serializedStore(result.document));
+		return result;
+	}));
+}
+function serializedStore(document) {
 	let validated;
 	try {
 		validated = parsePersonalizationStore(document);
-	} catch {
-		throw new PersonalizationStoreError("personalization-store-corrupt");
+	} catch (error) {
+		if (error instanceof PersonalizationValidationError) throw new PersonalizationStoreError("personalization-store-corrupt");
+		throw error;
 	}
-	const path = personalizationStorePath(options);
-	const root = dirname(path);
-	assertSafeStoreRoot(root, options.platform === "win32" ? win32 : posix);
-	assertWritableStoreFile(path);
-	ensurePrivateDirectory(root);
-	writePrivateFileAtomic(path, `${JSON.stringify(validated, null, 2)}\n`);
+	return Buffer.from(`${JSON.stringify(validated, null, 2)}\n`);
+}
+function withStoreErrors(operation) {
+	try {
+		return operation();
+	} catch (error) {
+		if (error instanceof PersonalizationFileError) throw new PersonalizationStoreError(error.code === "busy" ? "personalization-store-busy" : "personalization-store-unsafe");
+		throw error;
+	}
 }
 function assertSafeStoreRoot(root, path) {
 	if (!path.isAbsolute(root) || root.includes("\0") || root.trim() === "") throw new PersonalizationStoreError("personalization-store-unsafe");
@@ -2155,15 +2353,6 @@ function validateExistingDirectory(candidate) {
 		throw new PersonalizationStoreError("personalization-store-unsafe");
 	}
 }
-function assertWritableStoreFile(path) {
-	try {
-		const stat = lstatSync(path);
-		if (stat.isSymbolicLink() || !stat.isFile()) throw new PersonalizationStoreError("personalization-store-unsafe");
-	} catch (error) {
-		if (error instanceof PersonalizationStoreError) throw error;
-		if (!isMissingPathError(error)) throw new PersonalizationStoreError("personalization-store-unsafe");
-	}
-}
 function isMissingPathError(error) {
 	return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
 }
@@ -2183,115 +2372,108 @@ function proposePersonalizationCandidate(value, options = {}, explicitPending = 
 	} catch {
 		throw new PersonalizationStoreError("personalization-candidate-invalid");
 	}
-	const current = readPersonalizationStore(options);
-	if (current.profile.activeRules.some((rule) => rule.ruleId === `rule-${candidate.candidateId}`) || current.profile.pendingCandidates.some((item) => item.candidateId === candidate.candidateId)) throw new PersonalizationStoreError("personalization-candidate-invalid");
-	const now = timestamp(options);
-	const decisionId = createId(options, "decision");
-	const eventId = createId(options, "event");
-	const conflict = findConflictingRule(current.profile.activeRules, candidate);
-	if (explicitPending) {
-		const event = historyEvent(eventId, "pending", now, decisionId, candidate.candidateId, null);
-		const document = withMutation(current, {
-			action: "pending",
-			candidate,
-			decisionId,
-			event,
-			ruleId: null
-		});
-		writePersonalizationStore(document, options);
+	return mutatePersonalizationStore(options, (current) => {
+		if (current.profile.activeRules.some((rule) => rule.ruleId === `rule-${candidate.candidateId}`) || current.profile.pendingCandidates.some((item) => item.candidateId === candidate.candidateId)) throw new PersonalizationStoreError("personalization-candidate-invalid");
+		const now = timestamp(options);
+		const decisionId = createId(options, "decision");
+		const eventId = createId(options, "event");
+		const conflict = findConflictingRule(current.profile.activeRules, candidate);
+		if (explicitPending) {
+			const event = historyEvent(eventId, "pending", now, decisionId, candidate.candidateId, null);
+			return {
+				document: withMutation(current, {
+					action: "pending",
+					candidate,
+					decisionId,
+					event,
+					ruleId: null
+				}),
+				event,
+				status: "pending"
+			};
+		}
+		if (conflict !== void 0) {
+			const event = historyEvent(eventId, "conflict", now, decisionId, candidate.candidateId, null);
+			return {
+				document: withMutation(current, {
+					action: "pending",
+					candidate,
+					decisionId,
+					event,
+					ruleId: null
+				}),
+				event,
+				status: "conflict"
+			};
+		}
+		const ruleId = `rule-${candidate.candidateId}`;
+		const rule = ruleFromCandidate(candidate, ruleId, now);
+		const event = historyEvent(eventId, "activated", now, decisionId, candidate.candidateId, ruleId);
 		return {
-			document,
+			document: withMutation(current, {
+				action: "activate",
+				candidate,
+				decisionId,
+				event,
+				removeCandidate: true,
+				rule,
+				ruleId
+			}),
 			event,
-			status: "pending"
+			status: "activated"
 		};
-	}
-	if (conflict !== void 0) {
-		const event = historyEvent(eventId, "conflict", now, decisionId, candidate.candidateId, null);
-		const document = withMutation(current, {
-			action: "pending",
-			candidate,
-			decisionId,
-			event,
-			ruleId: null
-		});
-		writePersonalizationStore(document, options);
-		return {
-			document,
-			event,
-			status: "conflict"
-		};
-	}
-	const ruleId = `rule-${candidate.candidateId}`;
-	const rule = ruleFromCandidate(candidate, ruleId, now);
-	const event = historyEvent(eventId, "activated", now, decisionId, candidate.candidateId, ruleId);
-	const document = withMutation(current, {
-		action: "activate",
-		candidate,
-		decisionId,
-		event,
-		removeCandidate: true,
-		rule,
-		ruleId
 	});
-	writePersonalizationStore(document, options);
-	return {
-		document,
-		event,
-		status: "activated"
-	};
 }
 function resolvePersonalizationCandidate(candidateId, action, options = {}, exceptionScope) {
-	const current = readPersonalizationStore(options);
-	const candidate = current.profile.pendingCandidates.find((item) => item.candidateId === candidateId);
-	if (candidate === void 0) throw new PersonalizationStoreError("personalization-candidate-missing");
-	const now = timestamp(options);
-	const decisionId = createId(options, "decision");
-	const eventId = createId(options, "event");
-	if (action === "exception" && (exceptionScope === void 0 || exceptionScope.kind === "personal")) throw new PersonalizationStoreError("personalization-resolution-invalid");
-	const selectedScope = action === "exception" ? exceptionScope : candidate.scope;
-	const conflict = current.profile.activeRules.find((rule) => rule.topic === candidate.topic && selectedScope !== void 0 && scopesOverlap(rule.scope, selectedScope));
-	if (action === "exception" && conflict !== void 0) throw new PersonalizationStoreError("personalization-candidate-conflict");
-	if (action === "supersede" && conflict === void 0) throw new PersonalizationStoreError("personalization-resolution-invalid");
-	const ruleId = action === "exception" || action === "supersede" ? `rule-${candidate.candidateId}` : null;
-	const rule = ruleId === null ? void 0 : ruleFromCandidate(candidate, ruleId, now, selectedScope);
-	const eventName = action === "pending" ? "pending" : action === "retain" ? "retained" : action === "supersede" ? "superseded" : "exception";
-	const event = historyEvent(eventId, eventName, now, decisionId, candidateId, ruleId);
-	const document = withMutation(current, {
-		action,
-		candidate,
-		decisionId,
-		event,
-		replaceRule: action === "supersede" ? conflict : void 0,
-		rule,
-		ruleId,
-		removeCandidate: action !== "pending"
+	return mutatePersonalizationStore(options, (current) => {
+		const candidate = current.profile.pendingCandidates.find((item) => item.candidateId === candidateId);
+		if (candidate === void 0) throw new PersonalizationStoreError("personalization-candidate-missing");
+		const now = timestamp(options);
+		const decisionId = createId(options, "decision");
+		const eventId = createId(options, "event");
+		if (action === "exception" && (exceptionScope === void 0 || exceptionScope.kind === "personal")) throw new PersonalizationStoreError("personalization-resolution-invalid");
+		const selectedScope = action === "exception" ? exceptionScope : candidate.scope;
+		const conflict = current.profile.activeRules.find((rule) => rule.topic === candidate.topic && selectedScope !== void 0 && scopesOverlap(rule.scope, selectedScope));
+		if (action === "exception" && conflict !== void 0) throw new PersonalizationStoreError("personalization-candidate-conflict");
+		if (action === "supersede" && conflict === void 0) throw new PersonalizationStoreError("personalization-resolution-invalid");
+		const ruleId = action === "exception" || action === "supersede" ? `rule-${candidate.candidateId}` : null;
+		const rule = ruleId === null ? void 0 : ruleFromCandidate(candidate, ruleId, now, selectedScope);
+		const eventName = action === "pending" ? "pending" : action === "retain" ? "retained" : action === "supersede" ? "superseded" : "exception";
+		const event = historyEvent(eventId, eventName, now, decisionId, candidateId, ruleId);
+		return {
+			document: withMutation(current, {
+				action,
+				candidate,
+				decisionId,
+				event,
+				replaceRule: action === "supersede" ? conflict : void 0,
+				rule,
+				ruleId,
+				removeCandidate: action !== "pending"
+			}),
+			event,
+			status: eventName
+		};
 	});
-	writePersonalizationStore(document, options);
-	return {
-		document,
-		event,
-		status: eventName
-	};
 }
 function rollbackPersonalizationRule(ruleId, options = {}) {
-	const current = readPersonalizationStore(options);
-	if (current.profile.activeRules.find((item) => item.ruleId === ruleId) === void 0) throw new PersonalizationStoreError("personalization-rule-missing");
-	const now = timestamp(options);
-	const decisionId = createId(options, "decision");
-	const event = historyEvent(createId(options, "event"), "rollback", now, decisionId, null, ruleId);
-	const document = withMutation(current, {
-		action: "rollback",
-		decisionId,
-		event,
-		removeRule: ruleId,
-		ruleId
+	return mutatePersonalizationStore(options, (current) => {
+		if (current.profile.activeRules.find((item) => item.ruleId === ruleId) === void 0) throw new PersonalizationStoreError("personalization-rule-missing");
+		const now = timestamp(options);
+		const decisionId = createId(options, "decision");
+		const event = historyEvent(createId(options, "event"), "rollback", now, decisionId, null, ruleId);
+		return {
+			document: withMutation(current, {
+				action: "rollback",
+				decisionId,
+				event,
+				removeRule: ruleId,
+				ruleId
+			}),
+			event,
+			status: "rollback"
+		};
 	});
-	writePersonalizationStore(document, options);
-	return {
-		document,
-		event,
-		status: "rollback"
-	};
 }
 function withMutation(current, mutation) {
 	const activeRules = current.profile.activeRules.filter((rule) => rule.ruleId !== mutation.removeRule && rule.ruleId !== mutation.replaceRule?.ruleId);
@@ -2489,144 +2671,6 @@ function parseTargetPath(value) {
 }
 function isSafeIdentifier(value) {
 	return /^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/u.test(value);
-}
-//#endregion
-//#region dist/io/no-follow-directory-chain.js
-var NoFollowDirectoryChainError = class extends Error {
-	constructor() {
-		super("directory chain is unsafe");
-		this.name = "NoFollowDirectoryChainError";
-	}
-};
-function withNoFollowDirectoryChain(requestedPath, mode, operation) {
-	let current;
-	let previous;
-	try {
-		const absolutePath = absoluteDirectoryPath(requestedPath);
-		previous = reserveCurrentDirectory();
-		process$1.chdir(parse(absolutePath).root);
-		current = reserveCurrentDirectory();
-		for (const segment of childSegments(absolutePath)) {
-			const parent = current;
-			current = reserveOrCreateCurrentChildDirectory(parent, segment, mode);
-			closeSync(parent.descriptor);
-		}
-		assertCurrentDirectory(current);
-		return operation();
-	} catch {
-		return;
-	} finally {
-		if (current !== void 0) closeReservedDirectory(current);
-		if (previous !== void 0) {
-			restoreCurrentDirectory(previous);
-			closeReservedDirectory(previous);
-		}
-	}
-}
-function absoluteDirectoryPath(path) {
-	if (!isAbsolute(path) || path.includes("\0")) throw new NoFollowDirectoryChainError();
-	return resolve(path);
-}
-function childSegments(absolutePath) {
-	const root = parse(absolutePath).root;
-	const childPath = relative(root, absolutePath);
-	if (childPath.length === 0) return [];
-	const segments = childPath.split(sep);
-	if (segments.some((segment) => segment.length === 0 || segment === "." || segment === "..")) throw new NoFollowDirectoryChainError();
-	return segments;
-}
-function reserveCurrentDirectory() {
-	const path = process$1.cwd();
-	const current = captureNoFollowDirectory(path);
-	if (current.kind !== "ready") throw new NoFollowDirectoryChainError();
-	let descriptor;
-	try {
-		descriptor = openNoFollowDirectory(".");
-		const identity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }));
-		if (!sameNoFollowPathLocation(current.value, identity)) throw new NoFollowDirectoryChainError();
-		const reservation = {
-			descriptor,
-			identity,
-			path
-		};
-		descriptor = void 0;
-		return reservation;
-	} finally {
-		if (descriptor !== void 0) closeReservedDescriptor(descriptor);
-	}
-}
-function reserveOrCreateCurrentChildDirectory(parent, name, mode) {
-	assertCurrentDirectory(parent);
-	try {
-		mkdirSync(name, { mode });
-	} catch (error) {
-		if (errorCode(error) !== "EEXIST") throw new NoFollowDirectoryChainError();
-	}
-	let descriptor;
-	try {
-		const beforeStat = lstatSync(name, { bigint: true });
-		if (!beforeStat.isDirectory() || beforeStat.isSymbolicLink()) throw new NoFollowDirectoryChainError();
-		const before = noFollowPathIdentityFromStat(beforeStat);
-		descriptor = openNoFollowDirectory(name);
-		const descriptorIdentity = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }));
-		const after = noFollowPathIdentityFromStat(lstatSync(name, { bigint: true }));
-		if (!sameNoFollowPathIdentity(before, after) || !sameNoFollowPathLocation(after, descriptorIdentity)) throw new NoFollowDirectoryChainError();
-		const reservation = {
-			descriptor,
-			identity: after,
-			path: join(parent.path, name)
-		};
-		process$1.chdir(name);
-		assertCurrentDirectory(reservation);
-		descriptor = void 0;
-		return reservation;
-	} finally {
-		if (descriptor !== void 0) closeReservedDescriptor(descriptor);
-	}
-}
-function assertCurrentDirectory(reservation) {
-	let descriptor;
-	try {
-		descriptor = openNoFollowDirectory(".");
-		const current = noFollowPathIdentityFromStat(fstatSync(descriptor, { bigint: true }));
-		if (!sameNoFollowPathLocation(reservation.identity, current)) throw new NoFollowDirectoryChainError();
-	} finally {
-		if (descriptor !== void 0) closeReservedDescriptor(descriptor);
-	}
-}
-function openNoFollowDirectory(path) {
-	const descriptor = openSync(path, process$1.platform === "win32" ? constants.O_RDONLY : constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
-	try {
-		if (!fstatSync(descriptor, { bigint: true }).isDirectory()) throw new NoFollowDirectoryChainError();
-		return descriptor;
-	} catch (error) {
-		closeReservedDescriptor(descriptor);
-		throw error;
-	}
-}
-function restoreCurrentDirectory(previous) {
-	try {
-		const current = captureNoFollowDirectory(previous.path);
-		if (current.kind === "ready" && sameNoFollowPathLocation(current.value, previous.identity)) {
-			process$1.chdir(previous.path);
-			assertCurrentDirectory(previous);
-			return;
-		}
-	} catch {}
-	try {
-		process$1.chdir(parse(previous.path).root);
-	} catch {}
-}
-function closeReservedDirectory(reservation) {
-	closeReservedDescriptor(reservation.descriptor);
-}
-function closeReservedDescriptor(descriptor) {
-	try {
-		closeSync(descriptor);
-	} catch {}
-}
-function errorCode(error) {
-	return error !== null && typeof error === "object" && "code" in error && typeof error.code === "string" ? error.code : void 0;
 }
 //#endregion
 //#region dist/cli/context-checkout-binding.js
