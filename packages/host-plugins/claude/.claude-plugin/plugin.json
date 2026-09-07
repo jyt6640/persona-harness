@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "persona-harness",
-  "version": "1.0.0",
-  "description": "Portable Persona Harness shared skills for Claude Code.",
+  "version": "1.1.0",
+  "description": "Persona Harness shared skills and opt-in targeted Context for Claude Code.",
   "author": {
     "name": "Persona Harness",
     "url": "https://github.com/jyt6640/persona-harness"

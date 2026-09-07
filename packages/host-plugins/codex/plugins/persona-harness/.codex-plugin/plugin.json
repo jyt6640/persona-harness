@@ -1,7 +1,7 @@
 {
   "name": "persona-harness",
-  "version": "1.0.0",
-  "description": "Portable Persona Harness shared skills for Codex.",
+  "version": "1.1.0",
+  "description": "Persona Harness shared skills and opt-in targeted Context for Codex.",
   "author": {
     "name": "Persona Harness",
     "url": "https://github.com/jyt6640/persona-harness"
@@ -18,8 +18,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Persona Harness",
-    "shortDescription": "Portable engineering skills for Codex.",
-    "longDescription": "A versioned, canonical Persona Harness skill catalog for Codex project workflows.",
+    "shortDescription": "Engineering skills and targeted Context.",
+    "longDescription": "Canonical engineering skills and a read-only Context hook for explicitly enabled projects.",
     "developerName": "Persona Harness",
     "category": "Productivity",
     "capabilities": [

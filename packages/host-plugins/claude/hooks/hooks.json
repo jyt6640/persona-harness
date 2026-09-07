@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/context-runtime.mjs\" --host claude",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(Read|Edit|Write|MultiEdit|read|read_file|edit|edit_file|write|write_file|patch|apply_patch|applypatch|multiedit|multi_edit|functions\\.apply_patch)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/context-runtime.mjs\" --host claude",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

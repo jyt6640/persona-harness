@@ -57,6 +57,18 @@ rule. `resolve` supports `retain`, a project/task `exception`, `supersede`, and
 `pending`. `rollback` appends a compensating decision; it never edits or
 deletes history.
 
+Same-topic overlap is an unresolved selection, not proof that the statements
+logically contradict each other. The host first compares the concrete
+obligations against the approved decision and code. If the user approves a
+combined rule that preserves both obligations, propose that complete combined
+candidate on the original topic and scope, then explicitly resolve it with
+`supersede`. Before that resolution, only the old active rule is operative.
+Afterward, Preview and target delivery use the complete combined rule and the
+existing scope selectors; the earlier history events remain intact. Do not
+create misleading topics, broaden the scope, or infer approval to avoid the
+overlap. The deterministic store does not itself prove semantic equivalence or
+understanding by the host model.
+
 `ph philosophy refine --stdin` is the explicit Socratic refinement surface. It
 accepts `personalization-refinement.v1` only when the user explicitly asks to
 change, review, or persist a reusable philosophy. A direct code-change request,
@@ -96,6 +108,102 @@ context, even while broader `runtimeInjection` remains off. It is omitted for
 draft, incomplete, malformed, or unsafe profile content; setting the feature to
 `false` is the explicit opt-out. This narrow injection neither creates personal
 profile state nor starts philosophy refinement or a workflow.
+
+## Checkout-local project connection
+
+The current source adds an explicit connection between this checkout and an
+already active project rule scope:
+
+```text
+ph context scope
+ph context scope bind --project <approved-key>
+ph context scope unbind --project <bound-key>
+```
+
+Inspection is read-only. Bind requires an active matching project rule and
+explicit user approval for this checkout. Repeating the same binding is a
+no-op; a different key cannot overwrite it. Unbind removes only the matching
+connection, not rules or history. The portable setup bridge accepts the same
+arguments so the user need not run these commands manually.
+
+The connection is stored under the existing personal store root at
+`project-bindings/<checkout-digest>.json`. Its strict
+`persona-context-checkout-binding.1` record contains only `schemaVersion`,
+`checkoutDigest`, and `projectKey`. The full SHA-256 digest covers the canonical
+checkout path and directory device, inode and birth time. Raw paths, rule text,
+chat, and host credentials are not stored in the record. The digest identifies
+related context; it is not an execution permission or cryptographic approval.
+
+Preview and supported target hooks reuse a valid connection automatically.
+Explicit Preview project selectors remain available. Other worktrees, clones,
+moved directories and replacement checkouts need a new connection. A corrupt,
+unsupported, symlinked or mismatched record blocks automatic Context selection
+instead of silently falling back to a less specific rule. Missing connections
+remain read-only and produce the existing unbound-scope diagnostic when relevant.
+An explicit Context opt-out stays effective and does not read the binding from
+the target hook.
+
+Existing profile V1 documents, project configuration and user files are not
+rewritten. Complete private records are published without replacing an existing
+file. Per-checkout mutation locks serialize cooperating bind/unbind commands;
+lock contention fails closed without unbounded waiting. An interrupted process
+can leave a lock requiring explicit local recovery; it is not silently stolen.
+Unsupported local filesystem operations fail closed. Worktree sharing,
+automatic stale-record cleanup and recovery of manually corrupted records are
+not supplied by this boundary. Task connections are separate, as described below.
+This new public command/storage contract belongs to the user-approved 1.1.0
+release, not a patch-only change. Source preparation does not establish registry
+publication; see the [release notes](release/v1.1.0-release-notes.md).
+
+## Session-local task connection
+
+The user-confirmed policy is explicit same-task resume in a new session, never
+automatic reuse of the checkout's last task. The portable SessionStart hook
+supplies a handle derived from the configured host namespace and the hook's
+`session_id`. It is not inferred from a transcript path or Codex task title.
+
+```text
+ph context task --session <handle>
+ph context task --session <handle> resume --task <approved-key>
+ph context task --session <handle> preview <relative-target> --json
+ph context task --session <handle> end --task <bound-key>
+```
+
+Inspection and task Preview are read-only. Resume requires an active matching
+task rule and explicit task selection. The same connection is a no-op; a
+different active task cannot replace it. End requires the matching key and
+removes only the connection. A new session, host or checkout starts unbound;
+compaction using the same session identity does not change the connection.
+If a host creates a new identity on resume, explicit task resume is needed.
+
+`task-bindings/<binding-digest>.json` under the personal store uses the strict
+`persona-context-task-binding.1` record with `schemaVersion`, `bindingDigest`
+and `taskKey`. The digest covers the checkout identity and opaque session
+handle. Raw host/session IDs, paths, rules and conversations are not persisted.
+The same no-follow reader, exclusive mutation lock and complete private-record
+publication used for project bindings are reused. Copying a record into another
+binding's filename fails its digest check. Corruption blocks that session's
+Context selection; explicit opt-out still skips binding reads in the hook.
+
+Supported target hooks use the explicit connection. Task Preview routes the
+same task key through the existing resolver, renderer and project connection.
+The bridge does not guess when natural-language work changes: shared guidance
+requires ending a task on completion, cancellation or switch before unrelated
+work. That instruction is not deterministic host enforcement. A failed or
+omitted end can leave a stale connection in the same host session, and existing
+model context cannot be retracted by deleting a connection. No automatic
+cleanup, session transcript parsing, or new host permission is introduced.
+
+Local and relocated-plugin tests cover this contract. One isolated Codex
+0.153.4 / Luna Max observation used explicit task resume, read-only task Preview
+before editing, a durable Java regression test, and task end after verification.
+Independent recompilation and 14 boundary cases passed; the profile, project
+binding and config were unchanged, and no background terminals remained.
+Normal one-time host approvals were required for resume/end writes. This is
+bounded model evidence, not universal lifecycle enforcement or Claude evidence.
+The current Codex protocol's session ID may also be shared with its subagents;
+this is not a per-subagent task-isolation claim. See the official
+[hook input contract](https://learn.chatgpt.com/docs/hooks#common-input-fields).
 
 ## Privacy and failure behavior
 

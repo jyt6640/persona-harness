@@ -2,6 +2,28 @@
 
 Status: current canonical program record.
 
+Version 1.1.0 source boundary (2026-09-07): the current source work adds full rendered
+budgets, consistent multi-target snapshots, honest missing/unbound profile
+notices, and Codex/Claude portable guidance and Context transports. These are
+not part of the historical release/acceptance rows below. See the current
+[portable host boundary](portable-host-adapters.md) for implementation limits;
+no new hosted observation, independent-user acceptance or token result is
+claimed, and none of the terminal historical gates is reopened by this note.
+
+The user approved 1.1.0 for the new checkout/task connection APIs. Isolated
+native Codex observations include adaptive follow-up questions, saved-rule
+implementation, and explicit task resume/Preview/end; these are bounded local
+host observations, not independent-user acceptance or protected hosted gates.
+Claude model execution and token experiments are outside the current requested
+validation scope. See [release evidence and limits](release/v1.1.0-release-notes.md).
+
+The OpenCode target store holds at most 128 pending sessions. Once
+that capacity rejects an observation, it preserves admitted batches but blocks
+untracked/new batches until a new hook/store instance is created. Freeing a slot
+cannot reconstruct a rejected target, so it must not admit a partial replacement
+or count it as successful Context delivery. Transform-time rejection is also
+reported as `blocked`; this limit does not affect the stateless portable hooks.
+
 Last reconciled: 2026-08-30
 P0 integration release: `a82b85ddef7e9fd9518348bff16deb38f53b4676`
 P0 integration package: [`persona-harness@0.8.37`](https://www.npmjs.com/package/persona-harness/v/0.8.37)

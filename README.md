@@ -105,9 +105,10 @@ Persona Harness exposes two deliberately separate tracks:
 
 - **Workflow Integrity** is the existing evidence and completion-gate product.
 - **Context Personalization (Experimental)** is a local, default-off path for
-  targeted convention guidance. When enabled in a project that has the
-  OpenCode plugin registered, it delivers one bounded Context block only after
-  a safe observed file target. It grants no completion authority.
+  targeted convention guidance. Enabled adapters offer a bounded Context block
+  after safe observed file targets. Version 1.1.0 adds
+  Codex and Claude plugin hooks alongside OpenCode; this does not establish
+  live model receipt or grant completion authority.
 
 ### Context Boundary
 
@@ -117,13 +118,15 @@ Persona Harness exposes two deliberately separate tracks:
   verification authority.
 - **Isolation:** Context-only paths do not execute project commands or contact
   GitHub/network.
-- **No inferred skill route:** a Context-only or partial `.persona` directory
+- **No inferred skill route:** for the existing OpenCode route, a Context-only or partial `.persona` directory
   without the regular manifest created by `ph init` does not enable automatic
   shared-skill routing or an interview. Resolve the project state explicitly
   before enabling those routes.
 - **Host:** `ph init` installs static skill adapters for Codex, Claude Code,
-  OpenCode, and Antigravity. Context delivery is currently implemented only by
-  the optional OpenCode adapter and remains a separate, unobserved boundary.
+  OpenCode, and Antigravity. The packaged Codex/Claude hooks add
+  bounded session guidance and targeted Context transport after host trust.
+  Actual delivery and behavior remain separate observations; see the
+  [portable host boundary](docs/current/portable-host-adapters.md).
 - **Evidence:** Context usefulness remains `INCONCLUSIVE` until independent
   external evidence exists.
 - **Product focus:** the productized workflow focus is Java/Spring. The
@@ -208,12 +211,14 @@ the previous tracked configuration through your normal version-control flow.
 These lifecycle actions do not enable `features.runtimeInjection`, and they do
 not create workflow, evidence, or authority state or use network or GitHub.
 
-With Context enabled, the OpenCode adapter accepts only a safe observed
-project-relative target from a read or edit tool. It resolves the local
-envelope, rejects invalid/unsafe/budget-exceeding input without delivery, and
+With Context enabled, the OpenCode adapter collects safe observed
+project-relative targets from supported file tools, including multi-file patches.
+It resolves one current profile snapshot for the entire pending batch,
+rejects invalid/unsafe/budget-exceeding input without a rule payload, and
 prepends the selected bounded capsule content to the next user message for the
-same session. It suppresses the same digest until that session is compacted or
-deleted. It does not infer a target from the prompt, inject a full skill
+same session. It suppresses a duplicate only when the exact synthetic block is
+visible in the current model input; it does not assume retained delivery from
+an earlier transform. It does not infer a target from the prompt, inject a full skill
 catalog, access the network, execute shell commands, or write workflow,
 evidence, or authority records. The adapter's actual behavior in a live
 OpenCode release remains a separate host-observation boundary.

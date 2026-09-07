@@ -5,18 +5,17 @@ import {
   resolveEffectiveContext,
   type ContextEnvelope,
   type ContextRule,
-  type ContextScope,
   type EffectiveContextResolution,
 } from "../context-core/index.js"
 import { isContextPersonalizationEnabled, loadHarnessConfigResult } from "../config/harness-config.js"
 import { loadTeamProfile, toTeamContextRules } from "../context-profile/team-profile-store.js"
 import {
   PersonalizationStoreError,
-  readPersonalizationStore,
-  type PersonalizationRule,
   type PersonalizationStoreOptions,
 } from "./personalization-profile-store.js"
+import { contextScope, readContextPersonalization, withPersonalizationWarnings, type ContextPersonalization } from "./context-personalization.js"
 import { parseContextPreviewRequest, type ContextPreviewRequest } from "./context-preview-request.js"
+import { ContextScopeError, readCheckoutProjectBinding, type CheckoutProjectBinding } from "./context-checkout-binding.js"
 
 export type ContextPreviewCommandResult = {
   readonly status: 0 | 1
@@ -33,6 +32,7 @@ export type ContextPreviewFailureCode =
   | "context-team-profile-invalid"
   | "context-topic-unavailable"
   | "context-preview-arguments-invalid"
+  | "context-scope-unavailable"
 
 export type ContextTargetDetection = {
   readonly fileRole: string
@@ -74,9 +74,35 @@ export function readContextPreview(
   projectDir: string,
   options: ContextPreviewOptions = {},
 ): ContextPreviewReadResult {
-  const parsed = parseContextPreviewRequest(args)
-  if (parsed.status === "blocked") return blocked(parsed.code)
+  return createContextPreviewReader(projectDir, options)(args)
+}
 
+type ContextPreviewSources = {
+  readonly status: "ready"
+  readonly configResult: ReturnType<typeof loadHarnessConfigResult>
+  readonly teamResult: ReturnType<typeof loadTeamProfile>
+  readonly personalization: ContextPersonalization
+  readonly binding: CheckoutProjectBinding
+}
+
+// A reader owns one immutable batch snapshot; create a new reader for the next request.
+export function createContextPreviewReader(
+  projectDir: string,
+  options: ContextPreviewOptions = {},
+): (args: readonly string[]) => ContextPreviewReadResult {
+  let sources: ContextPreviewSources | Extract<ContextPreviewReadResult, { readonly status: "blocked" }> | undefined
+  return (args) => {
+    const parsed = parseContextPreviewRequest(args)
+    if (parsed.status === "blocked") return blocked(parsed.code)
+    sources ??= readContextPreviewSources(projectDir, options)
+    return sources.status === "blocked" ? sources : previewFromSources(parsed.request, sources)
+  }
+}
+
+function readContextPreviewSources(
+  projectDir: string,
+  options: ContextPreviewOptions,
+): ContextPreviewSources | Extract<ContextPreviewReadResult, { readonly status: "blocked" }> {
   const configResult = loadHarnessConfigResult(projectDir)
   if (!configResult.safe) return blocked("context-config-unavailable")
   if (configResult.contextDiagnostics.length > 0) return blocked("context-config-invalid")
@@ -84,46 +110,54 @@ export function readContextPreview(
   const teamResult = loadTeamProfile(projectDir)
   if (teamResult.status === "invalid") return blocked("context-team-profile-invalid")
 
-  let personalRules: readonly PersonalizationRule[]
+  let personalization: ContextPersonalization
+  let binding: CheckoutProjectBinding
   try {
-    personalRules = readPersonalizationStore(options.personalization).profile.activeRules
+    personalization = readContextPersonalization(options.personalization)
+    binding = readCheckoutProjectBinding(projectDir, options.personalization)
   } catch (error) {
+    if (error instanceof ContextScopeError) return blocked("context-scope-unavailable")
     if (error instanceof PersonalizationStoreError) return blocked("context-personal-profile-unavailable")
     throw error
   }
+  return { status: "ready", configResult, teamResult, personalization, binding }
+}
 
-  const detected = detectTarget(parsed.request.targetPath)
+function previewFromSources(request: ContextPreviewRequest, sources: ContextPreviewSources): ContextPreviewReadResult {
+  const { configResult, teamResult, personalization } = sources
+  const projectKey = request.projectKey ?? (sources.binding.status === "bound" ? sources.binding.projectKey : undefined)
+  const detected = detectTarget(request.targetPath)
   const teamRules = teamResult.status === "available" ? toTeamContextRules(teamResult.profile) : []
   const productInvariants = invariantRules()
   const commonDefaults = starterRules()
-  const personalContextRules = toPersonalContextRules(personalRules)
   const allRules = [
     ...productInvariants,
     ...commonDefaults,
     ...teamRules,
-    ...personalContextRules,
+    ...personalization.personalRules,
+    ...personalization.projectContracts,
+    ...personalization.taskDecisions,
   ]
-  const topics = selectedTopics(parsed.request, allRules)
+  const topics = selectedTopics(request, allRules)
   if (topics === undefined) return blocked("context-topic-unavailable")
 
   const resolution = resolveEffectiveContext({
     commonDefaults,
     languageDefaults: [],
     maxCapsules: configResult.config.context.maxCapsules,
-    personalProfileAvailable: true,
-    personalRules: personalContextRules,
+    personalRules: personalization.personalRules,
     productInvariants,
-    projectContracts: [],
+    projectContracts: personalization.projectContracts,
     relevance: {
       fileRole: detected.fileRole,
       language: detected.language,
-      projectKey: parsed.request.projectKey,
+      projectKey,
       skillIds: [],
-      taskKey: parsed.request.taskKey,
+      taskKey: request.taskKey,
       teamKey: teamResult.status === "available" ? teamResult.profile.teamKey : undefined,
       topics,
     },
-    taskDecisions: [],
+    taskDecisions: personalization.taskDecisions,
     teamContracts: teamRules,
   })
   const envelope = buildContextEnvelope({
@@ -135,14 +169,14 @@ export function readContextPreview(
     target: {
       fileRole: detected.fileRole,
       language: detected.language,
-      path: parsed.request.targetPath,
+      path: request.targetPath,
     },
   })
   return {
     preview: {
       contextEnabled: isContextPersonalizationEnabled(configResult),
       detected,
-      envelope,
+      envelope: withPersonalizationWarnings(envelope, personalization, { ...request, projectKey }),
       resolution,
     },
     status: "ready",
@@ -167,23 +201,6 @@ function toContextRule(rule: ReturnType<typeof createProductSafetyInvariants>[nu
     status: rule.status,
     topic: rule.topic,
   }
-}
-
-function toPersonalContextRules(rules: readonly PersonalizationRule[]): readonly ContextRule[] {
-  return rules.map((rule) => ({
-    id: rule.ruleId,
-    rule: rule.rule,
-    scope: contextScope(rule.scope),
-    status: "active",
-    topic: rule.topic,
-  }))
-}
-
-function contextScope(
-  scope: { readonly key: string; readonly kind: "personal" | "project" | "task" } | null | undefined,
-): ContextScope | undefined {
-  if (scope === undefined || scope === null || scope.kind === "personal") return undefined
-  return { key: scope.key, kind: scope.kind }
 }
 
 function selectedTopics(request: ContextPreviewRequest, rules: readonly ContextRule[]): readonly string[] | undefined {
@@ -240,7 +257,7 @@ function success(stdout: string): ContextPreviewCommandResult {
   return { status: 0, stderr: "", stdout }
 }
 
-function blocked(code: ContextPreviewFailureCode): ContextPreviewReadResult {
+function blocked(code: ContextPreviewFailureCode): Extract<ContextPreviewReadResult, { readonly status: "blocked" }> {
   return { code, status: "blocked" }
 }
 

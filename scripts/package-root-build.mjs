@@ -65,6 +65,12 @@ function buildDist(root) {
     stdio: "inherit",
   })
   if (result.status !== 0) throw new Error("package-root-build-typescript")
+  const bundled = spawnSync(process.execPath, [join(root, "scripts", "build-portable-context.mjs")], {
+    cwd: root,
+    env: buildEnvironment(),
+    stdio: "inherit",
+  })
+  if (bundled.status !== 0) throw new Error("package-root-build-portable-context")
   const cli = join(root, "dist", "cli", "index.js")
   assertRegularFile(cli, "package-root-build-cli")
   chmodSync(cli, 0o755)

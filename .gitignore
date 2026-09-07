@@ -10,6 +10,8 @@ analysis/
 references/
 !packages/shared-skills/**/references/
 !packages/shared-skills/**/references/**
+!packages/host-plugins/**/references/
+!packages/host-plugins/**/references/**
 experiments/*
 !experiments/entry-intent-corpus/
 !experiments/entry-intent-corpus/**
