@@ -64,8 +64,6 @@ jobs:
             --approval-scope "$APPROVAL_SCOPE" \
             --version "$package_version" \
             --dist-tag latest
-          git checkout --detach "$tag_commit"
-          test "$(git rev-parse HEAD)" = "$tag_commit"
           echo "RELEASE_SOURCE_HEAD=$tag_commit" >> "$GITHUB_ENV"
 
       - name: Setup canonical packer Node
@@ -97,6 +95,24 @@ jobs:
         env:
           PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}
         run: npm run test:repository
+
+      - name: Select approved tagged source
+        env:
+          TAG_NAME: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          tag_commit="$(git rev-parse "refs/tags/${TAG_NAME}^{commit}")"
+          test "$tag_commit" = "$RELEASE_SOURCE_HEAD"
+          git checkout --detach "$tag_commit"
+          test "$(git rev-parse HEAD)" = "$tag_commit"
+
+      - name: Install tagged dependencies
+        run: npm ci
+
+      - name: Test approved tagged source
+        env:
+          PERSONA_HARNESS_OBSERVER_GH: ${{ steps.observer-gh.outputs.path }}
+        run: npx --no-install vitest run --testTimeout=15000
 
       - name: Typecheck
         run: npm run typecheck

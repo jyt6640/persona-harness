@@ -23,7 +23,7 @@ function verificationSteps() {
 }
 
 describe("GitHub Release after npm publication", () => {
-  it.each(["checkout", "readback", "source", "publication"] as const)("rejects a release workflow that loses the %s boundary", (boundary) => {
+  it.each(["checkout", "readback", "source", "publication", "main-tests", "tagged-install", "tagged-tests", "source-selection"] as const)("rejects a release workflow that loses the %s boundary", (boundary) => {
     // Given
     const root = mkdtempSync(join(tmpdir(), "release-published-policy-"))
     try {
@@ -38,6 +38,10 @@ describe("GitHub Release after npm publication", () => {
         readback: current.replace("node scripts/release-registry-readback.mjs", "node scripts/skip-readback.mjs"),
         source: current.replace('--source-head "$RELEASE_SOURCE_HEAD"', '--source-head "$GITHUB_SHA"'),
         publication: `${current}\n      - name: Unexpected publisher\n        run: npm publish --dry-run\n`,
+        "main-tests": current.replace("run: npm run test:repository", 'run: |\n          git checkout --detach "$tag_commit"\n          npm run test:repository'),
+        "tagged-install": current.replace("- name: Install tagged dependencies\n        run: npm ci", "- name: Install tagged dependencies\n        run: true"),
+        "tagged-tests": current.replace("npx --no-install vitest run --testTimeout=15000", "true"),
+        "source-selection": current.replace('test "$tag_commit" = "$RELEASE_SOURCE_HEAD"', "true"),
       }
       writeFileSync(path, mutations[boundary])
 
@@ -59,15 +63,19 @@ describe("GitHub Release after npm publication", () => {
     const steps = verificationSteps()
     const checkout = steps.find((step) => step.name === "Checkout")
     const source = steps.find((step) => step.name === "Verify approved release source")
+    const select = steps.find((step) => step.name === "Select approved tagged source")
 
     // Then
     expect(checkout?.with?.ref).toBeUndefined()
     expect(source?.run).toContain('git show "${tag_commit}:package.json"')
-    expect(source?.run).toContain('git checkout --detach "$tag_commit"')
-    expect(source?.run).toContain('test "$(git rev-parse HEAD)" = "$tag_commit"')
+    expect(source?.run).not.toContain("git checkout")
+    expect(select?.run).toContain('git checkout --detach "$tag_commit"')
+    expect(select?.run).toContain('test "$(git rev-parse HEAD)" = "$tag_commit"')
+    expect(select?.run).toContain('test "$tag_commit" = "$RELEASE_SOURCE_HEAD"')
     expect(source?.run).toContain('echo "RELEASE_SOURCE_HEAD=$tag_commit" >> "$GITHUB_ENV"')
-    assert.ok(source?.run)
-    expect(source.run.indexOf("release-workflow-policy.mjs dist-tag")).toBeLessThan(source.run.indexOf('git checkout --detach "$tag_commit"'))
+    assert.ok(source)
+    assert.ok(select)
+    expect(steps.indexOf(source)).toBeLessThan(steps.indexOf(select))
   })
 
   it.each([false, true])("reads the published package without another publish command (readback blocked=%s)", (blocked) => {
