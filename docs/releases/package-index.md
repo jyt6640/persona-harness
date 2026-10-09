@@ -161,7 +161,9 @@ values in their historical rows; they are not competing live claims.
 | `0.11.0` | 2026-09-02 | historical local tag; packaged Codex and Claude Code plugins | [`release notes`](../current/release/v0.11.0-release-notes.md) | registry not checked in this index |
 | `0.12.0` | 2026-09-03 | historical local tag; packaged Antigravity plugin | [`release notes`](../current/release/v0.12.0-release-notes.md) | registry not checked in this index |
 | `0.13.0` | 2026-09-03 | immutable historical release | [`release notes`](../current/release/v0.13.0-release-notes.md) | historical evidence; not reusable for the current candidate |
-| `1.0.0` | 2026-09-05 | current unpublished source candidate; no local tag | [`release notes`](../current/release/v1.0.0-release-notes.md) | registry not checked in this candidate |
+| `1.1.1` | 2026-10-09 | stable release source; tag and publication pending | [`release notes`](../current/release/v1.1.1-release-notes.md) | no release workflow or registry evidence yet |
+| `1.1.0` | 2026-09-07 | published stable release; immutable tag and npm `latest` verified 2026-10-09 | [`release notes`](../current/release/v1.1.0-release-notes.md) | npm version `1.1.0`; dist SHA-1 `0d7aca79a20e7e7676824cf2b1c2a72035efe110`; registry workflow readback not rechecked in this turn |
+| `1.0.0` | 2026-09-05 | published stable release; immutable tag verified 2026-10-09 | [`release notes`](../current/release/v1.0.0-release-notes.md) | npm version `1.0.0`; dist SHA-1 `6cbfeaf036d320bed74cdb20134a197b82995d15` |
 
 ## Future Migration Notes
 

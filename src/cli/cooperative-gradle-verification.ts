@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 import {
-  ProjectReadBoundaryError,
+  projectReadBoundaryFailureCode,
   reserveProjectReadBoundary,
   type ProjectReadBoundary,
 } from "../io/bootstrap-write-boundary.js"
@@ -75,8 +75,8 @@ export function runCooperativeGradleVerification(
     if (projectRoot.kind === "blocked") return blocked(projectRoot.code)
     const preflight = preflightDiagnostic(projectRoot.value, "local", process.platform, boundary)
     return runGradleVerification(projectRoot.value, context, preflight, options, undefined, boundary)
-  } catch {
-    return blocked("source-read-runtime-unavailable")
+  } catch (error) {
+    return blocked(projectReadBoundaryFailureCode(error) ?? "source-read-runtime-unavailable")
   } finally {
     boundary?.close()
   }
@@ -93,8 +93,8 @@ export function runCooperativeGradleVerificationWithinBoundary(
     if (projectRoot.kind === "blocked") return blocked(projectRoot.code)
     const preflight = preflightDiagnostic(projectRoot.value, "local", process.platform, boundary)
     return runGradleVerification(projectRoot.value, context, preflight, options, undefined, boundary)
-  } catch {
-    return blocked("source-read-runtime-unavailable")
+  } catch (error) {
+    return blocked(projectReadBoundaryFailureCode(error) ?? "source-read-runtime-unavailable")
   }
 }
 
@@ -111,8 +111,7 @@ export function runProjectFinishAttestationGradleVerification(
       boundary.close()
     }
   } catch (error) {
-    if (error instanceof ProjectReadBoundaryError) return blocked("workspace-root-unavailable")
-    return blocked("project-finish-producer-profile")
+    return blocked(projectReadBoundaryFailureCode(error) ?? "project-finish-producer-profile")
   }
 }
 
@@ -137,10 +136,7 @@ export function runProjectFinishAttestationGradleVerificationWithinBoundary(
       projectReadBoundary,
     )
   } catch (error) {
-    if (error instanceof ProjectReadBoundaryError) {
-      return blocked(error.code === "source-read-unsafe" ? "source-read-runtime-unavailable" : error.code)
-    }
-    return blocked("source-read-runtime-unavailable")
+    return blocked(projectReadBoundaryFailureCode(error) ?? "source-read-runtime-unavailable")
   }
 }
 
@@ -157,8 +153,11 @@ function canonicalProjectRoot(
       return { code: "workspace-identity-drift", kind: "blocked" }
     }
     return { kind: "ready", value: projectDir }
-  } catch {
-    return { code: "workspace-root-unavailable", kind: "blocked" }
+  } catch (error) {
+    return {
+      code: projectReadBoundaryFailureCode(error) ?? "workspace-root-unavailable",
+      kind: "blocked",
+    }
   }
 }
 

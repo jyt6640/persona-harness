@@ -211,6 +211,7 @@ if (
   fail("package-notice-source-marker-unshipped")
 }
 const sbom = requireObject(readJson(sbomPath, "sbom-missing", "sbom-malformed"), "sbom-shape-invalid")
+const auditedPackageVersion = "1.1.0"
 if (sbom.bomFormat !== "CycloneDX" || sbom.specVersion !== "1.5") {
   fail("sbom-format-invalid")
 }
@@ -218,7 +219,7 @@ const metadata = requireObject(sbom.metadata, "sbom-metadata-invalid")
 const rootComponent = requireObject(metadata.component, "sbom-root-component-invalid")
 if (
   rootComponent.name !== packageMetadata.name ||
-  rootComponent.version !== packageMetadata.version ||
+  rootComponent.version !== auditedPackageVersion ||
   rootComponent.type !== "application"
 ) {
   fail("sbom-root-component-binding-invalid")

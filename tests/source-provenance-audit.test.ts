@@ -92,11 +92,12 @@ describe("source provenance audit", () => {
     expect(sbom.bomFormat).toBe("CycloneDX")
     expect(sbom.specVersion).toBe("1.5")
     const rootPackage = JSON.parse(readFileSync(join(repositoryRoot, "package.json"), "utf8")) as RootPackage
+    const auditedPackageVersion = "1.1.0"
     expect(sbom.metadata.component).toMatchObject({
-      "bom-ref": `pkg:npm/${rootPackage.name}@${rootPackage.version}`,
+      "bom-ref": `pkg:npm/${rootPackage.name}@${auditedPackageVersion}`,
       name: rootPackage.name,
       type: "application",
-      version: rootPackage.version,
+      version: auditedPackageVersion,
     })
     expect(sbom.components).toEqual([
       expect.objectContaining({

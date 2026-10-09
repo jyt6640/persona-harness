@@ -7,7 +7,7 @@ metadata:
   persona-harness/canonical-skill: git
   persona-harness/display-name: "(PH) Git Hygiene"
   persona-harness/adapter-layout: claude
-  persona-harness/adapter-version: 1.1.0
+  persona-harness/adapter-version: 1.1.1
   opencode/autoinvoke: "false"
 ---
 

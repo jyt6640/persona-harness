@@ -5,6 +5,7 @@ import process from "node:process"
 import type { CliRunResult } from "./bearshell.js"
 import { readBackendProjectProfileState } from "../config/project-profile.js"
 import {
+  projectReadBoundaryFailureCode,
   reserveProjectReadBoundary,
   type ProjectReadBoundary,
 } from "../io/bootstrap-write-boundary.js"
@@ -197,8 +198,14 @@ function runWorkflowFinish(
       projectDir,
       { boundary, snapshot },
     )
-  } catch {
-    return sourceReadRuntimeUnavailableFinishOutput(runnerKind)
+  } catch (error) {
+    const failureCode = projectReadBoundaryFailureCode(error)
+    if (failureCode === undefined || failureCode === "source-read-runtime-unavailable") {
+      return sourceReadRuntimeUnavailableFinishOutput(runnerKind)
+    }
+    return failedRunnerOutput("finish", runnerKind, [
+      `Project source read blocked: ${failureCode}.`,
+    ])
   } finally {
     boundary?.close()
   }

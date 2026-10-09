@@ -140,11 +140,16 @@ export function nativeProjectReadPlatformSupported(): boolean {
 
 function openNoFollowDirectory(path: string): number {
   if (nativeProjectReadGuardMode() === "no-follow-open") {
-    return openSync(path, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+    try {
+      return openSync(path, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW)
+    } catch (error) {
+      if (isDirectoryPathSafetyError(error)) throw new NativeProjectReadUnsafeError()
+      throw error
+    }
   }
   const before = lstatSync(path, { bigint: true })
   if (!before.isDirectory() || before.isSymbolicLink()) {
-    throw new NativeProjectReadRuntimeError()
+    throw new NativeProjectReadUnsafeError()
   }
   const descriptor = openSync(path, constants.O_RDONLY)
   try {
@@ -156,6 +161,13 @@ function openNoFollowDirectory(path: string): number {
     throw error instanceof NativeProjectReadRuntimeError ? error : new NativeProjectReadRuntimeError()
   }
   return descriptor
+}
+
+function isDirectoryPathSafetyError(error: unknown): boolean {
+  return typeof error === "object"
+    && error !== null
+    && "code" in error
+    && (error.code === "ELOOP" || error.code === "ENOTDIR")
 }
 
 export class NativeProjectReadLimitError extends Error {
@@ -265,18 +277,25 @@ export function captureNativeProjectReadRootContext(
 }
 
 export function captureNativeProjectReadDirectChildIdentity(projectDir: string): NativeProjectReadIdentity {
-  const selected = relative(resolve(process.cwd()), resolve(projectDir))
+  const projectPath = resolve(projectDir)
+  const selected = relative(resolve(process.cwd()), projectPath)
   if (
     !validNativeRelativeRoot(selected)
     || selected === "."
     || isAbsolute(selected)
     || selected.includes(sep)
   ) {
+    if (lstatSync(projectPath, { bigint: true }).isSymbolicLink()) {
+      throw new NativeProjectReadUnsafeError()
+    }
     throw new NativeProjectReadRuntimeError()
   }
   try {
     return parseNativeDirectoryResponse(runNative(["capture-root", selected], 128))
   } catch (error) {
+    if (error instanceof NativeProjectReadProtocolError && error.code === "absent") {
+      throw new NativeProjectReadUnsafeError()
+    }
     throw nativeError(error)
   }
 }
@@ -950,6 +969,13 @@ function validArtifactPath(
 function nativeError(
   error: unknown,
 ): NativeProjectReadLimitError | NativeProjectReadRuntimeError | NativeProjectReadUnsafeError {
+  if (
+    error instanceof NativeProjectReadLimitError
+    || error instanceof NativeProjectReadRuntimeError
+    || error instanceof NativeProjectReadUnsafeError
+  ) {
+    return error
+  }
   if (error instanceof NativeProjectReadProtocolError && error.code === "limit") return new NativeProjectReadLimitError()
   if (
     error instanceof NativeProjectReadProtocolError

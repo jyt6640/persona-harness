@@ -52,7 +52,7 @@ describe.sequential("cooperative Finish context", () => {
     const result = prepareCooperativeFinishContext(alias)
 
     // Then: a caller alias cannot become a native source-read capability.
-    expect(result).toEqual({ code: "source-read-runtime-unavailable", kind: "blocked" })
+    expect(result).toEqual({ code: "source-read-unsafe", kind: "blocked" })
   })
 
   it("blocks malformed configuration without creating evidence paths", () => {
@@ -81,7 +81,7 @@ describe.sequential("cooperative Finish context", () => {
 
     // Then: neither unsafe root can advance to source snapshots.
     expect(escapedResult).toEqual({ code: "harness-config-invalid", kind: "blocked" })
-    expect(linkedResult).toEqual({ code: "source-read-runtime-unavailable", kind: "blocked" })
+    expect(linkedResult).toEqual({ code: "source-read-unsafe", kind: "blocked" })
     expect(existsSync(join(escaping, ".persona", "evidence"))).toBe(false)
     expect(existsSync(join(linked, ".persona", "evidence"))).toBe(false)
   })

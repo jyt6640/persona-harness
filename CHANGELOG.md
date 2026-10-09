@@ -8,6 +8,13 @@ preparation alone does not establish stable support or channel state.
 
 ## Unreleased
 
+## [1.1.1] - 2026-10-09
+
+- Preserve unsafe-path, bounded-read-limit and native-runtime failure codes
+  through source-read boundary reservation, workflow closure, Finish and
+  cooperative verification. Fail-closed behavior and the existing 20,000-entry
+  and 64-MiB project snapshot limits are unchanged.
+
 ## [1.1.0] - 2026-09-07
 
 - Bundle consent/setup, targeted Context hooks and Java reference/checker assets

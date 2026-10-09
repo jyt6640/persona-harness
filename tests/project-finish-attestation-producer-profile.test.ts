@@ -114,7 +114,7 @@ describe("project finish producer input readiness", () => {
       },
     }))
 
-    expect(result).toEqual({ code: "workspace-root-unavailable", kind: "blocked" })
+    expect(result).toEqual({ code: "source-read-unsafe", kind: "blocked" })
     expect(calls).toBe(0)
   })
 
@@ -140,9 +140,9 @@ describe("project finish producer input readiness", () => {
 
   it.each([
     ["malformed profile", "malformed" as const, "project-finish-producer-profile"],
-    ["symlink profile", "symlink-profile" as const, "workspace-root-unavailable"],
+    ["symlink profile", "symlink-profile" as const, "source-read-unsafe"],
     ["missing settings descriptor", "missing-settings" as const, "project-finish-producer-profile"],
-    ["symlink settings descriptor", "symlink-settings" as const, "workspace-root-unavailable"],
+    ["symlink settings descriptor", "symlink-settings" as const, "source-read-unsafe"],
   ])("blocks a %s before fixed Gradle commands", (_name, mode, code) => {
     const projectDir = createProject(mode === "symlink-profile" || mode === "symlink-settings" ? "canonical" : mode)
     const context = readyContext(projectDir)
