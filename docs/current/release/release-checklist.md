@@ -180,7 +180,10 @@ Required repository setup:
 - trusted publisher workflow file: `.github/workflows/publish.yml`;
 - GitHub environment: `npm-publish`, if configured in npm/GitHub;
 - push the version commit before running the publish workflow;
-- create/push the git tag only after registry verification.
+- create/push the matching immutable git tag before running the publish
+  workflow;
+- require successful registry readback before creating the GitHub Release or
+  promoting a prerelease to `next`.
 
 The `.github/workflows/release.yml` workflow is manual-only. It verifies an
 explicitly supplied existing stable tag and creates GitHub release notes only

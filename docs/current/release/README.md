@@ -74,17 +74,22 @@ operation, and re-enable it. There is no bypass path.
 
 ## Release Order
 
-Run `release.yml` before `publish.yml`. The release workflow's source
-verification includes `npm publish --dry-run`; after a version exists on npm,
-that verification can no longer prepare the GitHub release for the same
-version.
+Run `publish.yml` before `release.yml`. The release workflow reads the exact
+version and tarball back from npm, so `npm publish --dry-run` alone cannot make
+its registry preflight pass. The publish workflow requires the immutable tag
+and records the registry readback needed by the later GitHub Release workflow.
 
 For a general-availability release:
 
 1. Tag the approved protected-main commit.
-2. Dispatch `release.yml` with the tag and `approval_scope: ga-approved`.
-3. Dispatch `publish.yml` with the tag, `dist_tag: latest`, and
+2. Dispatch `publish.yml` with the tag, `dist_tag: latest`, and
    `approval_scope: ga-approved`.
+3. Confirm the publish run succeeded and its registry readback matches the
+   canonical package facts and `latest` dist-tag.
+4. Dispatch `release.yml` with the tag and `approval_scope: ga-approved`.
 
-If the order was reversed, use `checkReleaseState` in
-`scripts/release-workflow-policy.mjs` to verify the recovered release state.
+If a release workflow was dispatched before publication, leave the immutable
+tag in place, complete the publish workflow, and reconcile its sanitized
+registry readback. Use `checkReleaseState` in
+`scripts/release-workflow-policy.mjs` to determine whether the matching GitHub
+Release is absent or already valid before retrying release creation.

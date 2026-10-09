@@ -139,16 +139,17 @@ tag, or registry verification. It never creates or moves a Git tag.
 6. Push the commit.
 7. Create the separately approved immutable matching tag on that protected-main
    package commit.
-8. Run `.github/workflows/publish.yml` first with `dist_tag=staging` and
-   `approval_scope=staging-only`.
-9. Verify protected source/tag preflight and the registry SHA-1/SRI, raw
-   SHA-256, portable content identity, and selected tag from the workflow
-   post-check; then run the staged installed-package gate.
-10. If a GitHub release is separately approved, dispatch
-    `.github/workflows/release.yml` with that existing stable tag and
-    `approval_scope=ga-approved`.
+8. Select the approved channel: use `dist_tag=staging` with
+   `approval_scope=staging-only` for an initial prerelease, or `dist_tag=latest`
+   with `approval_scope=ga-approved` for a stable GA release.
+9. Verify the publish workflow's protected source/tag preflight and registry
+   SHA-1/SRI, raw SHA-256, portable content identity, and selected dist-tag.
+   Complete the staged installed-package gate before any `next` promotion.
+10. For a separately approved stable GitHub release, dispatch
+    `.github/workflows/release.yml` only after the `latest` publish and registry
+    readback succeed, using that existing tag and `approval_scope=ga-approved`.
 11. Obtain a separate approval and dispatch before moving the exact verified
-   prerelease to `next`.
+    prerelease to `next`.
 
 ```bash
 git push origin main

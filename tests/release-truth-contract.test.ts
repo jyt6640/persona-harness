@@ -58,4 +58,28 @@ describe("public release truth", () => {
       expect(document).toContain("full repository contract")
     }
   })
+
+  it("documents the publish and registry-readback gate before GitHub release creation", () => {
+    const releaseOperations = readRepositoryFile("docs/current/release/README.md")
+    const releaseAutomation = readRepositoryFile("docs/current/release/github-actions-release-automation.md")
+    const releaseChecklist = readRepositoryFile("docs/current/release/release-checklist.md")
+    const releaseWorkflow = readRepositoryFile(".github/workflows/release.yml")
+    const publishWorkflow = readRepositoryFile(".github/workflows/publish.yml")
+    const sequenceHeading = releaseAutomation.indexOf("## Release Sequence")
+    const releaseSequence = sequenceHeading === -1 ? "" : releaseAutomation.slice(sequenceHeading)
+    const publishDispatch = releaseOperations.indexOf("Dispatch `publish.yml`")
+    const releaseDispatch = releaseOperations.indexOf("Dispatch `release.yml`")
+    const stablePublish = releaseSequence.indexOf("`dist_tag=latest`")
+    const stableRelease = releaseSequence.indexOf("`.github/workflows/release.yml`")
+
+    expect(releaseOperations).toContain("Run `publish.yml` before `release.yml`.")
+    expect(publishDispatch).toBeGreaterThan(-1)
+    expect(releaseDispatch).toBeGreaterThan(publishDispatch)
+    expect(stablePublish).toBeGreaterThan(-1)
+    expect(stableRelease).toBeGreaterThan(stablePublish)
+    expect(releaseChecklist).toContain("before running the publish\n  workflow")
+    expect(releaseChecklist).not.toContain("create/push the git tag only after registry verification")
+    expect(releaseWorkflow).toContain("scripts/release-registry-readback.mjs")
+    expect(publishWorkflow).toContain('npm publish "$CANONICAL_TARBALL"')
+  })
 })
