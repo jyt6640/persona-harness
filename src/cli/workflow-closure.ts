@@ -4,6 +4,7 @@ import process from "node:process"
 import { findConventionByBlockerId } from "../config/convention-registry.js"
 import type { WorkflowLifecycleProjection } from "../runtime/workflow-lifecycle-projection.js"
 import {
+  projectReadBoundaryFailureCode,
   reserveProjectReadBoundary,
   type ProjectReadBoundary,
 } from "../io/bootstrap-write-boundary.js"
@@ -117,8 +118,9 @@ export function runWorkflowClosureCommand(action: ClosureAction, options: { read
       projectReadBoundary: boundary,
       projectReadSnapshot: snapshot,
     }))
-  } catch {
-    return { status: 1, stdout: "", stderr: "source-read-runtime-unavailable\n" }
+  } catch (error) {
+    const code = projectReadBoundaryFailureCode(error) ?? "source-read-runtime-unavailable"
+    return { status: 1, stdout: "", stderr: `${code}\n` }
   } finally {
     boundary?.close()
   }

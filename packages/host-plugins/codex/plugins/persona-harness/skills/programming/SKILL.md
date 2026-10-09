@@ -7,7 +7,7 @@ metadata:
   persona-harness/canonical-skill: programming
   persona-harness/display-name: "(PH) Programming Discipline"
   persona-harness/adapter-layout: agents
-  persona-harness/adapter-version: 1.1.0
+  persona-harness/adapter-version: 1.1.1
   opencode/autoinvoke: "false"
 ---
 

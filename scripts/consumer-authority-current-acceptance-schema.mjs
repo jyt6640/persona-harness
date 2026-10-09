@@ -17,9 +17,9 @@ const CURRENT_SOURCE_CANDIDATE = Object.freeze({
   registryInstall: "requires-authorized-release-before-registry-install",
 })
 const PREVIOUS_PUBLISHED_RELEASE = Object.freeze({
-  outcome: "published-release-is-immutable-and-not-reusable-for-this-current-source-candidate-or-any-later-package",
+  outcome: "published-1.1.0-release-is-immutable-and-not-reusable-for-this-current-source-candidate-or-any-later-package",
   reusableForCurrent: false,
-  version: "0.8.31",
+  version: "1.1.0",
 })
 const ACCEPTANCE_RESPONSIBILITIES = Object.freeze({
   package: Object.freeze({

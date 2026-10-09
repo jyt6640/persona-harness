@@ -128,10 +128,22 @@ export class ProjectReadBoundaryError extends Error {
 }
 
 export class ProjectReadBoundaryLimitError extends Error {
+  readonly code = "source-read-limit"
+
   constructor() {
-    super("bootstrap project read exceeds a bounded limit")
+    super("source-read-limit")
     this.name = "ProjectReadBoundaryLimitError"
   }
+}
+
+export function projectReadBoundaryFailureCode(error: unknown): string | undefined {
+  if (error instanceof ProjectReadBoundaryError) return error.code
+  if (error instanceof ProjectReadBoundaryLimitError || error instanceof NativeProjectReadLimitError) {
+    return "source-read-limit"
+  }
+  if (error instanceof NativeProjectReadUnsafeError) return "source-read-unsafe"
+  if (error instanceof NativeProjectReadRuntimeError) return "source-read-runtime-unavailable"
+  return undefined
 }
 
 export class BootstrapWriteBoundary {
@@ -1249,8 +1261,10 @@ export class ProjectReadBoundary {
     } catch (error) {
       if (error instanceof ProjectReadBoundaryLimitError || error instanceof ProjectReadBoundaryError) throw error
       if (error instanceof NativeProjectReadLimitError) throw new ProjectReadBoundaryLimitError()
-      if (error instanceof NativeProjectReadUnsafeError) throw new ProjectReadBoundaryError()
-      if (error instanceof NativeProjectReadRuntimeError) throw new ProjectReadBoundaryError()
+      if (error instanceof NativeProjectReadUnsafeError) throw new ProjectReadBoundaryError("source-read-unsafe")
+      if (error instanceof NativeProjectReadRuntimeError) {
+        throw new ProjectReadBoundaryError("source-read-runtime-unavailable")
+      }
       throw error
     }
   }
@@ -1392,14 +1406,10 @@ export function reserveProjectReadBoundary(
     const entries = readNativeProjectTree(PROJECT_READ_MANIFEST_OPTIONS, projectPath, rootExpectation, rootContext)
     return new ProjectReadBoundary(projectPath, identity, entries, rootContext)
   } catch (error) {
-    if (
-      error instanceof ProjectReadBoundaryError
-      || error instanceof NativeProjectReadRuntimeError
-      || error instanceof NativeProjectReadUnsafeError
-    ) {
-      throw new ProjectReadBoundaryError()
-    }
-    throw error
+    const code = projectReadBoundaryFailureCode(error)
+    if (code === undefined) throw error
+    if (code === "source-read-limit") throw new ProjectReadBoundaryLimitError()
+    throw new ProjectReadBoundaryError(code)
   }
 }
 

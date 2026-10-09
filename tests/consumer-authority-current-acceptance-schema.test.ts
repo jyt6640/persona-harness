@@ -24,9 +24,9 @@ describe("current consumer authority acceptance schema", () => {
     expect(manifest.authority.hostedFixture.revision).toBe("current-source-candidate-head-before-authorized-release")
     expect(manifest.hostedResidual.id).toBe("current-package-acceptance-and-authorized-current-artifact-observation")
     expect(manifest.previousPublishedRelease).toEqual({
-      outcome: "published-release-is-immutable-and-not-reusable-for-this-current-source-candidate-or-any-later-package",
+      outcome: "published-1.1.0-release-is-immutable-and-not-reusable-for-this-current-source-candidate-or-any-later-package",
       reusableForCurrent: false,
-      version: "0.8.31",
+      version: "1.1.0",
     })
   })
 

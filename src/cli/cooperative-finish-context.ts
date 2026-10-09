@@ -3,6 +3,7 @@ import { resolve } from "node:path"
 
 import { loadHarnessConfigResult, resolveConfiguredPathResult } from "../config/harness-config.js"
 import {
+  projectReadBoundaryFailureCode,
   reserveProjectReadBoundary,
   type ProjectReadBoundary,
 } from "../io/bootstrap-write-boundary.js"
@@ -44,11 +45,14 @@ export function prepareCooperativeFinishContext(
     try {
       boundary = reserveProjectReadBoundary(projectDir)
       return prepareCooperativeFinishContext(projectDir, boundary)
-    } catch {
+    } catch (error) {
       // On a platform that does build an artifact, a failed reservation is a
       // load or tamper signal rather than a platform fact, and must keep
       // failing closed.
-      return { code: "source-read-runtime-unavailable", kind: "blocked" }
+      return {
+        code: projectReadBoundaryFailureCode(error) ?? "source-read-runtime-unavailable",
+        kind: "blocked",
+      }
     } finally {
       boundary?.close()
     }

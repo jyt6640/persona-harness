@@ -295,7 +295,7 @@ describe("mechanical workflow finish reachability", () => {
       const output = `${reverifiedFinish.stdout}\n${reverifiedFinish.stderr}`
 
       expect(reverifiedFinish.status).toBe(1)
-      expect(output).toContain("source-read-runtime-unavailable")
+      expect(output).toContain("source-read-unsafe")
       expect(output).not.toContain("trusted-authority-required")
       expect(output).not.toContain("Finish status: PASS")
       expect(existsSync(join(projectDir, ".persona", "evidence", "ci-reverification"))).toBe(false)
@@ -307,7 +307,7 @@ describe("mechanical workflow finish reachability", () => {
     }
   })
 
-  it("preserves recorded workflow artifacts while naming a source-read runtime blocker", () => {
+  it("preserves recorded workflow artifacts while naming a source-read safety blocker", () => {
     const projectDir = createTempProject()
     prepareReverificationFixture(projectDir)
     const history = runPh(projectDir, ["history", "--id", "source-read-runtime-blocked"])
@@ -325,9 +325,7 @@ describe("mechanical workflow finish reachability", () => {
       const finish = runPhAtProjectRoot(projectDir, ["workflow", "finish", "implement", "--reverify", "--ci"])
 
       expect(finish.status).toBe(1)
-      expect(finish.stderr).toContain("Blocker: source-read-runtime-unavailable")
-      expect(finish.stderr).toContain("Existing workflow reports and history archives, if any, remain diagnostic-only.")
-      expect(finish.stderr).toContain("Restore the source-read environment before retrying Finish.")
+      expect(finish.stderr).toContain("Project source read blocked: source-read-unsafe.")
       expect(finish.stdout).not.toContain("Finish status: PASS")
     } finally {
       unlinkSync(source)
